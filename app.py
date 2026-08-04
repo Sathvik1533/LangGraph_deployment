@@ -1,23 +1,25 @@
+%%writefile app.py
 import os
 import sys
 import io
 import traceback
 from typing import Optional, List, Dict, Any
 
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi import FastAPI
+from langserve import add_routes
 
 from langchain_core.messages import HumanMessage
 from langchain_core.tools import tool
 from langgraph.graph import StateGraph, START, END
 from langchain_google_genai import ChatGoogleGenerativeAI
 from typing_extensions import TypedDict
+from pydantic import BaseModel
 
 API_KEY = os.environ.get("GOOGLE_API_KEY")
 if not API_KEY:
     raise RuntimeError("GOOGLE_API_KEY env var not set. Set it in Render dashboard.")
 
-MODEL_NAME = os.environ.get("GEMINI_MODEL", "gemini-3.1-flash-lite-preview")
+MODEL_NAME = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
 llm = ChatGoogleGenerativeAI(model=MODEL_NAME, google_api_key=API_KEY)
 
 class CrewState(TypedDict):
@@ -65,13 +67,11 @@ def developer_node(state: CrewState):
     task = state["messages"][-1].content
     prompt = f"Write a clean Python script to solve this: {task}. Only return the code, no explanation or markdown formatting."
     response = llm.invoke(prompt)
-    code_str = _extract_text(response.content)
-    return {"code": code_str}
+    return {"code": _extract_text(response.content)}
 
 def tester_node(state: CrewState):
     task = state["messages"][-1].content
-    test_cases_raw = generate_test_cases.invoke(task)
-    cases_str = _extract_text(test_cases_raw)
+    cases_str = _extract_text(generate_test_cases.invoke(task))
     execution_result = run_python_code.invoke({"code": state["code"]})
     report = (
         f"### EXECUTION OUTPUT:\n{execution_result}\n\n"
@@ -87,37 +87,30 @@ workflow.add_edge("developer", "tester")
 workflow.add_edge("tester", END)
 graph_app = workflow.compile()
 
-STORED_TASKS: List[Dict[str, str]] = []
+# --- LangServe needs plain-JSON-friendly input/output, not raw HumanMessage objects ---
+class AgentInput(BaseModel):
+    task: str
+
+class AgentOutput(BaseModel):
+    code: Optional[str] = None
+    report: Optional[str] = None
+
+def _to_graph_input(inp: AgentInput) -> dict:
+    return {"messages": [HumanMessage(content=inp.task)], "code": None, "report": None}
+
+def _from_graph_output(result: dict) -> AgentOutput:
+    return AgentOutput(code=result.get("code"), report=result.get("report"))
+
+agent_runnable = (_to_graph_input | graph_app | _from_graph_output)
 
 app = FastAPI(title="Real-Time Dev/Test Agent")
 
-class TaskRequest(BaseModel):
-    task: str
-
-class StoreRequest(BaseModel):
-    task: str
-    code: str
-    report: str
+add_routes(
+    app,
+    agent_runnable.with_types(input_type=AgentInput, output_type=AgentOutput),
+    path="/agent",
+)
 
 @app.get("/")
 def health():
     return {"status": "ok"}
-
-@app.post("/run")
-def run_task(req: TaskRequest):
-    if not req.task.strip():
-        raise HTTPException(status_code=400, detail="task cannot be empty")
-    result = graph_app.invoke(
-        {"messages": [HumanMessage(content=req.task)], "code": None, "report": None},
-        config={"recursion_limit": 10},
-    )
-    return {"task": req.task, "code": result["code"], "report": result["report"]}
-
-@app.post("/store")
-def store_task(req: StoreRequest):
-    STORED_TASKS.append({"task": req.task, "code": req.code, "report": req.report})
-    return {"status": "stored", "total_stored": len(STORED_TASKS)}
-
-@app.get("/history")
-def history():
-    return {"stored_tasks": STORED_TASKS}
