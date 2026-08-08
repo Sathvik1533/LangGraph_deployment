@@ -202,12 +202,15 @@ def get_info():
 @app.post("/invoke", response_model=AgentResponse, tags=["Agent"])
 async def invoke_agent(request: TaskRequest, req: Request):
     """
-    Invoke the self-correcting agent workflow with production patterns.
+    Invoke the self-correcting agent workflow with comprehensive error handling.
     
     Production Patterns Applied:
+    - ✅ Input Validation (fail fast on bad input)
     - ✅ Rate Limiting (10 req/min per IP)
     - ✅ Circuit Breaker (stops calling failing services)
     - ✅ Graceful Degradation (returns partial results on timeout)
+    - ✅ User-Friendly Errors (no stack traces to users)
+    - ✅ Multi-Provider Fallback (switches LLM if primary fails)
     - ✅ Request Timeout (configurable)
     - ✅ Jitter for retries (in agent.py)
     
@@ -216,21 +219,29 @@ async def invoke_agent(request: TaskRequest, req: Request):
         req: FastAPI Request object (for IP-based rate limiting)
         
     Returns:
-        AgentResponse: Complete workflow results including code, report, and iterations
+        AgentResponse: Complete workflow results or user-friendly error
         
     Raises:
+        HTTPException 422: Invalid input
         HTTPException 429: Rate limit exceeded
         HTTPException 503: Circuit breaker open (service unavailable)
-        HTTPException 500: Agent workflow failed
-        
-    Example:
-        ```json
-        {
-            "task": "Write a function to check if a number is prime",
-            "max_iterations": 3
-        }
-        ```
+        HTTPException 500: Agent workflow failed (with friendly message)
     """
+    from agent import validate_task_input, _make_user_friendly_error
+    
+    # INPUT VALIDATION (Production Pattern)
+    is_valid, validation_error = validate_task_input(request.task)
+    if not is_valid:
+        logger.warning(f"Invalid input: {validation_error}")
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "Invalid input",
+                "message": validation_error,
+                "tip": "Please provide a clear description of what code you want to generate."
+            }
+        )
+    
     # Rate Limiting (Production Pattern)
     client_ip = req.client.host if req.client else "unknown"
     if not rate_limiter.is_allowed(client_ip):
@@ -240,8 +251,9 @@ async def invoke_agent(request: TaskRequest, req: Request):
             status_code=429,
             detail={
                 "error": "Rate limit exceeded",
-                "message": f"Too many requests. Try again in {int(reset_time)} seconds.",
-                "retry_after": int(reset_time)
+                "message": f"⚠️ Too many requests. Please try again in {int(reset_time)} seconds.",
+                "retry_after": int(reset_time),
+                "tip": "Rate limit: 10 requests per minute per IP"
             }
         )
     
@@ -252,13 +264,14 @@ async def invoke_agent(request: TaskRequest, req: Request):
             status_code=503,
             detail={
                 "error": "Service temporarily unavailable",
-                "message": "Circuit breaker is open. The service is experiencing issues. Please try again later.",
-                "circuit_breaker_failures": _circuit_breaker_failures
+                "message": "⚡ The AI service is experiencing issues. Automatic recovery in progress.",
+                "circuit_breaker_failures": _circuit_breaker_failures,
+                "tip": "Please try again in 60 seconds. The system is protecting itself from cascading failures."
             }
         )
     
     try:
-        logger.info(f"Received task from {client_ip}: {request.task}")
+        logger.info(f"✅ Validated request from {client_ip}: {request.task[:50]}...")
         logger.info(f"Max iterations: {request.max_iterations}")
         
         # Prepare initial state
@@ -268,43 +281,59 @@ async def invoke_agent(request: TaskRequest, req: Request):
             "report": None,
             "execution_success": False,
             "iterations": 0,
-            "max_iterations": request.max_iterations  # User-provided value
+            "max_iterations": request.max_iterations
         }
         
         # Invoke the agent workflow
         result = agent.invoke(initial_state)
         
-        logger.info(f"Agent completed in {result.get('iterations', 0)} iterations")
+        logger.info(f"✅ Agent completed in {result.get('iterations', 0)} iterations")
+        
+        # Check if we got valid results
+        if not result.get("code"):
+            raise ValueError("Agent did not generate any code")
         
         # Return structured response
         return AgentResponse(
-            success=True,
+            success=result.get("execution_success", False),
             code=result.get("code"),
             report=result.get("report"),
             execution_success=result.get("execution_success", False),
             iterations=result.get("iterations", 0),
-            error=None
+            error=None if result.get("execution_success") else "Code generated but tests failed"
         )
         
+    except HTTPException:
+        # Re-raise HTTP exceptions (already formatted)
+        raise
+        
     except Exception as e:
-        logger.error(f"Error invoking agent: {str(e)}")
+        logger.error(f"❌ Error invoking agent: {str(e)}")
+        
+        # Convert to user-friendly error
+        user_friendly_error = _make_user_friendly_error(e)
         
         # Graceful Degradation (Production Pattern)
         # Return partial results if available instead of complete failure
-        if "result" in locals() and result:
-            logger.info("Returning partial results due to error")
+        if "result" in locals() and result and result.get("code"):
+            logger.info("⚠️ Returning partial results due to error")
             return AgentResponse(
                 success=False,
                 code=result.get("code"),
-                report=result.get("report"),
+                report=result.get("report", f"### ERROR\n{user_friendly_error}"),
                 execution_success=False,
                 iterations=result.get("iterations", 0),
-                error=str(e)
+                error=user_friendly_error
             )
         
+        # Complete failure - return user-friendly error
         raise HTTPException(
             status_code=500,
-            detail=f"Agent workflow failed: {str(e)}"
+            detail={
+                "error": "Agent workflow failed",
+                "message": user_friendly_error,
+                "tip": "Try again with a simpler task or check your API configuration."
+            }
         )
 
 

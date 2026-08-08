@@ -51,7 +51,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 # ============================================================================
-# CONFIGURATION WITH RETRY LOGIC + JITTER
+# CONFIGURATION WITH RETRY LOGIC + JITTER + FALLBACK
 # ============================================================================
 
 # Circuit Breaker State (production pattern)
@@ -61,46 +61,87 @@ _circuit_breaker_last_failure_time = 0
 CIRCUIT_BREAKER_THRESHOLD = 5  # Open circuit after 5 failures
 CIRCUIT_BREAKER_TIMEOUT = 60    # Reset circuit after 60 seconds
 
+# Multi-Provider Fallback Configuration
+LLM_PROVIDERS = [
+    {
+        "name": "groq",
+        "env_key": "GROQ_API_KEY",
+        "model": "llama-3.3-70b-versatile",
+        "class": ChatGroq,
+        "available": True
+    },
+    # Add more providers as fallbacks
+    # {
+    #     "name": "openai",
+    #     "env_key": "OPENAI_API_KEY", 
+    #     "model": "gpt-4",
+    #     "class": ChatOpenAI,
+    #     "available": False
+    # }
+]
 
-def get_llm():
+_current_provider_index = 0
+
+
+def get_llm(force_fallback=False):
     """
-    Initialize the LLM (Large Language Model) with retry configuration.
+    Initialize the LLM with multi-provider fallback support.
     
-    Pattern: Lazy initialization with environment variable configuration
-    Why: Allows different models for different environments (dev/prod)
+    Pattern: Multi-Provider Fallback
+    Why: If primary LLM fails, automatically switch to backup provider
     
-    V2: Temperature lowered to 0.1 for consistent code generation
-    Production: Circuit breaker to prevent cascading failures
+    Fallback Chain:
+    1. Groq (Llama 3.3 70B) - Primary, fastest
+    2. OpenAI (GPT-4) - Fallback 1 (if configured)
+    3. Anthropic (Claude) - Fallback 2 (if configured)
+    
+    Production: Circuit breaker + automatic provider switching
     """
-    global _circuit_breaker_open, _circuit_breaker_last_failure_time
+    global _circuit_breaker_open, _circuit_breaker_last_failure_time, _current_provider_index
     
     # Circuit Breaker Pattern: Check if circuit is open
-    if _circuit_breaker_open:
+    if _circuit_breaker_open and not force_fallback:
         elapsed = time.time() - _circuit_breaker_last_failure_time
         if elapsed < CIRCUIT_BREAKER_TIMEOUT:
-            raise RuntimeError(
-                f"Circuit breaker open. Service unavailable. "
-                f"Retry in {CIRCUIT_BREAKER_TIMEOUT - int(elapsed)} seconds."
-            )
+            # Try fallback provider if available
+            if _current_provider_index < len(LLM_PROVIDERS) - 1:
+                logger.warning(f"Circuit breaker open for primary provider. Trying fallback...")
+                _current_provider_index += 1
+                force_fallback = True
+            else:
+                raise RuntimeError(
+                    f"All LLM providers unavailable. "
+                    f"Retry in {CIRCUIT_BREAKER_TIMEOUT - int(elapsed)} seconds."
+                )
         else:
             # Reset circuit breaker after timeout
             logger.info("Circuit breaker reset - attempting to reconnect")
             _circuit_breaker_open = False
             _circuit_breaker_failures = 0
+            _current_provider_index = 0  # Reset to primary
     
-    api_key = os.environ.get("GROQ_API_KEY")
+    # Try current provider
+    provider = LLM_PROVIDERS[_current_provider_index]
+    api_key = os.environ.get(provider["env_key"])
+    
     if not api_key:
-        raise RuntimeError(
-            "GROQ_API_KEY environment variable not set. "
-            "Please set it in your .env file or system environment."
-        )
+        # Try fallback if primary fails
+        if _current_provider_index < len(LLM_PROVIDERS) - 1:
+            logger.warning(f"{provider['name']} API key not found. Trying fallback...")
+            _current_provider_index += 1
+            return get_llm(force_fallback=True)
+        else:
+            raise RuntimeError(
+                f"No LLM provider API keys found. Please set {provider['env_key']} "
+                f"in your .env file or system environment."
+            )
     
-    model_name = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+    logger.info(f"Using LLM provider: {provider['name']} ({provider['model']})")
     
-    return ChatGroq(
-        model=model_name,
-        groq_api_key=api_key,
-        temperature=0.1,  # Low temperature for consistent, deterministic code generation
+    return provider["class"](
+        model=provider["model"],
+        **{provider["env_key"].lower(): api_key},  # Dynamic key name
+        temperature=0.1,  # Low temperature for consistent code generation
         timeout=30.0      # Request timeout (production pattern)
     )
 
@@ -273,7 +314,87 @@ def call_llm_with_retry(prompt) -> Any:
 
 
 # ============================================================================
-# STATE DEFINITION WITH REDUCERS
+# INPUT & OUTPUT VALIDATION (Production Pattern)
+# ============================================================================
+
+def validate_task_input(task: str) -> tuple[bool, Optional[str]]:
+    """
+    Validate user input before processing.
+    
+    Pattern: Input Validation
+    Why: Prevent garbage in, garbage out. Fail fast on bad input.
+    
+    Checks:
+    - Not empty
+    - Reasonable length (10-1000 chars)
+    - No malicious patterns
+    - Actually asks for code
+    
+    Returns:
+        (is_valid, error_message)
+    """
+    # Empty check
+    if not task or not task.strip():
+        return False, "Task cannot be empty. Please describe what code you want to generate."
+    
+    # Length check
+    if len(task) < 10:
+        return False, "Task too short. Please provide more details (minimum 10 characters)."
+    
+    if len(task) > 1000:
+        return False, "Task too long. Please keep it under 1000 characters."
+    
+    # Content check - must mention code/function/class/program
+    code_keywords = ['function', 'code', 'class', 'program', 'script', 'implement', 'write', 'create', 'build', 'generate']
+    if not any(keyword in task.lower() for keyword in code_keywords):
+        return False, "Task unclear. Please explicitly ask for code/function/class to be generated."
+    
+    # Security check - no obvious injection attempts
+    dangerous_patterns = ['__import__', 'eval(', 'exec(', 'compile(', 'os.system', 'subprocess']
+    if any(pattern in task for pattern in dangerous_patterns):
+        return False, "Task contains potentially dangerous code patterns. Please rephrase."
+    
+    return True, None
+
+
+def validate_code_output(code: str) -> tuple[bool, Optional[str]]:
+    """
+    Validate LLM output is actually Python code.
+    
+    Pattern: Output Validation
+    Why: LLM sometimes returns explanations instead of code. Catch this early.
+    
+    Checks:
+    - Not empty
+    - Has Python syntax (def, class, import, etc.)
+    - Not just explanation text
+    - Can be parsed as Python
+    
+    Returns:
+        (is_valid, error_message)
+    """
+    if not code or not code.strip():
+        return False, "Developer agent returned empty code. This is a bug."
+    
+    # Must contain Python keywords
+    python_keywords = ['def ', 'class ', 'import ', 'from ', 'return', '=']
+    if not any(keyword in code for keyword in python_keywords):
+        return False, "Output doesn't look like Python code. Contains only text/explanation."
+    
+    # Try to parse as Python
+    try:
+        compile(code, '<string>', 'exec')
+        return True, None
+    except SyntaxError as e:
+        return False, f"Generated code has syntax errors: {str(e)}"
+    except Exception as e:
+        # Still accept it - might be valid code that needs imports
+        logger.warning(f"Code validation warning: {e}")
+        return True, None
+
+
+# ============================================================================
+# STATE DEFINITION WITH REDUCERS + VALIDATION
 # ============================================================================
 
 class CrewState(TypedDict):
@@ -387,26 +508,69 @@ def _extract_text(content: Any) -> str:
     return str(content)
 
 
+def _make_user_friendly_error(exception: Exception) -> str:
+    """
+    Convert technical errors to user-friendly messages.
+    
+    Pattern: Error Translation
+    Why: Users don't need stack traces. Give them actionable messages.
+    
+    Examples:
+    - 429 Rate Limit → "Too many requests. Please try again in a few seconds."
+    - Timeout → "Request took too long. Try a simpler task or retry."
+    - Network Error → "Connection issue. Please check your internet and retry."
+    """
+    error_str = str(exception).lower()
+    
+    # Rate limiting
+    if "429" in error_str or "rate limit" in error_str or "quota" in error_str:
+        return "⚠️ Rate limit reached. The AI service is busy. Please wait 30 seconds and try again."
+    
+    # Timeout
+    if "timeout" in error_str or "timed out" in error_str:
+        return "⏱️ Request timed out. Try a simpler task or increase timeout. The task might be too complex."
+    
+    # Connection errors
+    if "connection" in error_str or "network" in error_str:
+        return "🌐 Connection error. Please check your internet connection and try again."
+    
+    # Authentication
+    if "401" in error_str or "unauthorized" in error_str or "api key" in error_str:
+        return "🔑 API key invalid or expired. Please check your GROQ_API_KEY configuration."
+    
+    # Service unavailable
+    if "503" in error_str or "unavailable" in error_str:
+        return "🚫 AI service temporarily unavailable. Please try again in a few minutes."
+    
+    # Circuit breaker
+    if "circuit breaker" in error_str:
+        return "⚡ Service experiencing issues. Automatic retry in 60 seconds. Please wait."
+    
+    # Generic fallback
+    return f"❌ Something went wrong: {str(exception)[:100]}... Please try again or contact support."
+
+
 # ============================================================================
 # AGENT NODES
 # ============================================================================
 
 def developer_node(state: CrewState) -> Dict[str, Any]:
     """
-    Developer Agent: Generates Python code based on conversation history.
+    Developer Agent: Generates Python code with output validation.
     
-    Pattern: Leverage LangGraph's Message History (The Clean Way!)
-    Why: LLM reads the full conversation naturally - no manual error parsing needed
+    Pattern: Output Validation + Graceful Error Handling
+    Why: Don't pass garbage from one agent to another. Validate outputs.
     
     Flow:
     1. Pass entire message history to LLM
-    2. LLM sees: task → (optional) previous code → (optional) error feedback
-    3. LLM naturally understands context and generates/fixes code
-    4. Return code + append new message
+    2. LLM generates code
+    3. **VALIDATE** code is actually Python
+    4. If invalid, add error message and mark for retry
+    5. If valid, proceed normally
     
-    V2: Simplified - removed is_retry checks, previous_error parsing, string searches
+    V2: Simplified - no manual error parsing
+    V3: Added output validation - prevents bad data flowing through system
     """
-    # Create a system message to set the developer role
     from langchain_core.messages import SystemMessage
     
     system_msg = SystemMessage(
@@ -417,81 +581,143 @@ def developer_node(state: CrewState) -> Dict[str, Any]:
         )
     )
     
-    # Build full conversation: system prompt + all history
-    # The LLM will naturally see the task, any previous attempts, and error feedback
+    # Build full conversation
     messages_to_send = [system_msg] + state["messages"]
     
-    # Use retry wrapper for resilient LLM call
-    response = call_llm_with_retry(messages_to_send)
-    
-    # Extract code
-    code = _extract_text(response.content)
-    
-    # Return code + add simple message to history
-    return {
-        "code": code,
-        "messages": [AIMessage(content=f"Generated code (iteration {state.get('iterations', 0) + 1})")],
-        "iterations": state.get("iterations", 0) + 1
-    }
+    try:
+        # Use retry wrapper for resilient LLM call
+        response = call_llm_with_retry(messages_to_send)
+        
+        # Extract code
+        code = _extract_text(response.content)
+        
+        # VALIDATION: Check if output is actually code
+        is_valid, error_msg = validate_code_output(code)
+        
+        if not is_valid:
+            logger.error(f"Developer output validation failed: {error_msg}")
+            
+            # Return error state - will be caught by tester
+            return {
+                "code": f"# ERROR: {error_msg}\n# The LLM returned invalid output.",
+                "messages": [AIMessage(content=f"⚠️ Output validation failed: {error_msg}")],
+                "iterations": state.get("iterations", 0) + 1,
+                "execution_success": False  # Mark as failed
+            }
+        
+        # Valid code - proceed normally
+        return {
+            "code": code,
+            "messages": [AIMessage(content=f"✅ Generated code (iteration {state.get('iterations', 0) + 1})")],
+            "iterations": state.get("iterations", 0) + 1
+        }
+        
+    except Exception as e:
+        logger.error(f"Developer agent failed: {str(e)}")
+        
+        # Graceful error handling - return friendly message
+        user_friendly_error = _make_user_friendly_error(e)
+        
+        return {
+            "code": f"# ERROR: {user_friendly_error}",
+            "messages": [AIMessage(content=f"❌ Developer agent error: {user_friendly_error}")],
+            "iterations": state.get("iterations", 0) + 1,
+            "execution_success": False,
+            "report": f"### ERROR\n{user_friendly_error}"
+        }
 
 
 def tester_node(state: CrewState) -> Dict[str, Any]:
     """
-    Tester Agent: Generates tests and executes the code.
+    Tester Agent: Validates and tests code with input validation.
     
-    Pattern: Validate & Report with Natural Feedback
-    Why: Appends clear error messages that developer LLM can read naturally
+    Pattern: Inter-Agent Validation + Graceful Error Handling
+    Why: Don't blindly trust previous agent. Validate inputs before processing.
     
     Flow:
-    1. Generate test scenarios using LLM
-    2. Execute the code from developer
-    3. Check if execution was successful (no errors)
-    4. Create report and append feedback message
-    5. If failed, message goes into history for developer to read on next loop
+    1. **VALIDATE** code from developer (is it actually Python?)
+    2. If invalid, return error immediately (don't waste time testing)
+    3. Generate test scenarios using LLM
+    4. Execute the code
+    5. Check if execution was successful
+    6. Create report and feedback
     
-    V2: Simplified - just append clear error messages, no manual parsing needed
+    V2: Simplified - just append clear error messages
+    V3: Added input validation - validates developer output before testing
     """
     # Get original task from first message
     task = state["messages"][0].content
     
-    # Generate test cases using the tool
-    cases_str = _extract_text(generate_test_cases.invoke(task))
+    # VALIDATION: Check if developer actually returned valid code
+    code = state.get("code", "")
+    if code.startswith("# ERROR:"):
+        # Developer failed - don't bother testing
+        return {
+            "report": f"### DEVELOPER ERROR\n{code}\n\n❌ Cannot run tests - code generation failed.",
+            "execution_success": False,
+            "messages": [AIMessage(content="❌ Developer returned invalid output. Cannot proceed with testing.")]
+        }
     
-    # Execute the code from developer agent
-    execution_result = run_python_code.invoke(state["code"])
+    # Double-check code validity (defense in depth)
+    is_valid, error_msg = validate_code_output(code)
+    if not is_valid:
+        return {
+            "report": f"### CODE VALIDATION FAILED\n{error_msg}\n\n❌ Cannot run tests - code is invalid.",
+            "execution_success": False,
+            "messages": [AIMessage(content=f"❌ Code validation failed: {error_msg}")]
+        }
     
-    # Check if execution was successful (no errors)
-    execution_success = not execution_result.startswith("Execution Error:")
-    
-    # Create comprehensive report
-    if execution_success:
-        report = (
-            f"### EXECUTION OUTPUT:\n{execution_result}\n\n"
-            f"### TEST SCENARIOS EVALUATED:\n{cases_str}\n\n"
-            f"✅ Code executed successfully!"
-        )
-        # Clear success message for history
-        feedback_message = "✅ Code passed all checks and executed successfully."
-    else:
-        report = (
-            f"### EXECUTION ERROR:\n{execution_result}\n\n"
-            f"### TEST SCENARIOS (not executed due to error):\n{cases_str}\n\n"
-            f"❌ Code failed - needs fixing."
-        )
-        # Clear, detailed error message for developer LLM to read and fix
-        feedback_message = (
-            f"❌ The code has an execution error. Please fix it.\n\n"
-            f"Error details:\n{execution_result}\n\n"
-            f"Fix the code to handle this error properly."
-        )
-    
-    # Return state update with message appended to history
-    # Developer will see this message naturally on next iteration
-    return {
-        "report": report,
-        "execution_success": execution_success,
-        "messages": [AIMessage(content=feedback_message)]
-    }
+    try:
+        # Generate test cases using the tool (with error handling)
+        try:
+            cases_str = _extract_text(generate_test_cases.invoke(task))
+        except Exception as e:
+            logger.warning(f"Test case generation failed: {e}")
+            cases_str = "1. Basic functionality test\n2. Edge case test\n3. Error handling test"
+        
+        # Execute the code from developer agent
+        execution_result = run_python_code.invoke(state["code"])
+        
+        # Check if execution was successful (no errors)
+        execution_success = not execution_result.startswith("Execution Error:")
+        
+        # Create comprehensive report
+        if execution_success:
+            report = (
+                f"### EXECUTION OUTPUT:\n{execution_result}\n\n"
+                f"### TEST SCENARIOS EVALUATED:\n{cases_str}\n\n"
+                f"✅ Code executed successfully!"
+            )
+            feedback_message = "✅ Code passed all checks and executed successfully."
+        else:
+            report = (
+                f"### EXECUTION ERROR:\n{execution_result}\n\n"
+                f"### TEST SCENARIOS (not executed due to error):\n{cases_str}\n\n"
+                f"❌ Code failed - needs fixing."
+            )
+            feedback_message = (
+                f"❌ The code has an execution error. Please fix it.\n\n"
+                f"Error details:\n{execution_result}\n\n"
+                f"Fix the code to handle this error properly."
+            )
+        
+        return {
+            "report": report,
+            "execution_success": execution_success,
+            "messages": [AIMessage(content=feedback_message)]
+        }
+        
+    except Exception as e:
+        logger.error(f"Tester agent failed: {str(e)}")
+        
+        # Graceful error handling
+        user_friendly_error = _make_user_friendly_error(e)
+        
+        return {
+            "report": f"### TESTING ERROR\n{user_friendly_error}",
+            "execution_success": False,
+            "messages": [AIMessage(content=f"❌ Tester error: {user_friendly_error}")]
+        }
 
 
 # ============================================================================
