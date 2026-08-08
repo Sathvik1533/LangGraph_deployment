@@ -298,11 +298,20 @@ docker run -p 8000:8000 -e GROQ_API_KEY=your_key langgraph-agent
 LangGraph_deployment/
 ├── agent.py              # 🧠 LangGraph workflow & agent logic
 ├── app.py                # 🌐 FastAPI application & API routes
+├── index.html            # 🎨 Interactive frontend dashboard
 ├── test_agent.py         # 🧪 Testing script
+├── verify_setup.py       # ✅ Setup verification script
 ├── requirements.txt      # 📦 Python dependencies
 ├── runtime.txt           # 🐍 Python version specification
 ├── .env.example          # 📝 Environment variables template
 ├── .env                  # 🔒 Your API keys (gitignored)
+├── docs/                 # 📚 Comprehensive documentation
+│   ├── ARCHITECTURE.md
+│   ├── FRONTEND_EXPLAINED.md
+│   ├── ERROR_HANDLING_GUIDE.md
+│   ├── PRODUCTION_PATTERNS.md
+│   └── ...
+├── extras/               # 🎁 Optional components (Gradio UI)
 └── README.md             # 📖 This file
 ```
 
@@ -399,6 +408,19 @@ def call_llm_with_retry(prompt):
 - Authentication errors (wrong API key)
 - Invalid model errors
 - Malformed requests
+
+---
+
+## 📚 Documentation
+
+Comprehensive documentation is available in the [`docs/`](./docs) folder:
+
+- **[Architecture Guide](./docs/ARCHITECTURE.md)** - System design and workflow
+- **[Frontend Explained](./docs/FRONTEND_EXPLAINED.md)** - Complete UI architecture
+- **[Error Handling](./docs/ERROR_HANDLING_GUIDE.md)** - Multi-layer error handling strategy
+- **[Production Patterns](./docs/PRODUCTION_PATTERNS.md)** - Circuit breaker, rate limiting, jitter
+- **[Configuration](./docs/CONFIGURATION_EXPLAINED.md)** - Environment variables explained
+- **[FAQ](./docs/QUESTIONS_ANSWERED.md)** - Common questions answered
 
 ---
 
