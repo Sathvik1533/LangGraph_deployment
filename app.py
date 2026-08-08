@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional
 import logging
-
+from langchain_groq import Groq
 from agent import agent, CrewState
 from langchain_core.messages import HumanMessage
 
@@ -51,6 +51,12 @@ class TaskRequest(BaseModel):
         ...,
         description="Description of the Python code to generate",
         example="Write a function to calculate fibonacci numbers"
+    )
+    max_iterations: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        description="Maximum self-correction attempts (1-10, default: 3)"
     )
 
 
@@ -132,6 +138,7 @@ async def invoke_agent(request: TaskRequest):
     """
     try:
         logger.info(f"Received task: {request.task}")
+        logger.info(f"Max iterations: {request.max_iterations}")
         
         # Prepare initial state
         initial_state: CrewState = {
@@ -139,7 +146,8 @@ async def invoke_agent(request: TaskRequest):
             "code": None,
             "report": None,
             "execution_success": False,
-            "iterations": 0
+            "iterations": 0,
+            "max_iterations": request.max_iterations  # Use user-provided value
         }
         
         # Invoke the agent workflow

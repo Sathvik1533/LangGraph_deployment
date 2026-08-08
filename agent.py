@@ -194,6 +194,7 @@ class CrewState(TypedDict):
     report: Optional[str]                         # Test execution report
     execution_success: bool                       # Whether code executed without errors
     iterations: int                               # Number of self-correction loops
+    max_iterations: int                           # Maximum allowed iterations (configurable, default 3)
 
 
 # ============================================================================
@@ -415,8 +416,10 @@ def should_continue(state: CrewState) -> Literal["developer", "end"]:
     - Prevents infinite loops when bugs are unfixable
     - Saves API costs
     - Provides clear failure state
+    
+    Note: MAX_ITERATIONS is read from state (set by API) or defaults to 3
     """
-    MAX_ITERATIONS = 3
+    MAX_ITERATIONS = state.get("max_iterations", 3)  # Dynamic with safe default
     
     # Check if we've exceeded max iterations
     if state.get("iterations", 0) >= MAX_ITERATIONS:
