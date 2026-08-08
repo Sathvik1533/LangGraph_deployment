@@ -388,16 +388,30 @@ def validate_code_output(code: str) -> tuple[bool, Optional[str]]:
     if not code or not code.strip():
         return False, "Developer agent returned empty code. This is a bug."
     
+    # Clean markdown code blocks if present
+    cleaned_code = code.strip()
+    if cleaned_code.startswith("```"):
+        # Extract code from markdown block
+        lines = cleaned_code.split('\n')
+        # Remove first line (```python or ```)
+        if lines[0].startswith("```"):
+            lines = lines[1:]
+        # Remove last line if it's ```
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        cleaned_code = '\n'.join(lines).strip()
+    
     # Must contain Python keywords
     python_keywords = ['def ', 'class ', 'import ', 'from ', 'return', '=']
-    if not any(keyword in code for keyword in python_keywords):
+    if not any(keyword in cleaned_code for keyword in python_keywords):
         return False, "Output doesn't look like Python code. Contains only text/explanation."
     
     # Try to parse as Python
     try:
-        compile(code, '<string>', 'exec')
+        compile(cleaned_code, '<string>', 'exec')
         return True, None
     except SyntaxError as e:
+        # More detailed error message
         return False, f"Generated code has syntax errors: {str(e)}"
     except Exception as e:
         # Still accept it - might be valid code that needs imports
@@ -603,8 +617,11 @@ def developer_node(state: CrewState) -> Dict[str, Any]:
         # Extract code
         code = _extract_text(response.content)
         
+        # Clean markdown formatting (same as run_python_code tool)
+        clean_code = code.replace("```python", "").replace("```", "").strip()
+        
         # VALIDATION: Check if output is actually code
-        is_valid, error_msg = validate_code_output(code)
+        is_valid, error_msg = validate_code_output(clean_code)
         
         if not is_valid:
             logger.error(f"Developer output validation failed: {error_msg}")
@@ -617,9 +634,9 @@ def developer_node(state: CrewState) -> Dict[str, Any]:
                 "execution_success": False  # Mark as failed
             }
         
-        # Valid code - proceed normally
+        # Valid code - proceed normally (use cleaned code)
         return {
-            "code": code,
+            "code": clean_code,
             "messages": [AIMessage(content=f"✅ Generated code (iteration {state.get('iterations', 0) + 1})")],
             "iterations": state.get("iterations", 0) + 1
         }

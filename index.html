@@ -47,6 +47,15 @@
     </script>
     
     <style>
+        /* Base Styles */
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            overflow-x: hidden;
+        }
+        
         /* Dot Grid Background */
         .dot-grid {
             background-size: 20px 20px;
@@ -117,21 +126,6 @@
             animation: spin 1s linear infinite;
         }
         
-        /* Typewriter Effect */
-        @keyframes blink {
-            50% { opacity: 0; }
-        }
-        
-        .typewriter-cursor::after {
-            content: '|';
-            animation: blink 1s step-end infinite;
-        }
-        
-        /* Smooth Transitions */
-        * {
-            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s;
-        }
-        
         /* Button Hover Effects */
         .btn-hover:hover {
             transform: translateY(-2px);
@@ -142,354 +136,329 @@
             transform: translateY(0);
         }
         
-        /* Progress Bar */
-        @keyframes progress {
-            from { width: 0%; }
-        }
-        
-        .progress-bar {
-            animation: progress 2s ease-out;
-        }
-        
         /* Glow Effect */
         .glow {
             box-shadow: 0 0 20px rgba(37, 99, 235, 0.5);
         }
         
-        /* Hide scrollbar but keep functionality */
-        .hide-scrollbar::-webkit-scrollbar {
-            display: none;
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
         }
-        .hide-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* Code Block Styling */
+        .code-container {
+            position: relative;
+            max-width: 100%;
+            overflow-x: auto;
+        }
+        
+        .code-container pre {
+            margin: 0;
+            padding: 1rem;
+            background: #1e293b;
+            color: #e2e8f0;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            white-space: pre;
+            word-wrap: normal;
+        }
+        
+        .code-container pre code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        
+        /* Syntax Highlighting Classes */
+        .keyword { color: #c792ea; font-weight: 600; }
+        .string { color: #c3e88d; }
+        .number { color: #f78c6c; }
+        .comment { color: #697098; font-style: italic; }
+        .function { color: #82aaff; font-weight: 500; }
+        
+        /* Mobile-first responsive utilities */
+        @media (max-width: 640px) {
+            .mobile-stack {
+                flex-direction: column !important;
+            }
+        }
+        
+        /* Prevent horizontal overflow */
+        .no-overflow {
+            max-width: 100%;
+            overflow-x: hidden;
         }
     </style>
 </head>
-<body class="bg-surface text-on-surface h-full flex overflow-hidden antialiased">
+<body class="bg-surface text-on-surface min-h-screen flex flex-col antialiased no-overflow">
 
-    <!-- Side Navigation Bar -->
-    <nav class="bg-white text-primary flex flex-col h-full py-6 px-4 gap-4 fixed left-0 top-0 h-full w-64 border-r border-outline-variant z-10 hidden md:flex">
-        <div class="mb-4">
-            <h1 class="text-2xl font-bold text-primary flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">schema</span>
-                LangGraph
-            </h1>
-            <p class="text-sm text-on-surface-variant mt-1">Self-Correcting Agent</p>
+    <!-- Top Navigation Bar (Mobile Friendly) -->
+    <header class="bg-white text-primary flex justify-between items-center px-4 md:px-6 h-14 md:h-16 border-b border-outline-variant shrink-0 sticky top-0 z-50">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-primary text-2xl md:text-3xl" style="font-variation-settings: 'FILL' 1;">schema</span>
+            <div>
+                <h1 class="text-lg md:text-xl font-bold text-primary">LangGraph Agent</h1>
+                <p class="text-xs text-on-surface-variant hidden sm:block">Self-Correcting Code Generator</p>
+            </div>
         </div>
         
-        <button id="newRunBtn" class="w-full bg-primary text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-blue-600 transition-all btn-hover shadow-sm">
-            <span class="material-symbols-outlined text-lg">add</span>
-            New Run
-        </button>
-        
-        <div class="flex-1 flex flex-col gap-1">
-            <a class="bg-primary-container text-primary font-semibold rounded-lg px-3 py-2 flex items-center gap-3" href="#">
-                <span class="material-symbols-outlined">account_tree</span>
-                <span class="text-sm">Workflow</span>
-            </a>
-            <a class="text-on-surface-variant hover:bg-surface-container px-3 py-2 flex items-center gap-3 rounded-lg" href="#">
-                <span class="material-symbols-outlined">code</span>
-                <span class="text-sm">Editor</span>
-            </a>
-            <a class="text-on-surface-variant hover:bg-surface-container px-3 py-2 flex items-center gap-3 rounded-lg" href="#">
-                <span class="material-symbols-outlined">terminal</span>
-                <span class="text-sm">Execution</span>
-            </a>
-            <a class="text-on-surface-variant hover:bg-surface-container px-3 py-2 flex items-center gap-3 rounded-lg" href="#">
-                <span class="material-symbols-outlined">history</span>
-                <span class="text-sm">History</span>
-            </a>
+        <div class="flex items-center gap-2 md:gap-4">
+            <button id="newRunBtn" class="bg-primary text-white py-1.5 px-3 md:py-2 md:px-4 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-blue-600 transition-all btn-hover">
+                <span class="material-symbols-outlined text-base md:text-lg">add</span>
+                <span class="hidden sm:inline">New Run</span>
+            </button>
+            <div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-semibold text-sm">
+                SK
+            </div>
         </div>
-        
-        <div class="mt-auto border-t border-outline-variant pt-4 flex flex-col gap-1">
-            <a class="text-on-surface-variant hover:bg-surface-container px-3 py-2 flex items-center gap-3 rounded-lg" href="https://github.com/Sathvik1533/LangGraph_deployment" target="_blank">
-                <span class="material-symbols-outlined text-lg">code</span>
-                <span class="text-sm">GitHub</span>
-            </a>
-            <a class="text-on-surface-variant hover:bg-surface-container px-3 py-2 flex items-center gap-3 rounded-lg" href="#" onclick="alert('API Docs: http://localhost:8000/docs')">
-                <span class="material-symbols-outlined text-lg">description</span>
-                <span class="text-sm">API Docs</span>
-            </a>
-        </div>
-    </nav>
+    </header>
 
-    <!-- Main Content Area -->
-    <main class="flex-1 flex flex-col h-full md:ml-64 w-full bg-surface">
-        
-        <!-- Top Navigation Bar -->
-        <header class="bg-white text-primary flex justify-between items-center w-full px-6 h-16 border-b border-outline-variant z-10 shrink-0">
-            <div class="flex items-center gap-4">
-                <span class="text-2xl font-bold text-primary hidden md:block">Agent Dashboard</span>
-                <div class="md:hidden text-xl font-bold text-primary">LangGraph</div>
-            </div>
+    <!-- Main Content: Responsive 3-Panel Layout -->
+    <main class="flex-1 w-full overflow-hidden">
+        <div class="h-full w-full flex flex-col lg:flex-row">
             
-            <div class="flex items-center gap-4">
-                <!-- Status Indicator -->
-                <div id="statusIndicator" class="hidden items-center gap-2 px-3 py-1 rounded-full bg-surface-container">
-                    <div class="w-2 h-2 rounded-full bg-success animate-pulse"></div>
-                    <span class="text-sm font-medium">Ready</span>
-                </div>
-                
-                <!-- Settings -->
-                <button class="text-on-surface-variant hover:bg-surface-container p-2 rounded-full hidden md:block">
-                    <span class="material-symbols-outlined">settings</span>
-                </button>
-                
-                <!-- User Profile -->
-                <div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-semibold text-sm">
-                    SK
-                </div>
-            </div>
-        </header>
-        
-        <!-- 3-Panel Layout - Responsive -->
-        <div class="flex-1 overflow-hidden flex flex-col w-full">
-            
-            <!-- Mobile/Tablet: Tabs to switch between panels -->
-            <div class="lg:hidden flex border-b border-outline-variant bg-white sticky top-0 z-20">
-                <button class="panel-tab flex-1 py-3 text-sm font-medium border-b-2 border-primary text-primary" data-panel="workflow">
-                    <span class="material-symbols-outlined text-base">account_tree</span>
-                    Workflow
-                </button>
-                <button class="panel-tab flex-1 py-3 text-sm text-on-surface-variant border-b-2 border-transparent" data-panel="editor">
-                    <span class="material-symbols-outlined text-base">code</span>
-                    Editor
-                </button>
-                <button class="panel-tab flex-1 py-3 text-sm text-on-surface-variant border-b-2 border-transparent" data-panel="report">
-                    <span class="material-symbols-outlined text-base">analytics</span>
-                    Report
-                </button>
-            </div>
-            
-            <!-- Desktop: Side-by-side panels -->
-            <div class="flex-1 overflow-hidden flex flex-row w-full">
-            
-            <!-- LEFT PANEL: Workflow & Timeline -->
-            <div id="workflowPanel" class="w-full lg:w-1/4 border-r border-outline-variant bg-white flex flex-col overflow-y-auto hide-scrollbar">
-                <div class="p-4 border-b border-outline-variant bg-white sticky top-0 z-10">
-                    <h2 class="text-xl font-semibold text-on-surface">Workflow Visualization</h2>
-                </div>
-                
-                <!-- Graph Area -->
-                <div class="p-6 flex-1 flex flex-col items-center justify-start dot-grid min-h-[300px] relative">
-                    
-                    <!-- Start Node -->
-                    <div id="nodeStart" class="bg-white border-2 border-outline-variant rounded-xl p-3 w-40 flex items-center justify-center gap-2 shadow-sm z-10 relative transition-all">
-                        <span class="material-symbols-outlined text-lg text-on-surface-variant">play_circle</span>
-                        <span class="text-sm font-medium">Start</span>
-                        <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-outline-variant">
-                            <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 border-r-2 border-b-2 border-outline-variant rotate-45"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="h-8 w-full"></div>
-                    
-                    <!-- Developer Node -->
-                    <div id="nodeDeveloper" class="bg-white border-2 border-outline-variant rounded-xl p-3 w-40 flex items-center justify-center gap-2 shadow-sm z-10 relative mt-2 transition-all">
-                        <span class="material-symbols-outlined text-lg text-secondary">code</span>
-                        <span class="text-sm font-medium">Developer</span>
-                        <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-outline-variant">
-                            <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 border-r-2 border-b-2 border-outline-variant rotate-45"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="h-8 w-full"></div>
-                    
-                    <!-- Tester Node -->
-                    <div id="nodeTester" class="bg-white border-2 border-outline-variant rounded-xl p-3 w-40 flex items-center justify-center gap-2 shadow-sm z-10 relative mt-2 transition-all">
-                        <span class="material-symbols-outlined text-lg text-tertiary">science</span>
-                        <span class="text-sm font-medium">Tester</span>
-                        <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-outline-variant">
-                            <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 border-r-2 border-b-2 border-outline-variant rotate-45"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="h-8 w-full"></div>
-                    
-                    <!-- Decision Node -->
-                    <div id="nodeDecision" class="bg-white border-2 border-outline-variant rounded-xl p-3 w-40 flex items-center justify-center gap-2 shadow-sm z-10 relative mt-2 transition-all">
-                        <span class="material-symbols-outlined text-lg text-primary">call_split</span>
-                        <span class="text-sm font-medium">Decision</span>
-                        
-                        <!-- Retry Loop Arrow -->
-                        <svg class="absolute -left-12 -top-32 w-12 h-40 text-warning hidden" id="retryArrow" fill="none" stroke="currentColor" viewBox="0 0 48 160">
-                            <path d="M 48 140 Q 16 140 16 80 Q 16 20 48 20" stroke-dasharray="4 4" stroke-width="2"></path>
-                            <polygon fill="currentColor" points="44,16 48,20 44,24" stroke="none"></polygon>
-                        </svg>
-                    </div>
-                    
-                    <div class="h-8 w-full"></div>
-                    
-                    <!-- End Node -->
-                    <div id="nodeEnd" class="bg-white border-2 border-outline-variant rounded-xl p-3 w-40 flex items-center justify-center gap-2 shadow-sm z-10 relative mt-2 transition-all">
-                        <span class="material-symbols-outlined text-lg text-success">check_circle</span>
-                        <span class="text-sm font-medium">Complete</span>
-                    </div>
-                </div>
-                
-                <!-- Timeline -->
-                <div class="p-6 border-t border-outline-variant bg-white">
-                    <h3 class="text-base font-medium mb-4 flex items-center gap-2 text-on-surface">
-                        <span class="material-symbols-outlined text-lg">schedule</span>
-                        Execution Timeline
-                    </h3>
-                    
-                    <div id="timeline" class="relative pl-4 border-l-2 border-surface-variant flex flex-col gap-4">
-                        <!-- Timeline items will be dynamically added here -->
-                        <div class="text-sm text-on-surface-variant italic">No execution yet</div>
-                    </div>
-                    
-                    <!-- Iteration Counter -->
-                    <div id="iterationBadge" class="hidden mt-4 p-3 bg-warning/10 border border-warning rounded-lg">
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm font-medium text-warning">🔄 Retry in progress</span>
-                            <span id="iterationCount" class="text-xs font-mono bg-warning text-white px-2 py-1 rounded">0/3</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- CENTER PANEL: Input & Code Editor -->
-            <div id="editorPanel" class="w-full lg:w-1/2 flex flex-col h-full bg-surface hidden lg:flex">
-                
-                <!-- Task Input -->
-                <div class="p-6 border-b border-outline-variant shrink-0 bg-white">
-                    <div class="flex justify-between items-center mb-3">
-                        <h2 class="text-xl font-semibold text-on-surface">Task Definition</h2>
-                        <button id="clearBtn" class="text-on-surface-variant hover:text-error text-sm flex items-center gap-1">
-                            <span class="material-symbols-outlined text-base">delete</span>
-                            Clear
-                        </button>
-                    </div>
-                    
-                    <div class="relative">
-                        <textarea 
-                            id="taskInput" 
-                            class="w-full bg-surface border-2 border-outline-variant rounded-lg p-4 text-sm text-on-surface focus:ring-2 focus:ring-primary focus:border-primary resize-none h-24 transition-all"
-                            placeholder="Describe your coding task... (e.g., 'Write a function to calculate fibonacci numbers')"
-                        ></textarea>
-                        
-                        <button 
-                            id="generateBtn" 
-                            class="absolute bottom-3 right-3 bg-primary text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-all flex items-center gap-2 shadow-md btn-hover disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <span class="material-symbols-outlined text-base">magic_button</span>
-                            <span id="generateBtnText">Generate Code</span>
-                        </button>
-                    </div>
-                    
-                    <!-- Quick Examples -->
-                    <div class="mt-3 flex flex-wrap gap-2">
-                        <span class="text-xs text-on-surface-variant font-medium">Quick examples:</span>
-                        <button class="example-btn text-xs bg-primary-container text-primary px-2 py-1 rounded hover:bg-primary hover:text-white transition-all" data-task="Write a function to calculate fibonacci numbers">
-                            Fibonacci
-                        </button>
-                        <button class="example-btn text-xs bg-primary-container text-primary px-2 py-1 rounded hover:bg-primary hover:text-white transition-all" data-task="Create a function to check if a number is prime">
-                            Prime Check
-                        </button>
-                        <button class="example-btn text-xs bg-primary-container text-primary px-2 py-1 rounded hover:bg-primary hover:text-white transition-all" data-task="Write a function to reverse a string">
-                            Reverse String
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Code Editor Area -->
-                <div class="flex-1 flex flex-col min-h-0 bg-surface">
-                    
-                    <!-- Editor Header / Tabs -->
-                    <div class="flex justify-between items-center px-4 pt-4 border-b border-outline-variant bg-white">
-                        <div class="flex gap-1" id="iterationTabs">
-                            <!-- Tabs will be dynamically added -->
-                        </div>
-                        
-                        <div class="flex gap-2 pb-2">
-                            <button id="copyCodeBtn" class="text-on-surface-variant hover:text-primary p-1.5 rounded hover:bg-surface-container transition-all" title="Copy Code">
-                                <span class="material-symbols-outlined text-lg">content_copy</span>
-                            </button>
-                            <button id="downloadCodeBtn" class="text-on-surface-variant hover:text-primary p-1.5 rounded hover:bg-surface-container transition-all" title="Download">
-                                <span class="material-symbols-outlined text-lg">download</span>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Editor Content -->
-                    <div class="flex-1 overflow-auto p-6 bg-gray-50 font-mono text-sm hide-scrollbar">
-                        <div id="codeDisplay" class="text-on-surface-variant italic">
-                            No code generated yet. Enter a task above and click "Generate Code".
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- RIGHT PANEL: Execution Report -->
-            <div id="reportPanel" class="w-full lg:w-1/4 border-l border-outline-variant bg-white flex flex-col h-full overflow-hidden hidden lg:flex">
-                <div class="p-4 border-b border-outline-variant bg-white sticky top-0 z-10">
-                    <h2 class="text-xl font-semibold text-on-surface flex items-center gap-2">
-                        <span class="material-symbols-outlined">analytics</span> 
-                        Report
+            <!-- LEFT PANEL: Workflow Visualization (Mobile: Full width, Desktop: 25%) -->
+            <aside class="w-full lg:w-1/4 bg-white border-b lg:border-b-0 lg:border-r border-outline-variant flex flex-col overflow-hidden">
+                <!-- Panel Header -->
+                <div class="p-3 md:p-4 border-b border-outline-variant shrink-0">
+                    <h2 class="text-base md:text-lg font-semibold text-on-surface flex items-center gap-2">
+                        <span class="material-symbols-outlined text-lg md:text-xl">account_tree</span>
+                        Workflow
                     </h2>
                 </div>
                 
-                <!-- Tabs -->
-                <div class="flex border-b border-outline-variant bg-white px-2">
-                    <button class="report-tab flex-1 py-3 text-sm font-medium border-b-2 border-primary text-primary" data-tab="tests">
-                        Tests
-                    </button>
-                    <button class="report-tab flex-1 py-3 text-sm text-on-surface-variant hover:text-on-surface border-b-2 border-transparent" data-tab="output">
-                        Output
-                    </button>
-                    <button class="report-tab flex-1 py-3 text-sm text-on-surface-variant hover:text-on-surface border-b-2 border-transparent" data-tab="metrics">
-                        Metrics
-                    </button>
-                </div>
-                
-                <!-- Tab Content -->
-                <div class="flex-1 overflow-y-auto hide-scrollbar">
-                    <!-- Tests Tab -->
-                    <div id="testsTab" class="p-4 flex flex-col gap-3">
-                        <div class="text-sm text-on-surface-variant italic text-center py-8">
-                            No test results yet
+                <!-- Workflow Graph (Scrollable) -->
+                <div class="flex-1 overflow-y-auto custom-scrollbar">
+                    <div class="p-4 md:p-6 dot-grid min-h-[300px] flex flex-col items-center">
+                        
+                        <!-- Start Node -->
+                        <div id="nodeStart" class="bg-white border-2 border-outline-variant rounded-xl p-3 w-36 md:w-40 flex items-center justify-center gap-2 shadow-sm transition-all relative">
+                            <span class="material-symbols-outlined text-lg text-on-surface-variant">play_circle</span>
+                            <span class="text-sm font-medium">Start</span>
+                            <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-outline-variant">
+                                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 border-r-2 border-b-2 border-outline-variant rotate-45"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="h-8"></div>
+                        
+                        <!-- Developer Node -->
+                        <div id="nodeDeveloper" class="bg-white border-2 border-outline-variant rounded-xl p-3 w-36 md:w-40 flex items-center justify-center gap-2 shadow-sm transition-all relative">
+                            <span class="material-symbols-outlined text-lg text-secondary">code</span>
+                            <span class="text-sm font-medium">Developer</span>
+                            <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-outline-variant">
+                                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 border-r-2 border-b-2 border-outline-variant rotate-45"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="h-8"></div>
+                        
+                        <!-- Tester Node -->
+                        <div id="nodeTester" class="bg-white border-2 border-outline-variant rounded-xl p-3 w-36 md:w-40 flex items-center justify-center gap-2 shadow-sm transition-all relative">
+                            <span class="material-symbols-outlined text-lg text-tertiary">science</span>
+                            <span class="text-sm font-medium">Tester</span>
+                            <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-outline-variant">
+                                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 border-r-2 border-b-2 border-outline-variant rotate-45"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="h-8"></div>
+                        
+                        <!-- Decision Node -->
+                        <div id="nodeDecision" class="bg-white border-2 border-outline-variant rounded-xl p-3 w-36 md:w-40 flex items-center justify-center gap-2 shadow-sm transition-all relative">
+                            <span class="material-symbols-outlined text-lg text-primary">call_split</span>
+                            <span class="text-sm font-medium">Decision</span>
+                            <svg class="absolute -left-12 -top-32 w-12 h-40 text-warning hidden" id="retryArrow" fill="none" stroke="currentColor" viewBox="0 0 48 160">
+                                <path d="M 48 140 Q 16 140 16 80 Q 16 20 48 20" stroke-dasharray="4 4" stroke-width="2"></path>
+                                <polygon fill="currentColor" points="44,16 48,20 44,24" stroke="none"></polygon>
+                            </svg>
+                        </div>
+                        
+                        <div class="h-8"></div>
+                        
+                        <!-- End Node -->
+                        <div id="nodeEnd" class="bg-white border-2 border-outline-variant rounded-xl p-3 w-36 md:w-40 flex items-center justify-center gap-2 shadow-sm transition-all relative">
+                            <span class="material-symbols-outlined text-lg text-success">check_circle</span>
+                            <span class="text-sm font-medium">Complete</span>
                         </div>
                     </div>
                     
-                    <!-- Output Tab -->
-                    <div id="outputTab" class="p-4 hidden">
-                        <div class="text-sm text-on-surface-variant italic text-center py-8">
-                            No output yet
+                    <!-- Timeline -->
+                    <div class="p-4 md:p-6 border-t border-outline-variant bg-white">
+                        <h3 class="text-sm md:text-base font-medium mb-3 flex items-center gap-2 text-on-surface">
+                            <span class="material-symbols-outlined text-lg">schedule</span>
+                            Timeline
+                        </h3>
+                        <div id="timeline" class="relative pl-4 border-l-2 border-surface-variant flex flex-col gap-3">
+                            <div class="text-sm text-on-surface-variant italic">No execution yet</div>
                         </div>
-                    </div>
-                    
-                    <!-- Metrics Tab -->
-                    <div id="metricsTab" class="p-4 hidden">
-                        <div class="text-sm text-on-surface-variant italic text-center py-8">
-                            No metrics yet
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Metrics Summary (Always visible at bottom) -->
-                <div id="metricsSummary" class="hidden p-4 border-t border-outline-variant bg-white">
-                    <h3 class="text-xs font-semibold text-on-surface-variant mb-3 uppercase tracking-wider">Run Summary</h3>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <div id="totalTime" class="text-2xl font-bold text-on-surface">-</div>
-                            <div class="text-sm text-on-surface-variant">Total Time</div>
-                        </div>
-                        <div>
-                            <div id="totalIterations" class="text-2xl font-bold text-on-surface">-</div>
-                            <div class="text-sm text-on-surface-variant">Iterations</div>
-                        </div>
-                        <div class="col-span-2">
-                            <div id="executionStatus" class="text-base font-medium text-on-surface flex items-center gap-2">
-                                <span class="material-symbols-outlined text-lg">pending</span>
-                                <span>Waiting...</span>
+                        
+                        <!-- Iteration Badge -->
+                        <div id="iterationBadge" class="hidden mt-4 p-3 bg-warning/10 border border-warning rounded-lg">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-warning">🔄 Retrying...</span>
+                                <span id="iterationCount" class="text-xs font-mono bg-warning text-white px-2 py-1 rounded">0/3</span>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            </div>
+            </aside>
+            
+            <!-- CENTER + RIGHT PANELS: Task Input, Code Editor, and Report -->
+            <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+                
+                <!-- CENTER PANEL: Task Input & Code Editor (Mobile: Full, Desktop: 50%) -->
+                <section class="w-full lg:w-2/3 flex flex-col bg-surface overflow-hidden">
+                    
+                    <!-- Task Input -->
+                    <div class="p-4 md:p-6 border-b border-outline-variant bg-white shrink-0">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-base md:text-lg font-semibold text-on-surface">Task Definition</h2>
+                            <button id="clearBtn" class="text-on-surface-variant hover:text-error text-sm flex items-center gap-1">
+                                <span class="material-symbols-outlined text-base">delete</span>
+                                <span class="hidden sm:inline">Clear</span>
+                            </button>
+                        </div>
+                        
+                        <div class="relative">
+                            <textarea 
+                                id="taskInput" 
+                                class="w-full bg-surface border-2 border-outline-variant rounded-lg p-3 md:p-4 text-sm text-on-surface focus:ring-2 focus:ring-primary focus:border-primary resize-none h-20 md:h-24"
+                                placeholder="Describe your coding task... (e.g., 'Write a function to calculate fibonacci numbers')"
+                            ></textarea>
+                            
+                            <button 
+                                id="generateBtn" 
+                                class="absolute bottom-3 right-3 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-all flex items-center gap-2 shadow-md btn-hover disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <span class="material-symbols-outlined text-base">magic_button</span>
+                                <span id="generateBtnText" class="hidden sm:inline">Generate</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Quick Examples -->
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            <span class="text-xs text-on-surface-variant font-medium hidden md:inline">Quick:</span>
+                            <button class="example-btn text-xs bg-primary-container text-primary px-2 py-1 rounded hover:bg-primary hover:text-white transition-all" data-task="Write a function to calculate fibonacci numbers">
+                                Fibonacci
+                            </button>
+                            <button class="example-btn text-xs bg-primary-container text-primary px-2 py-1 rounded hover:bg-primary hover:text-white transition-all" data-task="Create a function to check if a number is prime">
+                                Prime
+                            </button>
+                            <button class="example-btn text-xs bg-primary-container text-primary px-2 py-1 rounded hover:bg-primary hover:text-white transition-all" data-task="Write a function to reverse a string">
+                                Reverse
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Code Editor Area -->
+                    <div class="flex-1 flex flex-col overflow-hidden">
+                        
+                        <!-- Editor Header -->
+                        <div class="flex justify-between items-center px-3 md:px-4 py-2 border-b border-outline-variant bg-white shrink-0">
+                            <h3 class="text-sm md:text-base font-medium text-on-surface">Generated Code</h3>
+                            <div class="flex gap-1 md:gap-2">
+                                <button id="copyCodeBtn" class="text-on-surface-variant hover:text-primary p-1.5 rounded hover:bg-surface-container transition-all" title="Copy Code">
+                                    <span class="material-symbols-outlined text-lg">content_copy</span>
+                                </button>
+                                <button id="downloadCodeBtn" class="text-on-surface-variant hover:text-primary p-1.5 rounded hover:bg-surface-container transition-all" title="Download">
+                                    <span class="material-symbols-outlined text-lg">download</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Code Display (Scrollable) -->
+                        <div class="flex-1 overflow-auto custom-scrollbar bg-gray-50 p-3 md:p-4">
+                            <div id="codeDisplay" class="text-sm text-on-surface-variant italic">
+                                No code generated yet. Enter a task above and click "Generate".
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- RIGHT PANEL: Execution Report (Mobile: Full, Desktop: 33%) -->
+                <aside class="w-full lg:w-1/3 border-t lg:border-t-0 lg:border-l border-outline-variant bg-white flex flex-col overflow-hidden max-h-[50vh] lg:max-h-full">
+                    <!-- Panel Header -->
+                    <div class="p-3 md:p-4 border-b border-outline-variant shrink-0">
+                        <h2 class="text-base md:text-lg font-semibold text-on-surface flex items-center gap-2">
+                            <span class="material-symbols-outlined">analytics</span> 
+                            Report
+                        </h2>
+                    </div>
+                    
+                    <!-- Tabs -->
+                    <div class="flex border-b border-outline-variant bg-white shrink-0">
+                        <button class="report-tab flex-1 py-2 md:py-3 text-xs md:text-sm font-medium border-b-2 border-primary text-primary" data-tab="tests">
+                            Tests
+                        </button>
+                        <button class="report-tab flex-1 py-2 md:py-3 text-xs md:text-sm text-on-surface-variant hover:text-on-surface border-b-2 border-transparent" data-tab="output">
+                            Output
+                        </button>
+                        <button class="report-tab flex-1 py-2 md:py-3 text-xs md:text-sm text-on-surface-variant hover:text-on-surface border-b-2 border-transparent" data-tab="metrics">
+                            Metrics
+                        </button>
+                    </div>
+                    
+                    <!-- Tab Content (Scrollable) -->
+                    <div class="flex-1 overflow-y-auto custom-scrollbar">
+                        <!-- Tests Tab -->
+                        <div id="testsTab" class="p-3 md:p-4">
+                            <div class="text-sm text-on-surface-variant italic text-center py-8">
+                                No test results yet
+                            </div>
+                        </div>
+                        
+                        <!-- Output Tab -->
+                        <div id="outputTab" class="p-3 md:p-4 hidden">
+                            <div class="text-sm text-on-surface-variant italic text-center py-8">
+                                No output yet
+                            </div>
+                        </div>
+                        
+                        <!-- Metrics Tab -->
+                        <div id="metricsTab" class="p-3 md:p-4 hidden">
+                            <div class="text-sm text-on-surface-variant italic text-center py-8">
+                                No metrics yet
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Metrics Summary (Always visible at bottom) -->
+                    <div id="metricsSummary" class="hidden p-3 md:p-4 border-t border-outline-variant bg-white shrink-0">
+                        <h3 class="text-xs font-semibold text-on-surface-variant mb-3 uppercase tracking-wider">Summary</h3>
+                        <div class="grid grid-cols-2 gap-3 md:gap-4">
+                            <div>
+                                <div id="totalTime" class="text-xl md:text-2xl font-bold text-on-surface">-</div>
+                                <div class="text-xs text-on-surface-variant">Time</div>
+                            </div>
+                            <div>
+                                <div id="totalIterations" class="text-xl md:text-2xl font-bold text-on-surface">-</div>
+                                <div class="text-xs text-on-surface-variant">Iterations</div>
+                            </div>
+                            <div class="col-span-2">
+                                <div id="executionStatus" class="text-sm font-medium text-on-surface flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-base">pending</span>
+                                    <span>Waiting...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
             </div>
         </div>
     </main>
@@ -628,20 +597,29 @@
         }
         
         function syntaxHighlight(code) {
-            // Simple syntax highlighting
-            return code
-                .replace(/\n/g, '<br>')
-                .replace(/(&lt;|<)/g, '&lt;')
-                .replace(/(&gt;|>)/g, '&gt;')
-                .replace(/(def|class|if|else|elif|for|while|return|import|from|try|except|raise|with|as|in|is|and|or|not|lambda|yield|break|continue|pass)\b/g, '<span class="text-secondary font-semibold">$1</span>')
-                .replace(/(\d+)/g, '<span class="text-green-600">$1</span>')
-                .replace(/(#.*)/g, '<span class="text-gray-500 italic">$1</span>')
-                .replace(/(".*?"|\'.*?\')/g, '<span class="text-red-600">$1</span>')
-                .replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g, '<span class="text-primary font-medium">$1</span>(');
+            // Escape HTML entities first to prevent injection
+            const escaped = code
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            
+            // Apply syntax highlighting with proper color classes
+            return escaped
+                .replace(/\b(def|class|if|else|elif|for|while|return|import|from|try|except|raise|with|as|in|is|and|or|not|lambda|yield|break|continue|pass|async|await|finally)\b/g, '<span class="keyword">$1</span>')
+                .replace(/\b(\d+\.?\d*)\b/g, '<span class="number">$1</span>')
+                .replace(/(#[^\n]*)/g, '<span class="comment">$1</span>')
+                .replace(/("(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\')/g, '<span class="string">$1</span>')
+                .replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g, '<span class="function">$1</span>(');
         }
         
         function displayCode(code) {
-            codeDisplay.innerHTML = `<pre class="font-mono text-sm leading-relaxed">${syntaxHighlight(code)}</pre>`;
+            // Create a properly formatted code block
+            const highlighted = syntaxHighlight(code);
+            codeDisplay.innerHTML = `
+                <div class="code-container">
+                    <pre><code>${highlighted}</code></pre>
+                </div>
+            `;
         }
         
         function celebrateSuccess() {
@@ -941,35 +919,6 @@
         // Initialize
         console.log('🚀 LangGraph Agent Dashboard initialized');
         console.log('API endpoint:', API_URL);
-        
-        // Mobile panel switching
-        const panelTabs = document.querySelectorAll('.panel-tab');
-        const workflowPanel = document.getElementById('workflowPanel');
-        const editorPanel = document.getElementById('editorPanel');
-        const reportPanel = document.getElementById('reportPanel');
-        
-        panelTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                const panel = tab.dataset.panel;
-                
-                // Update tabs
-                panelTabs.forEach(t => {
-                    t.classList.remove('border-primary', 'text-primary');
-                    t.classList.add('border-transparent', 'text-on-surface-variant');
-                });
-                tab.classList.add('border-primary', 'text-primary');
-                tab.classList.remove('border-transparent', 'text-on-surface-variant');
-                
-                // Show selected panel
-                workflowPanel.classList.add('hidden');
-                editorPanel.classList.add('hidden');
-                reportPanel.classList.add('hidden');
-                
-                if (panel === 'workflow') workflowPanel.classList.remove('hidden');
-                if (panel === 'editor') editorPanel.classList.remove('hidden');
-                if (panel === 'report') reportPanel.classList.remove('hidden');
-            });
-        });
     </script>
 </body>
 </html>
