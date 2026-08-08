@@ -48,8 +48,7 @@ htmlcov/
 # Logs
 *.log
 
-# Documentation (local only)
-*_GUIDE.md
+# Documentation (local only - but keep frontend docs)
 *_PLAN.md
 *_SUMMARY.md
 *_NOTES.md
@@ -62,8 +61,9 @@ START_*.md
 ACTION_*.md
 ARCHITECTURE.md
 DEPLOY_*.md
+# Keep: FRONTEND_GUIDE.md, STITCH_AI_PROMPT.md
 
-# Optional files
+# Optional files (but keep new interactive index.html)
 gradio_ui.py
-index.html
 verify_setup.py
+# Keep: index.html
