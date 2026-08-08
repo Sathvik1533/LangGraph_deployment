@@ -146,8 +146,20 @@ def get_llm(force_fallback=False):
     )
 
 
-# Global LLM instance (initialized once)
-llm = get_llm()
+# Global LLM instance (lazy initialization)
+_llm_instance = None
+
+def get_llm_instance():
+    """
+    Get or create the LLM instance (lazy initialization).
+    
+    Pattern: Lazy Loading
+    Why: Don't initialize at module import time (Render loads env vars later)
+    """
+    global _llm_instance
+    if _llm_instance is None:
+        _llm_instance = get_llm()
+    return _llm_instance
 
 
 # ============================================================================
@@ -299,7 +311,7 @@ def call_llm_with_retry(prompt) -> Any:
     
     # Check if exception is retryable before attempting
     try:
-        response = llm.invoke(prompt)
+        response = get_llm_instance().invoke(prompt)
         # Success! Reset circuit breaker failure count
         _circuit_breaker_failures = max(0, _circuit_breaker_failures - 1)
         return response
