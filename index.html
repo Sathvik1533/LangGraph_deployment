@@ -482,7 +482,7 @@
     <!-- JavaScript -->
     <script>
         // Configuration
-        const API_URL = 'http://localhost:8000/invoke';
+        const API_URL = window.location.origin + '/invoke';  // Use same domain as frontend
         
         // State
         let currentIteration = 1;

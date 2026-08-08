@@ -19,11 +19,14 @@ Production Patterns:
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from typing import Optional
 import logging
 import time
 from collections import defaultdict, deque
+import os
 
 from agent import agent, CrewState, _circuit_breaker_open, _circuit_breaker_failures
 from langchain_core.messages import HumanMessage
@@ -156,6 +159,28 @@ def health_check():
 
 
 @app.get("/", tags=["Health"])
+def root():
+    """
+    Serve the frontend UI
+    """
+    if os.path.exists("index.html"):
+        return FileResponse("index.html")
+    else:
+        return {
+            "status": "ok",
+            "service": "LangGraph Self-Correcting Agent",
+            "version": "2.0.0",
+            "message": "API is running. Frontend not found.",
+            "docs": "/docs",
+            "endpoints": {
+                "health": "/health",
+                "invoke": "/invoke",
+                "info": "/info"
+            }
+        }
+
+
+@app.get("/health", tags=["Health"])
 def health():
     """
     Simple health check endpoint
