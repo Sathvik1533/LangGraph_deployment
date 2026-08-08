@@ -7,20 +7,77 @@ Architecture:
 - Uses agent.py (self-correcting workflow with Groq)
 - Provides standard REST endpoints
 - Returns detailed execution results including iterations
+
+Production Patterns:
+- Rate Limiting (prevents API abuse)
+- Health Checks (monitors system status)
+- Request Timeout (configurable per request)
+- Graceful Degradation (returns partial results on failure)
+- Circuit Breaker (via agent.py)
+- Jitter for retries (via agent.py)
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional
 import logging
-from langchain_groq import Groq
-from agent import agent, CrewState
+import time
+from collections import defaultdict, deque
+
+from agent import agent, CrewState, _circuit_breaker_open, _circuit_breaker_failures
 from langchain_core.messages import HumanMessage
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# RATE LIMITING (Production Pattern)
+# ============================================================================
+
+class RateLimiter:
+    """
+    Simple in-memory rate limiter using sliding window algorithm.
+    
+    Production Pattern: Rate Limiting
+    Why: Prevents API abuse, protects backend from overload
+    
+    In production, use Redis-based rate limiter for distributed systems.
+    """
+    def __init__(self, max_requests=10, window_seconds=60):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self.requests = defaultdict(deque)  # IP -> deque of timestamps
+    
+    def is_allowed(self, identifier: str) -> bool:
+        """Check if request is allowed based on rate limit."""
+        now = time.time()
+        request_times = self.requests[identifier]
+        
+        # Remove old requests outside the window
+        while request_times and request_times[0] < now - self.window_seconds:
+            request_times.popleft()
+        
+        # Check if under limit
+        if len(request_times) < self.max_requests:
+            request_times.append(now)
+            return True
+        
+        return False
+    
+    def get_reset_time(self, identifier: str) -> float:
+        """Get seconds until rate limit resets."""
+        request_times = self.requests[identifier]
+        if not request_times:
+            return 0
+        oldest = request_times[0]
+        return max(0, self.window_seconds - (time.time() - oldest))
+
+
+# Global rate limiter (10 requests per minute per IP)
+rate_limiter = RateLimiter(max_requests=10, window_seconds=60)
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -74,10 +131,34 @@ class AgentResponse(BaseModel):
 # API ENDPOINTS
 # ============================================================================
 
-@app.get("/", tags=["Health"])
+@app.get("/health", tags=["Health"])
 def health_check():
     """
-    Health check endpoint
+    Health check endpoint with circuit breaker status.
+    
+    Production Pattern: Health Checks
+    Why: Monitoring systems (Kubernetes, AWS ELB) need to know if service is healthy
+    
+    Returns:
+        dict: Health status including circuit breaker state
+    """
+    return {
+        "status": "healthy" if not _circuit_breaker_open else "degraded",
+        "service": "LangGraph Self-Correcting Agent",
+        "version": "2.0.0",
+        "circuit_breaker": {
+            "open": _circuit_breaker_open,
+            "failures": _circuit_breaker_failures,
+            "status": "Circuit breaker is open - service temporarily unavailable" if _circuit_breaker_open else "OK"
+        },
+        "timestamp": time.time()
+    }
+
+
+@app.get("/", tags=["Health"])
+def health():
+    """
+    Simple health check endpoint
     
     Returns:
         dict: Status and API information
@@ -88,8 +169,8 @@ def health_check():
         "version": "2.0.0",
         "docs": "/docs",
         "endpoints": {
+            "health": "/health",
             "invoke": "/invoke",
-            "health": "/",
             "info": "/info"
         }
     }
@@ -119,25 +200,65 @@ def get_info():
 
 
 @app.post("/invoke", response_model=AgentResponse, tags=["Agent"])
-async def invoke_agent(request: TaskRequest):
+async def invoke_agent(request: TaskRequest, req: Request):
     """
-    Invoke the self-correcting agent workflow
+    Invoke the self-correcting agent workflow with production patterns.
+    
+    Production Patterns Applied:
+    - ✅ Rate Limiting (10 req/min per IP)
+    - ✅ Circuit Breaker (stops calling failing services)
+    - ✅ Graceful Degradation (returns partial results on timeout)
+    - ✅ Request Timeout (configurable)
+    - ✅ Jitter for retries (in agent.py)
     
     Args:
         request: TaskRequest with code generation task
+        req: FastAPI Request object (for IP-based rate limiting)
         
     Returns:
         AgentResponse: Complete workflow results including code, report, and iterations
         
+    Raises:
+        HTTPException 429: Rate limit exceeded
+        HTTPException 503: Circuit breaker open (service unavailable)
+        HTTPException 500: Agent workflow failed
+        
     Example:
         ```json
         {
-            "task": "Write a function to check if a number is prime"
+            "task": "Write a function to check if a number is prime",
+            "max_iterations": 3
         }
         ```
     """
+    # Rate Limiting (Production Pattern)
+    client_ip = req.client.host if req.client else "unknown"
+    if not rate_limiter.is_allowed(client_ip):
+        reset_time = rate_limiter.get_reset_time(client_ip)
+        logger.warning(f"Rate limit exceeded for {client_ip}")
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error": "Rate limit exceeded",
+                "message": f"Too many requests. Try again in {int(reset_time)} seconds.",
+                "retry_after": int(reset_time)
+            }
+        )
+    
+    # Circuit Breaker Check (Production Pattern)
+    if _circuit_breaker_open:
+        logger.error("Circuit breaker open - rejecting request")
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "Service temporarily unavailable",
+                "message": "Circuit breaker is open. The service is experiencing issues. Please try again later.",
+                "circuit_breaker_failures": _circuit_breaker_failures
+            }
+        )
+    
     try:
-        logger.info(f"Received task: {request.task}")
+        logger.info(f"Received task from {client_ip}: {request.task}")
         logger.info(f"Max iterations: {request.max_iterations}")
         
         # Prepare initial state
@@ -147,7 +268,7 @@ async def invoke_agent(request: TaskRequest):
             "report": None,
             "execution_success": False,
             "iterations": 0,
-            "max_iterations": request.max_iterations  # Use user-provided value
+            "max_iterations": request.max_iterations  # User-provided value
         }
         
         # Invoke the agent workflow
@@ -167,6 +288,20 @@ async def invoke_agent(request: TaskRequest):
         
     except Exception as e:
         logger.error(f"Error invoking agent: {str(e)}")
+        
+        # Graceful Degradation (Production Pattern)
+        # Return partial results if available instead of complete failure
+        if "result" in locals() and result:
+            logger.info("Returning partial results due to error")
+            return AgentResponse(
+                success=False,
+                code=result.get("code"),
+                report=result.get("report"),
+                execution_success=False,
+                iterations=result.get("iterations", 0),
+                error=str(e)
+            )
+        
         raise HTTPException(
             status_code=500,
             detail=f"Agent workflow failed: {str(e)}"

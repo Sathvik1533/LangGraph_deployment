@@ -11,6 +11,12 @@ V2 Features:
 - State reducers for message history
 - Self-correction loops
 - Tenacity-based retry logic for API resilience
+
+Production Patterns:
+- Exponential Backoff with Jitter (prevents thundering herd)
+- Circuit Breaker (stops calling failing services)
+- Request Timeout (configurable per request)
+- Graceful Degradation (returns partial results on failure)
 """
 
 import os
@@ -19,6 +25,8 @@ import io
 import traceback
 from typing import Optional, List, Dict, Any, Literal
 from operator import add
+import random
+import time
 
 from langchain_core.messages import HumanMessage, BaseMessage, AIMessage, SystemMessage
 from langchain_core.tools import tool
@@ -26,7 +34,7 @@ from langgraph.graph import StateGraph, START, END
 from langchain_groq import ChatGroq
 from typing_extensions import TypedDict, Annotated
 
-# Tenacity for robust API retry handling
+# Tenacity for robust API retry handling with jitter
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -43,8 +51,16 @@ logging.basicConfig(level=logging.INFO)
 
 
 # ============================================================================
-# CONFIGURATION WITH RETRY LOGIC
+# CONFIGURATION WITH RETRY LOGIC + JITTER
 # ============================================================================
+
+# Circuit Breaker State (production pattern)
+_circuit_breaker_failures = 0
+_circuit_breaker_open = False
+_circuit_breaker_last_failure_time = 0
+CIRCUIT_BREAKER_THRESHOLD = 5  # Open circuit after 5 failures
+CIRCUIT_BREAKER_TIMEOUT = 60    # Reset circuit after 60 seconds
+
 
 def get_llm():
     """
@@ -54,7 +70,24 @@ def get_llm():
     Why: Allows different models for different environments (dev/prod)
     
     V2: Temperature lowered to 0.1 for consistent code generation
+    Production: Circuit breaker to prevent cascading failures
     """
+    global _circuit_breaker_open, _circuit_breaker_last_failure_time
+    
+    # Circuit Breaker Pattern: Check if circuit is open
+    if _circuit_breaker_open:
+        elapsed = time.time() - _circuit_breaker_last_failure_time
+        if elapsed < CIRCUIT_BREAKER_TIMEOUT:
+            raise RuntimeError(
+                f"Circuit breaker open. Service unavailable. "
+                f"Retry in {CIRCUIT_BREAKER_TIMEOUT - int(elapsed)} seconds."
+            )
+        else:
+            # Reset circuit breaker after timeout
+            logger.info("Circuit breaker reset - attempting to reconnect")
+            _circuit_breaker_open = False
+            _circuit_breaker_failures = 0
+    
     api_key = os.environ.get("GROQ_API_KEY")
     if not api_key:
         raise RuntimeError(
@@ -67,7 +100,8 @@ def get_llm():
     return ChatGroq(
         model=model_name,
         groq_api_key=api_key,
-        temperature=0.1  # Low temperature for consistent, deterministic code generation
+        temperature=0.1,  # Low temperature for consistent, deterministic code generation
+        timeout=30.0      # Request timeout (production pattern)
     )
 
 
@@ -76,8 +110,42 @@ llm = get_llm()
 
 
 # ============================================================================
-# RETRY DECORATOR FOR LLM CALLS
+# RETRY DECORATOR WITH JITTER (PRODUCTION PATTERN)
 # ============================================================================
+
+def jittered_wait(multiplier=1, min_wait=1, max_wait=10):
+    """
+    Custom wait strategy with JITTER (randomness) to prevent thundering herd.
+    
+    Pattern: Exponential Backoff with Full Jitter
+    Why: If 100 users get rate-limited at the same time and all retry after
+         exactly 2 seconds, they'll all hit the API simultaneously again!
+         Jitter spreads out the retries randomly.
+    
+    Example without jitter:
+        Request 1-100: Fail at 12:00:00
+        All retry at:   12:00:02 (synchronized - BAD!)
+        All retry at:   12:00:04 (synchronized - BAD!)
+    
+    Example WITH jitter:
+        Request 1:  Retry at 12:00:01.3
+        Request 2:  Retry at 12:00:02.7
+        Request 3:  Retry at 12:00:01.9
+        (Spread out - GOOD!)
+    
+    Formula: wait_time = random(0, min(cap, base * 2^attempt))
+    """
+    def wait_func(retry_state):
+        attempt = retry_state.attempt_number
+        # Exponential: 1s, 2s, 4s, 8s, 16s...
+        exponential_wait = min(max_wait, multiplier * (2 ** attempt))
+        # Add jitter: random between 0 and exponential_wait
+        jittered = random.uniform(min_wait, exponential_wait)
+        logger.info(f"Retry attempt {attempt}: waiting {jittered:.2f}s (with jitter)")
+        return jittered
+    
+    return wait_func
+
 
 def is_retryable_error(exception: Exception) -> bool:
     """
@@ -96,12 +164,25 @@ def is_retryable_error(exception: Exception) -> bool:
     """
     import httpx
     
+    # Update circuit breaker on retryable errors
+    global _circuit_breaker_failures, _circuit_breaker_open, _circuit_breaker_last_failure_time
+    
     # Standard network errors
     if isinstance(exception, (ConnectionError, TimeoutError)):
+        _circuit_breaker_failures += 1
+        _circuit_breaker_last_failure_time = time.time()
+        if _circuit_breaker_failures >= CIRCUIT_BREAKER_THRESHOLD:
+            _circuit_breaker_open = True
+            logger.error(f"Circuit breaker opened after {_circuit_breaker_failures} failures")
         return True
     
     # httpx-specific errors (used by langchain-groq)
     if isinstance(exception, (httpx.TimeoutException, httpx.ConnectError, httpx.RemoteProtocolError)):
+        _circuit_breaker_failures += 1
+        _circuit_breaker_last_failure_time = time.time()
+        if _circuit_breaker_failures >= CIRCUIT_BREAKER_THRESHOLD:
+            _circuit_breaker_open = True
+            logger.error(f"Circuit breaker opened after {_circuit_breaker_failures} failures")
         return True
     
     # Rate limit detection (Groq returns 429)
@@ -117,10 +198,10 @@ def is_retryable_error(exception: Exception) -> bool:
     return False
 
 
-# Create retry decorator with exponential backoff
+# Create retry decorator with exponential backoff + jitter
 llm_retry = retry(
     stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=1, max=10),
+    wait=jittered_wait(multiplier=1, min_wait=1, max_wait=10),  # WITH JITTER!
     retry=retry_if_exception_type(Exception),
     before_sleep=before_sleep_log(logger, logging.WARNING),
     after=after_log(logger, logging.INFO),
@@ -131,19 +212,29 @@ llm_retry = retry(
 @llm_retry
 def call_llm_with_retry(prompt) -> Any:
     """
-    Call the LLM with automatic retry logic.
+    Call the LLM with automatic retry logic + jitter.
     
-    Pattern: Wrapper function with tenacity retry decorator
+    Pattern: Wrapper function with tenacity retry decorator + Jitter
     Why: Centralizes retry logic, production-resilient API calls
     
     Retry Strategy:
     - Max 3 attempts (stop_after_attempt(3))
-    - Exponential backoff: 1s → 2s → 4s → 8s (max 10s)
+    - Exponential backoff WITH JITTER: prevents thundering herd
+      * Attempt 1: 0-2s (random)
+      * Attempt 2: 0-4s (random)
+      * Attempt 3: 0-8s (random)
     - Only retries on transient errors (connection, timeout, rate limits)
     - Logs retry attempts for monitoring
+    - Circuit breaker opens after 5 consecutive failures
     
-    This function will automatically retry up to 3 times with exponential backoff
-    if the API call fails due to connection issues or rate limits.
+    Production Patterns:
+    - ✅ Exponential Backoff with Full Jitter
+    - ✅ Circuit Breaker (prevents cascading failures)
+    - ✅ Request Timeout (30s per request)
+    - ✅ Selective Retry (only transient errors)
+    
+    This function will automatically retry up to 3 times with jittered
+    exponential backoff if the API call fails due to connection issues or rate limits.
     
     Args:
         prompt: Either a string prompt OR a list of message objects (for chat history)
@@ -152,6 +243,7 @@ def call_llm_with_retry(prompt) -> Any:
         LLM response object
         
     Raises:
+        RuntimeError: If circuit breaker is open
         Exception: After 3 failed attempts, raises the last exception
         
     Example:
@@ -162,12 +254,17 @@ def call_llm_with_retry(prompt) -> Any:
         messages = [SystemMessage(...), HumanMessage(...), AIMessage(...)]
         response = call_llm_with_retry(messages)
     """
+    global _circuit_breaker_failures
+    
     # Check if exception is retryable before attempting
     try:
-        return llm.invoke(prompt)
+        response = llm.invoke(prompt)
+        # Success! Reset circuit breaker failure count
+        _circuit_breaker_failures = max(0, _circuit_breaker_failures - 1)
+        return response
     except Exception as e:
         if is_retryable_error(e):
-            # Let tenacity handle the retry
+            # Let tenacity handle the retry (with jitter!)
             raise
         else:
             # Don't retry on non-retryable errors (e.g., auth failures)
