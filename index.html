@@ -243,11 +243,30 @@
             </div>
         </header>
         
-        <!-- 3-Panel Layout -->
-        <div class="flex-1 overflow-hidden flex flex-col lg:flex-row w-full">
+        <!-- 3-Panel Layout - Responsive -->
+        <div class="flex-1 overflow-hidden flex flex-col w-full">
+            
+            <!-- Mobile/Tablet: Tabs to switch between panels -->
+            <div class="lg:hidden flex border-b border-outline-variant bg-white sticky top-0 z-20">
+                <button class="panel-tab flex-1 py-3 text-sm font-medium border-b-2 border-primary text-primary" data-panel="workflow">
+                    <span class="material-symbols-outlined text-base">account_tree</span>
+                    Workflow
+                </button>
+                <button class="panel-tab flex-1 py-3 text-sm text-on-surface-variant border-b-2 border-transparent" data-panel="editor">
+                    <span class="material-symbols-outlined text-base">code</span>
+                    Editor
+                </button>
+                <button class="panel-tab flex-1 py-3 text-sm text-on-surface-variant border-b-2 border-transparent" data-panel="report">
+                    <span class="material-symbols-outlined text-base">analytics</span>
+                    Report
+                </button>
+            </div>
+            
+            <!-- Desktop: Side-by-side panels -->
+            <div class="flex-1 overflow-hidden flex flex-row w-full">
             
             <!-- LEFT PANEL: Workflow & Timeline -->
-            <div class="w-full lg:w-1/4 border-r border-outline-variant bg-white flex flex-col overflow-y-auto hide-scrollbar">
+            <div id="workflowPanel" class="w-full lg:w-1/4 border-r border-outline-variant bg-white flex flex-col overflow-y-auto hide-scrollbar">
                 <div class="p-4 border-b border-outline-variant bg-white sticky top-0 z-10">
                     <h2 class="text-xl font-semibold text-on-surface">Workflow Visualization</h2>
                 </div>
@@ -332,7 +351,7 @@
             </div>
             
             <!-- CENTER PANEL: Input & Code Editor -->
-            <div class="w-full lg:w-1/2 flex flex-col h-full bg-surface">
+            <div id="editorPanel" class="w-full lg:w-1/2 flex flex-col h-full bg-surface hidden lg:flex">
                 
                 <!-- Task Input -->
                 <div class="p-6 border-b border-outline-variant shrink-0 bg-white">
@@ -404,7 +423,7 @@
             </div>
             
             <!-- RIGHT PANEL: Execution Report -->
-            <div class="w-full lg:w-1/4 border-l border-outline-variant bg-white flex flex-col h-full overflow-hidden">
+            <div id="reportPanel" class="w-full lg:w-1/4 border-l border-outline-variant bg-white flex flex-col h-full overflow-hidden hidden lg:flex">
                 <div class="p-4 border-b border-outline-variant bg-white sticky top-0 z-10">
                     <h2 class="text-xl font-semibold text-on-surface flex items-center gap-2">
                         <span class="material-symbols-outlined">analytics</span> 
@@ -469,6 +488,8 @@
                         </div>
                     </div>
                 </div>
+            </div>
+            </div>
             </div>
         </div>
     </main>
@@ -920,6 +941,35 @@
         // Initialize
         console.log('🚀 LangGraph Agent Dashboard initialized');
         console.log('API endpoint:', API_URL);
+        
+        // Mobile panel switching
+        const panelTabs = document.querySelectorAll('.panel-tab');
+        const workflowPanel = document.getElementById('workflowPanel');
+        const editorPanel = document.getElementById('editorPanel');
+        const reportPanel = document.getElementById('reportPanel');
+        
+        panelTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const panel = tab.dataset.panel;
+                
+                // Update tabs
+                panelTabs.forEach(t => {
+                    t.classList.remove('border-primary', 'text-primary');
+                    t.classList.add('border-transparent', 'text-on-surface-variant');
+                });
+                tab.classList.add('border-primary', 'text-primary');
+                tab.classList.remove('border-transparent', 'text-on-surface-variant');
+                
+                // Show selected panel
+                workflowPanel.classList.add('hidden');
+                editorPanel.classList.add('hidden');
+                reportPanel.classList.add('hidden');
+                
+                if (panel === 'workflow') workflowPanel.classList.remove('hidden');
+                if (panel === 'editor') editorPanel.classList.remove('hidden');
+                if (panel === 'report') reportPanel.classList.remove('hidden');
+            });
+        });
     </script>
 </body>
 </html>
