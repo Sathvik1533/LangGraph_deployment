@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Visualization - LangGraph Agent</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/css/shared.css">
+    
+    <style>
+        .workflow-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            height: calc(100vh - 180px);
+        }
+        
+        .workflow-diagram {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e5eeff;
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            overflow-y: auto;
+        }
+        
+        .workflow-node {
+            min-width: 200px;
+            padding: 20px 24px;
+            border-radius: 12px;
+            border: 2px solid #e5eeff;
+            background: white;
+            text-align: center;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .workflow-node .node-icon {
+            font-size: 32px;
+        }
+        
+        .workflow-node.node-start,
+        .workflow-node.node-complete {
+            border-color: #10b981;
+            background: #f0fdf4;
+            color: #059669;
+        }
+        
+        .workflow-node.node-developer {
+            border-color: #8b5cf6;
+            background: #f5f3ff;
+            color: #7c3aed;
+        }
+        
+        .workflow-node.node-tester {
+            border-color: #06b6d4;
+            background: #f0fdfa;
+            color: #0891b2;
+        }
+        
+        .workflow-node.node-decision {
+            border-color: #2563eb;
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+        
+        .workflow-node.active {
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            border-width: 3px;
+        }
+        
+        .workflow-node.completed {
+            opacity: 0.7;
+        }
+        
+        .node-arrow {
+            font-size: 32px;
+            color: #cbd5e1;
+            margin: 4px 0;
+        }
+        
+        .timeline-container {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e5eeff;
+            padding: 24px;
+            overflow-y: auto;
+        }
+        
+        .timeline-item {
+            position: relative;
+            padding-left: 32px;
+            padding-bottom: 20px;
+            border-left: 2px solid #e5eeff;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        .timeline-item:last-child {
+            border-left-color: transparent;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: 0;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #cbd5e1;
+        }
+        
+        .timeline-item.active::before {
+            background: #2563eb;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
+        }
+        
+        .timeline-item.completed::before {
+            background: #10b981;
+        }
+        
+        .timeline-item.error::before {
+            background: #ef4444;
+        }
+        
+        .timeline-item.retry::before {
+            background: #f59e0b;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .pulse {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @media (max-width: 768px) {
+            .workflow-container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body class="h-full">
+    
+    <!-- Include Navigation -->
+    <div id="navigation"></div>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Page Header -->
+        <header class="page-header">
+            <h1 class="page-title">
+                <span class="material-symbols-outlined" style="font-size: 40px;">account_tree</span>
+                Workflow Visualization
+            </h1>
+            <p class="page-subtitle">Self-correcting agent execution flow with real-time updates</p>
+        </header>
+        
+        <!-- Workflow Container -->
+        <div class="workflow-container">
+            <!-- Left: Workflow Diagram -->
+            <div class="workflow-diagram custom-scrollbar">
+                <div class="workflow-node node-start" id="nodeStart">
+                    <span class="material-symbols-outlined node-icon">play_circle</span>
+                    <span>START</span>
+                    <span class="text-xs" style="opacity: 0.7;">Initialize workflow</span>
+                </div>
+                
+                <span class="material-symbols-outlined node-arrow">arrow_downward</span>
+                
+                <div class="workflow-node node-developer" id="nodeDeveloper">
+                    <span class="material-symbols-outlined node-icon">code</span>
+                    <span>Developer Agent</span>
+                    <span class="text-xs" style="opacity: 0.7;">Generate code</span>
+                </div>
+                
+                <span class="material-symbols-outlined node-arrow">arrow_downward</span>
+                
+                <div class="workflow-node node-tester" id="nodeTester">
+                    <span class="material-symbols-outlined node-icon">science</span>
+                    <span>Tester Agent</span>
+                    <span class="text-xs" style="opacity: 0.7;">Run validation tests</span>
+                </div>
+                
+                <span class="material-symbols-outlined node-arrow">arrow_downward</span>
+                
+                <div class="workflow-node node-decision" id="nodeDecision">
+                    <span class="material-symbols-outlined node-icon">fork_right</span>
+                    <span>Decision Router</span>
+                    <span class="text-xs" style="opacity: 0.7;">Evaluate results</span>
+                </div>
+                
+                <span class="material-symbols-outlined node-arrow">arrow_downward</span>
+                
+                <div class="workflow-node node-complete" id="nodeComplete">
+                    <span class="material-symbols-outlined node-icon">check_circle</span>
+                    <span>COMPLETE</span>
+                    <span class="text-xs" style="opacity: 0.7;">Workflow finished</span>
+                </div>
+                
+                <!-- Loop Arrow (Hidden by default) -->
+                <div id="loopArrow" style="display: none; margin-top: 16px; text-align: center;">
+                    <span class="badge badge-warning">↻ Self-Correction Loop Active</span>
+                </div>
+            </div>
+            
+            <!-- Right: Timeline -->
+            <div class="timeline-container custom-scrollbar">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="font-bold text-lg flex items-center gap-2">
+                        <span class="material-symbols-outlined">schedule</span>
+                        Execution Timeline
+                    </h2>
+                    <span id="stepCounter" class="badge badge-info" style="display: none;">0 steps</span>
+                </div>
+                
+                <div id="timeline">
+                    <div class="text-center" style="padding: 48px; color: #64748b;">
+                        <span class="material-symbols-outlined" style="font-size: 64px; opacity: 0.3;">pending_actions</span>
+                        <p class="mt-4">No workflow execution yet</p>
+                        <p class="text-sm">Generate code to see the workflow in action</p>
+                        <a href="/generate" class="btn btn-primary mt-4" style="display: inline-flex;">
+                            <span class="material-symbols-outlined">auto_awesome</span>
+                            Generate Code
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Scripts -->
+    <script src="/static/js/common.js"></script>
+    <script>
+        // Load navigation
+        fetch('/templates/navigation.html')
+            .then(res => res.text())
+            .then(html => {
+                document.getElementById('navigation').innerHTML = html;
+                setActiveNav('workflow');
+            });
+        
+        // Load last execution workflow
+        function loadLastWorkflow() {
+            const lastGeneration = JSON.parse(localStorage.getItem('lastGeneration') || 'null');
+            
+            if (!lastGeneration) {
+                return; // Show empty state
+            }
+            
+            // Simulate workflow replay
+            const timeline = document.getElementById('timeline');
+            timeline.innerHTML = '';
+            
+            // Add timeline items from last generation
+            addTimelineItem('🚀 Workflow initiated', 'completed');
+            addTimelineItem('✓ Start node completed', 'completed');
+            addTimelineItem('👨‍💻 Developer Agent: Code generated', 'completed');
+            addTimelineItem('🧪 Tester Agent: Tests executed', 'completed');
+            
+            if (lastGeneration.iterations > 1) {
+                for (let i = 2; i <= lastGeneration.iterations; i++) {
+                    addTimelineItem(`⚠️ Iteration ${i-1}: Code failed tests`, 'retry');
+                    addTimelineItem(`🔧 Developer Agent: Fixing code`, 'retry');
+                    addTimelineItem(`🧪 Tester Agent: Re-running tests`, 'active');
+                }
+            }
+            
+            if (lastGeneration.execution_success) {
+                addTimelineItem('✅ Decision: All tests passed!', 'completed');
+                addTimelineItem('🎉 Workflow completed successfully', 'completed');
+                completeNode('nodeComplete');
+            } else {
+                addTimelineItem('❌ Decision: Maximum iterations reached', 'error');
+            }
+            
+            // Mark nodes as completed
+            completeNode('nodeStart');
+            completeNode('nodeDeveloper');
+            completeNode('nodeTester');
+            completeNode('nodeDecision');
+            if (lastGeneration.execution_success) {
+                completeNode('nodeComplete');
+            }
+        }
+        
+        function addTimelineItem(text, status = 'completed') {
+            const timeline = document.getElementById('timeline');
+            
+            // Remove empty state
+            if (timeline.querySelector('.text-center')) {
+                timeline.innerHTML = '';
+            }
+            
+            const item = document.createElement('div');
+            item.className = `timeline-item ${status}`;
+            item.innerHTML = `
+                <div class="text-sm font-medium" style="color: #0b1c30;">${text}</div>
+                <div class="text-xs" style="color: #64748b; margin-top: 4px;">${new Date().toLocaleTimeString()}</div>
+            `;
+            
+            timeline.appendChild(item);
+            
+            // Update counter
+            const stepCounter = document.getElementById('stepCounter');
+            const steps = timeline.querySelectorAll('.timeline-item').length;
+            stepCounter.textContent = `${steps} steps`;
+            stepCounter.style.display = 'inline-flex';
+            
+            // Auto-scroll
+            timeline.scrollTop = timeline.scrollHeight;
+        }
+        
+        function activateNode(nodeId) {
+            const node = document.getElementById(nodeId);
+            if (node) {
+                node.classList.add('active');
+                node.classList.add('pulse');
+            }
+        }
+        
+        function completeNode(nodeId) {
+            const node = document.getElementById(nodeId);
+            if (node) {
+                node.classList.remove('active');
+                node.classList.remove('pulse');
+                node.classList.add('completed');
+            }
+        }
+        
+        // Initialize
+        loadLastWorkflow();
+        
+        // Listen for workflow updates from other pages
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'lastGeneration') {
+                loadLastWorkflow();
+            }
+        });
+    </script>
+</body>
+</html>
