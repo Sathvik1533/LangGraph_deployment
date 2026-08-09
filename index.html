@@ -252,11 +252,11 @@
         
         /* View Switching */
         .view-content {
-            display: none;
+            display: none !important;
         }
         
         .view-content.active {
-            display: flex;
+            display: flex !important;
         }
         
         /* Prevent horizontal overflow */
@@ -988,6 +988,11 @@
         // Initialize
         console.log('🚀 LangGraph Agent Dashboard initialized');
         console.log('API endpoint:', API_URL);
+        console.log('Views available:', Object.keys(views));
+        console.log('Default view (workflow) active:', views.workflow?.classList.contains('active'));
+        
+        // Ensure only workflow view is active on load
+        switchView('workflow');
     </script>
 </body>
 </html>
