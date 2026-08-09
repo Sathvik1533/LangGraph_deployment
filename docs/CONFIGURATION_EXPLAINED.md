@@ -368,3 +368,496 @@ logger.info(f"Avg iterations: {avg_iterations}, Success rate: {success_rate}%")
 ---
 
 **Now you understand why we log, why Tenacity is separate from MAX_ITERATIONS, and why making it dynamic is better! 🎉**
+
+
+---
+
+## 🔴 Redis Checkpointing Configuration
+
+### **Why is Redis Optional?**
+
+**The agent works perfectly fine WITHOUT Redis!** Here's why it's optional:
+
+#### **Development Mode (No Redis)**
+```python
+# .env file - No REDIS_URL set
+GROQ_API_KEY=your_key_here
+# REDIS_URL=  ← Not set
+
+# What happens:
+checkpointer = MemorySaver()  # In-memory storage
+logger.info("🧠 Using in-memory checkpointing")
+```
+
+**Characteristics:**
+- ✅ Fast (no network calls)
+- ✅ Simple setup (no Redis install)
+- ✅ Perfect for testing/development
+- ❌ State lost on restart
+- ❌ Can't resume conversations
+- ❌ Single-instance only
+
+#### **Production Mode (With Redis)**
+```python
+# .env file - REDIS_URL set
+GROQ_API_KEY=your_key_here
+REDIS_URL=redis://localhost:6379
+
+# What happens:
+redis_client = aioredis.from_url(redis_url)
+checkpointer = RedisSaver(redis_client)
+logger.info("✅ Redis checkpointing enabled")
+```
+
+**Characteristics:**
+- ✅ Persistent (survives restarts)
+- ✅ Multi-instance support
+- ✅ Resume conversations
+- ✅ Crash recovery
+- ⚠️ Requires Redis server
+- ⚠️ Slightly slower (~10-20ms overhead)
+
+### **Automatic Fallback Logic**
+
+```python
+def get_agent():
+    redis_url = os.getenv("REDIS_URL", "").strip()
+    
+    if redis_url:
+        try:
+            # Try Redis
+            checkpointer = RedisSaver(redis_client)
+            logger.info("✅ Redis enabled")
+        except ImportError:
+            # Package not installed
+            logger.warning("⚠️ langgraph-checkpoint-redis not installed")
+            checkpointer = MemorySaver()
+        except Exception as e:
+            # Connection failed
+            logger.error(f"❌ Redis connection failed: {e}")
+            logger.info("⬇️ Falling back to memory")
+            checkpointer = MemorySaver()
+    else:
+        # Default: memory
+        checkpointer = MemorySaver()
+        logger.info("🧠 In-memory mode")
+    
+    return workflow.compile(checkpointer=checkpointer)
+```
+
+**Why Graceful Fallback?**
+1. **Deployment flexibility**: Works on platforms without Redis
+2. **Development simplicity**: Don't need Redis locally
+3. **Cost optimization**: Use memory when persistence not needed
+4. **Reliability**: System never fails due to Redis issues
+
+### **When to Use Redis**
+
+**Use Redis when:**
+- ✅ Multi-user production application
+- ✅ Need conversation resumption
+- ✅ Want crash recovery
+- ✅ Running multiple instances
+- ✅ Long-running sessions
+
+**Skip Redis when:**
+- ❌ Single-user development
+- ❌ Stateless interactions
+- ❌ Cost-sensitive deployments
+- ❌ Simple demos/POCs
+
+### **Redis Configuration Options**
+
+```bash
+# Local Development (Docker)
+REDIS_URL=redis://localhost:6379
+
+# Cloud Redis (Render, Railway)
+REDIS_URL=redis://red-xxxxx:6379
+
+# Authenticated Redis
+REDIS_URL=redis://username:password@hostname:port
+
+# Redis with DB selection
+REDIS_URL=redis://localhost:6379/0
+
+# Redis with SSL
+REDIS_URL=rediss://hostname:port  # Note: rediss (with 's')
+```
+
+### **Cost Comparison**
+
+| Scenario | Redis Cost | Justification |
+|----------|------------|---------------|
+| Development | $0 (use memory) | Don't need persistence |
+| Small production (< 1000 users) | $0 (Render free 25MB) | Free tier sufficient |
+| Medium production | ~$7/month | Dedicated Redis instance |
+| Large production | $20+/month | High availability Redis |
+
+---
+
+## 🧵 Thread Management Configuration
+
+### **What are Threads?**
+
+Think of threads as **isolated conversation rooms**:
+
+```
+User Alice:
+  thread_id: "user_alice_workspace"
+  ├─ "Write a calculator" → Generated code
+  ├─ "Add division" → Updated code
+  └─ "Add error handling" → Final code
+  
+User Bob (completely isolated):
+  thread_id: "user_bob_project"
+  ├─ "Sort algorithm" → Generated code
+  └─ "Optimize for large arrays" → Updated code
+```
+
+### **Thread ID Patterns**
+
+```python
+# Auto-generated (default)
+thread_id = f"thread_{uuid.uuid4().hex[:12]}"
+# Example: thread_a1b2c3d4e5f6
+
+# User-based
+thread_id = f"user_{user_id}_session"
+# Example: user_12345_session
+
+# Project-based
+thread_id = f"project_{project_name}"
+# Example: project_sorting_algorithms
+
+# Time-based
+thread_id = f"thread_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+# Example: thread_20260809_143052
+```
+
+### **Thread Configuration in Request**
+
+```json
+// No thread_id = new conversation
+{
+  "task": "Write fibonacci function"
+}
+// Response: thread_id = "thread_abc123"
+
+// With thread_id = continue conversation
+{
+  "task": "Add error handling",
+  "thread_id": "thread_abc123"
+}
+// Response: same thread_id, has previous context
+```
+
+### **Thread API Endpoints**
+
+```python
+# List all threads
+GET /threads
+→ Returns: ["thread_abc123", "thread_def456", ...]
+
+# Get thread details
+GET /threads/{thread_id}
+→ Returns: checkpoint count, keys, metadata
+
+# Delete thread (cleanup)
+DELETE /threads/{thread_id}
+→ Returns: deleted checkpoints count
+```
+
+### **Thread Lifecycle Management**
+
+```python
+# Frontend tracks current thread
+let currentThreadId = null;
+
+// First request - creates thread
+const result1 = await fetch('/invoke', {
+  body: JSON.stringify({ task: "..." })
+});
+currentThreadId = result1.thread_id;  // Save it
+
+// Follow-up - continues thread
+const result2 = await fetch('/invoke', {
+  body: JSON.stringify({
+    task: "...",
+    thread_id: currentThreadId  // Use saved ID
+  })
+});
+
+// New conversation - clear thread
+currentThreadId = null;  // Start fresh
+```
+
+### **Thread Storage in Redis**
+
+```
+Keys in Redis:
+checkpoint:thread_abc123:step_1  → After Developer agent
+checkpoint:thread_abc123:step_2  → After Tester agent
+checkpoint:thread_abc123:step_3  → After Decision router
+
+Each checkpoint ~1-2 KB
+3 checkpoints per conversation
+= ~3-6 KB per thread
+```
+
+**Storage Example:**
+- 1000 threads = ~5 MB
+- 10,000 threads = ~50 MB
+- 100,000 threads = ~500 MB
+
+**Cleanup Strategy:**
+```python
+# Delete threads older than 30 days
+old_threads = get_threads_older_than(days=30)
+for thread in old_threads:
+    delete_thread(thread.id)
+
+# Per-user limits
+if user_thread_count(user_id) > 10:
+    delete_oldest_thread(user_id)
+```
+
+---
+
+## ⚙️ Environment Variable Reference
+
+### **Complete .env Configuration**
+
+```bash
+# ============================================================================
+# REQUIRED
+# ============================================================================
+
+# Groq API Key (REQUIRED)
+GROQ_API_KEY=your_groq_api_key_here
+
+# ============================================================================
+# OPTIONAL - Model Configuration
+# ============================================================================
+
+# Model Selection (default: llama-3.3-70b-versatile)
+GROQ_MODEL=llama-3.3-70b-versatile
+# Options:
+#   - llama-3.3-70b-versatile (fastest, recommended)
+#   - llama-3.1-70b-versatile
+#   - mixtral-8x7b-32768 (for long context)
+
+# ============================================================================
+# OPTIONAL - Redis Checkpointing (State Persistence)
+# ============================================================================
+
+# Redis URL (leave empty to use in-memory storage)
+# If NOT set: Uses MemorySaver (development mode)
+# If set: Uses RedisSaver (production mode)
+#
+# Local Redis:
+# REDIS_URL=redis://localhost:6379
+#
+# Cloud Redis (Render, Railway, Upstash):
+# REDIS_URL=redis://username:password@hostname:port
+#
+# Redis is OPTIONAL - agent works perfectly without it
+# Only needed for: state persistence, conversation resumption
+
+# ============================================================================
+# OPTIONAL - Production Patterns
+# ============================================================================
+
+# Circuit Breaker
+CIRCUIT_BREAKER_THRESHOLD=5      # Open after 5 failures
+CIRCUIT_BREAKER_TIMEOUT=60       # Reset after 60 seconds
+
+# Rate Limiting
+RATE_LIMIT_REQUESTS=10           # Max requests per window
+RATE_LIMIT_WINDOW=60             # Window in seconds
+
+# Request Timeout
+REQUEST_TIMEOUT=30               # Seconds per LLM call
+
+# Max Self-Correction Iterations (can be overridden per request)
+MAX_ITERATIONS=3                 # Default: 3 (range: 1-10)
+
+# ============================================================================
+# OPTIONAL - Logging
+# ============================================================================
+
+# Log Level (default: INFO)
+LOG_LEVEL=INFO
+# Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+
+# ============================================================================
+# OPTIONAL - Server Configuration
+# ============================================================================
+
+# Server Port (default: 8000)
+PORT=8000
+
+# Host (default: 0.0.0.0 for Docker/Cloud)
+HOST=0.0.0.0
+```
+
+### **Configuration by Environment**
+
+#### **Development**
+```bash
+GROQ_API_KEY=your_key
+# REDIS_URL=                      # Empty (use memory)
+LOG_LEVEL=DEBUG                   # Verbose logging
+RATE_LIMIT_REQUESTS=100           # Relaxed
+CIRCUIT_BREAKER_THRESHOLD=10      # Tolerant
+```
+
+#### **Staging**
+```bash
+GROQ_API_KEY=staging_key
+REDIS_URL=redis://staging:6379    # Test Redis
+LOG_LEVEL=INFO                    # Standard logging
+RATE_LIMIT_REQUESTS=20            # Similar to prod
+CIRCUIT_BREAKER_THRESHOLD=5       # Production settings
+```
+
+#### **Production**
+```bash
+GROQ_API_KEY=prod_key
+REDIS_URL=redis://prod:6379       # Production Redis
+LOG_LEVEL=WARNING                 # Minimal logging
+RATE_LIMIT_REQUESTS=10            # Strict limits
+CIRCUIT_BREAKER_THRESHOLD=5       # Strict protection
+```
+
+---
+
+## 🎯 Configuration Decision Tree
+
+### **Should I enable Redis?**
+
+```
+Do you need conversation history?
+├─ NO → Use memory (Redis not needed) ✅
+└─ YES → Continue...
+    │
+    Are you in production?
+    ├─ NO → Use memory for now (add Redis later) ✅
+    └─ YES → Continue...
+        │
+        Do you have multiple app instances?
+        ├─ NO → Memory works (but Redis recommended) ⚠️
+        └─ YES → MUST use Redis for shared state ✅
+```
+
+### **What log level should I use?**
+
+```
+Environment?
+├─ Development → DEBUG (see everything)
+├─ Staging → INFO (standard logging)
+└─ Production → WARNING (only issues)
+```
+
+### **What rate limit should I set?**
+
+```
+Application type?
+├─ Public API → 10 req/min (strict) ✅
+├─ Internal tool → 50 req/min (relaxed)
+└─ Development → 100+ req/min (unlimited)
+```
+
+---
+
+## 📚 Configuration Best Practices
+
+### **1. Never Hardcode Secrets**
+```python
+# ❌ BAD
+GROQ_API_KEY = "gsk_1234567890"
+
+# ✅ GOOD
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+```
+
+### **2. Provide Sensible Defaults**
+```python
+# ✅ GOOD
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+MAX_ITERATIONS = int(os.getenv("MAX_ITERATIONS", "3"))
+```
+
+### **3. Validate Configuration on Startup**
+```python
+def validate_config():
+    if not os.getenv("GROQ_API_KEY"):
+        raise ValueError("GROQ_API_KEY required")
+    
+    log_level = os.getenv("LOG_LEVEL", "INFO")
+    if log_level not in ["DEBUG", "INFO", "WARNING", "ERROR"]:
+        raise ValueError(f"Invalid LOG_LEVEL: {log_level}")
+```
+
+### **4. Document Every Variable**
+```bash
+# ✅ GOOD: Documented in .env.example
+# Groq API Key (Required)
+# Get your free key: https://console.groq.com
+GROQ_API_KEY=your_api_key_here
+```
+
+### **5. Use Type Hints**
+```python
+# ✅ GOOD
+def get_config_value(key: str, default: str = "") -> str:
+    return os.getenv(key, default)
+
+def get_config_int(key: str, default: int) -> int:
+    return int(os.getenv(key, str(default)))
+```
+
+---
+
+## 🔍 Troubleshooting Configuration
+
+### **Issue: "GROQ_API_KEY not found"**
+```bash
+# Check if .env file exists
+ls -la .env
+
+# Check if variable is set
+echo $GROQ_API_KEY
+
+# Load .env manually (if needed)
+export $(cat .env | xargs)
+```
+
+### **Issue: "Redis connection failed"**
+```bash
+# Check Redis is running
+redis-cli ping
+# Should return: PONG
+
+# Check REDIS_URL format
+echo $REDIS_URL
+# Should be: redis://host:port
+
+# Test connection
+python -c "import redis; r = redis.from_url('redis://localhost:6379'); r.ping()"
+```
+
+### **Issue: "Rate limit too strict"**
+```bash
+# Temporarily increase for testing
+export RATE_LIMIT_REQUESTS=100
+
+# Or update .env
+echo "RATE_LIMIT_REQUESTS=100" >> .env
+```
+
+---
+
+**Last Updated:** August 9, 2026  
+**Version:** 2.0.0  
+**New Sections:** Redis Configuration, Thread Management, Environment Variables Complete Reference
