@@ -274,17 +274,88 @@
                 New Run
             </button>
             
-            <!-- Thread Info Display -->
-            <div id="threadInfo" class="hidden mt-3 p-3 bg-primary/5 border border-primary/20 rounded-lg">
-                <div class="flex items-start justify-between gap-2">
-                    <div class="flex-1 min-w-0">
-                        <div class="text-xs font-semibold text-primary mb-1">Active Thread</div>
-                        <div id="threadIdDisplay" class="text-xs font-mono text-on-surface-variant truncate" title="">-</div>
-                    </div>
-                    <button id="endThreadBtn" class="shrink-0 text-on-surface-variant hover:text-error" title="End thread">
-                        <span class="material-symbols-outlined text-base">close</span>
-                    </button>
+            <!-- Production Features Display -->
+            <div class="mt-3 p-3 bg-gradient-to-br from-primary/5 to-secondary/5 border border-primary/20 rounded-lg">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="material-symbols-outlined text-sm text-primary">verified</span>
+                    <div class="text-xs font-bold text-primary">PRODUCTION GRADE</div>
                 </div>
+                
+                <!-- Production Pattern Badges -->
+                <div class="space-y-1.5">
+                    <!-- Thread Management -->
+                    <div id="threadStatusBadge" class="flex items-center justify-between text-xs bg-white/50 rounded px-2 py-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-gray-400" id="threadStatusDot"></span>
+                            <span class="font-medium text-on-surface-variant">Thread</span>
+                        </div>
+                        <span id="threadStatusText" class="text-[10px] text-on-surface-variant">Idle</span>
+                    </div>
+                    
+                    <!-- Redis Checkpointing -->
+                    <div id="redisStatusBadge" class="flex items-center justify-between text-xs bg-white/50 rounded px-2 py-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-gray-400" id="redisStatusDot"></span>
+                            <span class="font-medium text-on-surface-variant">Redis</span>
+                        </div>
+                        <span id="redisStatusText" class="text-[10px] text-on-surface-variant">Checking...</span>
+                    </div>
+                    
+                    <!-- Self-Correction -->
+                    <div class="flex items-center justify-between text-xs bg-white/50 rounded px-2 py-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+                            <span class="font-medium text-on-surface-variant">Self-Fix</span>
+                        </div>
+                        <span class="text-[10px] text-on-surface-variant">3 Iter</span>
+                    </div>
+                    
+                    <!-- Rate Limiting -->
+                    <div class="flex items-center justify-between text-xs bg-white/50 rounded px-2 py-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+                            <span class="font-medium text-on-surface-variant">Rate Limit</span>
+                        </div>
+                        <span class="text-[10px] text-on-surface-variant">10/min</span>
+                    </div>
+                    
+                    <!-- Circuit Breaker -->
+                    <div id="circuitBreakerBadge" class="flex items-center justify-between text-xs bg-white/50 rounded px-2 py-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-success" id="circuitStatusDot"></span>
+                            <span class="font-medium text-on-surface-variant">Circuit</span>
+                        </div>
+                        <span id="circuitStatusText" class="text-[10px] text-on-surface-variant">Closed</span>
+                    </div>
+                    
+                    <!-- Multi-Language -->
+                    <div class="flex items-center justify-between text-xs bg-white/50 rounded px-2 py-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+                            <span class="font-medium text-on-surface-variant">Languages</span>
+                        </div>
+                        <span class="text-[10px] text-on-surface-variant">3 Types</span>
+                    </div>
+                </div>
+                
+                <!-- Collapsible Thread Details -->
+                <div id="threadDetails" class="hidden mt-2 pt-2 border-t border-primary/10">
+                    <div class="text-[10px] font-semibold text-primary mb-1">ACTIVE THREAD</div>
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex-1 min-w-0">
+                            <div id="threadIdDisplay" class="text-[10px] font-mono text-on-surface-variant truncate" title="">-</div>
+                        </div>
+                        <button id="endThreadBtn" class="shrink-0 text-on-surface-variant hover:text-error" title="End thread">
+                            <span class="material-symbols-outlined" style="font-size: 14px;">close</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Toggle Details Button -->
+                <button id="toggleProductionDetails" class="w-full mt-2 text-[10px] text-primary hover:text-primary/80 font-medium flex items-center justify-center gap-1">
+                    <span>View Details</span>
+                    <span class="material-symbols-outlined" style="font-size: 12px;">expand_more</span>
+                </button>
             </div>
         </div>
         
@@ -650,9 +721,18 @@
         const sidebar = document.getElementById('sidebar');
         
         // Thread management elements
-        const threadInfo = document.getElementById('threadInfo');
+        const threadDetails = document.getElementById('threadDetails');
         const threadIdDisplay = document.getElementById('threadIdDisplay');
         const endThreadBtn = document.getElementById('endThreadBtn');
+        const toggleProductionDetails = document.getElementById('toggleProductionDetails');
+        
+        // Production status elements
+        const threadStatusDot = document.getElementById('threadStatusDot');
+        const threadStatusText = document.getElementById('threadStatusText');
+        const redisStatusDot = document.getElementById('redisStatusDot');
+        const redisStatusText = document.getElementById('redisStatusText');
+        const circuitStatusDot = document.getElementById('circuitStatusDot');
+        const circuitStatusText = document.getElementById('circuitStatusText');
         
         // Nodes
         const nodeStart = document.getElementById('nodeStart');
@@ -1307,7 +1387,7 @@
             
             // Display with proper formatting
             codeDisplay.innerHTML = `<div class="code-container"><pre class="font-mono text-sm leading-relaxed bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">${highlighted}</pre></div>`;
-        }
+        
         
         function celebrateSuccess() {
             // Confetti animation
@@ -1547,10 +1627,28 @@
         
         // Thread Management Functions
         function updateThreadDisplay(threadId, checkpointed) {
-            if (threadInfo && threadIdDisplay) {
-                threadInfo.classList.remove('hidden');
+            if (threadDetails && threadIdDisplay) {
+                threadDetails.classList.remove('hidden');
                 threadIdDisplay.textContent = threadId;
                 threadIdDisplay.title = threadId;
+                
+                // Update thread status badge
+                if (threadStatusDot && threadStatusText) {
+                    threadStatusDot.classList.remove('bg-gray-400');
+                    threadStatusDot.classList.add('bg-success', 'animate-pulse');
+                    threadStatusText.textContent = 'Active';
+                }
+                
+                // Update Redis status badge
+                if (checkpointed && redisStatusDot && redisStatusText) {
+                    redisStatusDot.classList.remove('bg-gray-400', 'bg-warning');
+                    redisStatusDot.classList.add('bg-success');
+                    redisStatusText.textContent = 'Connected';
+                } else if (redisStatusDot && redisStatusText) {
+                    redisStatusDot.classList.remove('bg-gray-400', 'bg-success');
+                    redisStatusDot.classList.add('bg-warning');
+                    redisStatusText.textContent = 'In-Memory';
+                }
                 
                 if (checkpointed) {
                     addTimelineItem(`💾 Thread persisted: ${threadId.substring(0, 16)}...`, 'info');
@@ -1560,14 +1658,100 @@
         
         function clearThread() {
             currentThreadId = null;
-            if (threadInfo) {
-                threadInfo.classList.add('hidden');
+            if (threadDetails) {
+                threadDetails.classList.add('hidden');
             }
             if (threadIdDisplay) {
                 threadIdDisplay.textContent = '-';
                 threadIdDisplay.title = '';
             }
+            
+            // Update thread status badge
+            if (threadStatusDot && threadStatusText) {
+                threadStatusDot.classList.remove('bg-success', 'animate-pulse');
+                threadStatusDot.classList.add('bg-gray-400');
+                threadStatusText.textContent = 'Idle';
+            }
         }
+        
+        // Toggle production details panel
+        if (toggleProductionDetails) {
+            toggleProductionDetails.addEventListener('click', () => {
+                const isHidden = threadDetails.classList.contains('hidden');
+                if (isHidden && currentThreadId) {
+                    threadDetails.classList.remove('hidden');
+                    toggleProductionDetails.querySelector('span:last-child').textContent = 'expand_less';
+                    toggleProductionDetails.querySelector('span:first-child').textContent = 'Hide Details';
+                } else if (!isHidden) {
+                    threadDetails.classList.add('hidden');
+                    toggleProductionDetails.querySelector('span:last-child').textContent = 'expand_more';
+                    toggleProductionDetails.querySelector('span:first-child').textContent = 'View Details';
+                } else {
+                    showToast('No active thread to display', 'info');
+                }
+            });
+        }
+        
+        // Check health endpoint to update circuit breaker status
+        async function checkSystemHealth() {
+            try {
+                const response = await fetch(window.location.origin + '/health');
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Update circuit breaker status
+                    if (data.circuit_breaker) {
+                        const isOpen = data.circuit_breaker.open;
+                        if (circuitStatusDot && circuitStatusText) {
+                            if (isOpen) {
+                                circuitStatusDot.classList.remove('bg-success');
+                                circuitStatusDot.classList.add('bg-error', 'animate-pulse');
+                                circuitStatusText.textContent = 'Open';
+                            } else {
+                                circuitStatusDot.classList.remove('bg-error', 'animate-pulse');
+                                circuitStatusDot.classList.add('bg-success');
+                                circuitStatusText.textContent = 'Closed';
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.warn('Health check failed:', error);
+            }
+        }
+        
+        // Initial health check
+        checkSystemHealth();
+        
+        // Check Redis status on page load
+        async function checkRedisStatus() {
+            try {
+                const response = await fetch(THREADS_API_URL);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (redisStatusDot && redisStatusText) {
+                        if (data.checkpointing_enabled) {
+                            redisStatusDot.classList.remove('bg-gray-400', 'bg-warning');
+                            redisStatusDot.classList.add('bg-success');
+                            redisStatusText.textContent = 'Connected';
+                        } else {
+                            redisStatusDot.classList.remove('bg-gray-400', 'bg-success');
+                            redisStatusDot.classList.add('bg-warning');
+                            redisStatusText.textContent = 'In-Memory';
+                        }
+                    }
+                }
+            } catch (error) {
+                if (redisStatusDot && redisStatusText) {
+                    redisStatusDot.classList.remove('bg-success', 'bg-gray-400');
+                    redisStatusDot.classList.add('bg-warning');
+                    redisStatusText.textContent = 'In-Memory';
+                }
+            }
+        }
+        
+        // Check Redis on load
+        checkRedisStatus();
         
         async function deleteThread(threadId) {
             if (!threadId) return;
