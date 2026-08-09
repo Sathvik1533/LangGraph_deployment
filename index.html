@@ -410,7 +410,7 @@
         <div class="flex-1 flex flex-col lg:flex-row overflow-hidden w-full">
             
             <!-- LEFT COLUMN: Workflow Visualization + Timeline -->
-            <section class="w-full lg:w-1/3 bg-white border-b lg:border-b-0 lg:border-r border-outline-variant flex flex-col overflow-hidden">
+            <section class="w-full lg:w-1/3 bg-white border-b lg:border-b-0 lg:border-r border-outline-variant flex flex-col overflow-hidden" style="height: calc(100vh - 56px);">
                 <div class="p-6 lg:p-8 border-b border-outline-variant shrink-0">
                     <h2 class="text-xl lg:text-2xl font-bold text-on-surface flex items-center gap-3">
                         <span class="material-symbols-outlined text-2xl lg:text-3xl">account_tree</span>
@@ -507,7 +507,7 @@
                             Execution Timeline
                             <span id="timelineCounter" class="hidden ml-auto text-sm font-mono bg-primary/10 text-primary px-3 py-1 rounded-full">0 steps</span>
                         </h3>
-                        <div id="timeline" class="relative pl-4 lg:pl-6 border-l-2 border-surface-variant flex flex-col gap-3 lg:gap-4 max-h-64 overflow-y-auto custom-scrollbar">
+                        <div id="timeline" class="relative pl-4 lg:pl-6 border-l-2 border-surface-variant flex flex-col gap-3 lg:gap-4 min-h-[200px] overflow-visible">
                             <div class="text-sm text-on-surface-variant italic">Waiting for execution...</div>
                         </div>
                         
@@ -1264,32 +1264,75 @@
             // Store the code
             generatedCode = code;
             
-            // Clean up ALL markdown formatting artifacts
+            // AGGRESSIVE CLEANING - Remove ALL non-code artifacts
             let cleanCode = code
-                .replace(/```python\s*/g, '')     // Remove ```python
-                .replace(/```java\s*/g, '')       // Remove ```java
-                .replace(/```cpp\s*/g, '')        // Remove ```cpp
-                .replace(/```c\+\+\s*/g, '')      // Remove ```c++
-                .replace(/```\s*/g, '')           // Remove any other ```
-                .replace(/###\s*/g, '')           // Remove ### headers
-                .replace(/##\s*/g, '')            // Remove ## headers
-                .replace(/\*\*(.+?)\*\*/g, '$1')  // Remove **bold**
-                .replace(/\*(.+?)\*/g, '$1')      // Remove *italic*
-                .replace(/<br\s*\/?>/gi, '\n')    // Convert <br> to newlines
+                // Remove markdown code fences
+                .replace(/```python\s*/gi, '')
+                .replace(/```java\s*/gi, '')
+                .replace(/```cpp\s*/gi, '')
+                .replace(/```c\+\+\s*/gi, '')
+                .replace(/```javascript\s*/gi, '')
+                .replace(/```\s*/g, '')
+                // Remove markdown headers
+                .replace(/###\s*/g, '')
+                .replace(/##\s*/g, '')
+                .replace(/#\s+/gm, '')
+                // Remove markdown formatting
+                .replace(/\*\*(.+?)\*\*/g, '$1')
+                .replace(/\*(.+?)\*/g, '$1')
+                .replace(/_(.+?)_/g, '$1')
+                // Remove HTML tags
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/<\/?[^>]+(>|$)/g, '')
+                // Remove quotes around keywords (e.g., "keyword" -> just remove it)
+                .replace(/"keyword"[>\s]*/gi, '')
+                .replace(/'keyword'[>\s]*/gi, '')
+                // Remove any remaining "keyword" text
+                .replace(/keyword\s*>/gi, '')
+                .replace(/>\s*keyword/gi, '')
                 .trim();
             
-            // Extract pure code from markdown code blocks if present
-            const patterns = [
-                /```(?:python|java|cpp|c\+\+)?\s*([\s\S]*?)```/,  // Code block with optional language
-                /^[\s\S]*?```\s*([\s\S]*?)```[\s\S]*$/  // Any code block
+            // Extract ONLY code from markdown blocks if present
+            const codeBlockPatterns = [
+                /```(?:python|java|cpp|c\+\+|javascript)?\s*([\s\S]*?)```/i,
+                /~~~(?:python|java|cpp|c\+\+)?\s*([\s\S]*?)~~~/i
             ];
             
-            for (const pattern of patterns) {
+            for (const pattern of codeBlockPatterns) {
                 const match = cleanCode.match(pattern);
                 if (match && match[1]) {
                     cleanCode = match[1].trim();
                     break;
                 }
+            }
+            
+            // Final cleanup - remove any leading/trailing non-code text
+            const lines = cleanCode.split('\n');
+            const codeLines = [];
+            let inCode = false;
+            
+            for (const line of lines) {
+                const trimmed = line.trim();
+                // Start capturing when we see actual code patterns
+                if (!inCode && (
+                    trimmed.startsWith('def ') || trimmed.startsWith('class ') ||
+                    trimmed.startsWith('import ') || trimmed.startsWith('from ') ||
+                    trimmed.startsWith('public ') || trimmed.startsWith('private ') ||
+                    trimmed.startsWith('#include') || trimmed.startsWith('int ') ||
+                    trimmed.startsWith('void ') || trimmed.startsWith('package ') ||
+                    trimmed.startsWith('function ') || trimmed.startsWith('const ') ||
+                    trimmed.startsWith('let ') || trimmed.startsWith('var ')
+                )) {
+                    inCode = true;
+                }
+                
+                if (inCode) {
+                    codeLines.push(line);
+                }
+            }
+            
+            if (codeLines.length > 0) {
+                cleanCode = codeLines.join('\n').trim();
             }
             
             // Apply syntax highlighting based on language
@@ -1364,12 +1407,37 @@
                 languageIndicator.textContent = languageNames[lang] || lang;
             }
             
-            // Re-display code with new syntax highlighting if code exists
-            if (generatedCode) {
-                displayCode(generatedCode);
-            }
+            // Show toast that language will be used for NEXT generation
+            showToast(`Language switched to ${languageNames[lang]}. Click "Generate Code" to create ${languageNames[lang]} code.`, 'info');
             
-            showToast(`Language switched to ${languageNames[lang]}`, 'info');
+            // If there's existing code, show a message that user needs to regenerate
+            if (generatedCode) {
+                const codeDisplay = document.getElementById('codeDisplay');
+                if (codeDisplay) {
+                    // Add overlay message
+                    const overlay = document.createElement('div');
+                    overlay.id = 'languageChangeOverlay';
+                    overlay.className = 'absolute inset-0 bg-black/50 flex items-center justify-center z-10 rounded-lg';
+                    overlay.innerHTML = `
+                        <div class="bg-white p-4 rounded-lg shadow-xl max-w-md text-center">
+                            <span class="material-symbols-outlined text-4xl text-primary mb-2">refresh</span>
+                            <h3 class="font-bold text-lg mb-2">Language Changed to ${languageNames[lang]}</h3>
+                            <p class="text-sm text-on-surface-variant mb-3">Click "Generate Code" to create new ${languageNames[lang]} code</p>
+                            <button onclick="document.getElementById('languageChangeOverlay').remove()" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-600">
+                                Got it
+                            </button>
+                        </div>
+                    `;
+                    const codeContainer = codeDisplay.closest('.flex-1');
+                    if (codeContainer && codeContainer.style.position !== 'relative') {
+                        codeContainer.style.position = 'relative';
+                    }
+                    // Remove old overlay if exists
+                    const oldOverlay = document.getElementById('languageChangeOverlay');
+                    if (oldOverlay) oldOverlay.remove();
+                    codeContainer.appendChild(overlay);
+                }
+            }
         }
             const codeBlockMatch = cleanCode.match(/```python\s*([\s\S]*?)```/);
             if (codeBlockMatch) {
@@ -1466,7 +1534,13 @@
             // DEVELOPER AGENT
             activateNode(nodeDeveloper, 'purple');
             showNodeStatus(nodeDeveloper, developerStatus, 'Generating...');
-            addTimelineItem(`👨‍💻 Developer Agent: Generating ${selectedLanguage.toUpperCase()} code`, 'active');
+            const languageNames = {
+                'python': 'Python',
+                'java': 'Java',
+                'cpp': 'C++'
+            };
+            const languageName = languageNames[selectedLanguage] || selectedLanguage.toUpperCase();
+            addTimelineItem(`👨‍💻 Developer Agent: Generating ${languageName} code`, 'active');
             
             try {
                 // Build language-specific task prompt
