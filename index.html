@@ -492,14 +492,51 @@
                     </div>
                 </div>
                 
-                <!-- Execution Report Card -->
-                <div id="reportSection" class="hidden bg-white border-t border-outline-variant max-h-48 lg:max-h-64 overflow-y-auto custom-scrollbar">
-                    <div class="p-4 lg:p-6">
-                        <h3 class="text-base lg:text-lg font-semibold mb-3 flex items-center gap-2 text-on-surface">
-                            <span class="material-symbols-outlined text-lg lg:text-xl">terminal</span>
-                            Execution Report
+                <!-- Enhanced Report Panel with Tabs -->
+                <div id="reportSection" class="hidden bg-white border-t border-outline-variant flex flex-col" style="max-height: 400px;">
+                    <!-- Report Header with Tabs -->
+                    <div class="px-4 lg:px-6 py-3 lg:py-4 border-b border-outline-variant shrink-0">
+                        <h3 class="text-base lg:text-lg font-bold text-on-surface flex items-center gap-2 mb-3">
+                            <span class="material-symbols-outlined text-lg lg:text-xl">analytics</span>
+                            Report
                         </h3>
-                        <div id="reportDisplay" class="text-sm text-on-surface whitespace-pre-wrap font-mono"></div>
+                        
+                        <!-- Tab Navigation -->
+                        <div class="flex gap-1 border-b border-outline-variant">
+                            <button class="report-tab active px-4 py-2 text-sm font-medium border-b-2 border-primary text-primary transition-all" data-tab="tests">
+                                Tests
+                            </button>
+                            <button class="report-tab px-4 py-2 text-sm font-medium border-b-2 border-transparent text-on-surface-variant hover:text-on-surface transition-all" data-tab="output">
+                                Output
+                            </button>
+                            <button class="report-tab px-4 py-2 text-sm font-medium border-b-2 border-transparent text-on-surface-variant hover:text-on-surface transition-all" data-tab="metrics">
+                                Metrics
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Tab Content Container -->
+                    <div class="flex-1 overflow-y-auto custom-scrollbar">
+                        <!-- Tests Tab -->
+                        <div id="testsTab" class="tab-content p-4 lg:p-6">
+                            <div id="testResults" class="space-y-3">
+                                <div class="text-sm text-on-surface-variant italic">No tests run yet</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Output Tab -->
+                        <div id="outputTab" class="tab-content hidden p-4 lg:p-6">
+                            <div id="outputDisplay" class="text-sm font-mono whitespace-pre-wrap text-on-surface">
+                                <div class="text-on-surface-variant italic">No output yet</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Metrics Tab -->
+                        <div id="metricsTab" class="tab-content hidden p-4 lg:p-6">
+                            <div id="metricsDisplay" class="space-y-4">
+                                <div class="text-sm text-on-surface-variant italic">No metrics yet</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -551,6 +588,24 @@
         // View content sections
         const workflowSection = document.querySelector('.lg\\:w-1\\/3'); // Workflow column
         const taskCodeSection = document.querySelector('.flex-1.flex.flex-col.bg-surface'); // Task+Code column
+        
+        // Report tabs
+        const reportTabs = document.querySelectorAll('.report-tab');
+        const testResults = document.getElementById('testResults');
+        const outputDisplay = document.getElementById('outputDisplay');
+        const metricsDisplay = document.getElementById('metricsDisplay');
+        
+        // Metrics tracking
+        let executionMetrics = {
+            startTime: null,
+            endTime: null,
+            totalTime: 0,
+            iterations: 0,
+            tokensUsed: 0,
+            testsTotal: 0,
+            testsPassed: 0,
+            testsFailed: 0
+        };
         
         // View switching function
         function switchToView(viewName) {
@@ -634,6 +689,26 @@
             }
             showToast('Viewing History - Feature coming soon', 'info');
         }
+        
+        // Report tab switching
+        reportTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Update active tab
+                reportTabs.forEach(t => {
+                    t.classList.remove('active', 'border-primary', 'text-primary');
+                    t.classList.add('border-transparent', 'text-on-surface-variant');
+                });
+                tab.classList.add('active', 'border-primary', 'text-primary');
+                tab.classList.remove('border-transparent', 'text-on-surface-variant');
+                
+                // Show corresponding content
+                const tabName = tab.dataset.tab;
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.add('hidden');
+                });
+                document.getElementById(`${tabName}Tab`).classList.remove('hidden');
+            });
+        });
         
         // Navigation click handlers
         document.querySelectorAll('.nav-item').forEach(item => {
@@ -804,6 +879,7 @@
             // Reset state
             isGenerating = true;
             startTime = Date.now();
+            executionMetrics.startTime = Date.now();
             currentIteration = 0;
             generateBtn.disabled = true;
             generateBtnText.textContent = 'Generating...';
@@ -812,9 +888,10 @@
             timeline.innerHTML = '';
             codeDisplay.innerHTML = '<div class="text-sm lg:text-base text-on-surface-variant italic">Generating code...</div>';
             const reportSection = document.getElementById('reportSection');
-            const reportDisplay = document.getElementById('reportDisplay');
             reportSection.classList.add('hidden');
-            reportDisplay.innerHTML = '';
+            testResults.innerHTML = '';
+            outputDisplay.innerHTML = '';
+            metricsDisplay.innerHTML = '';
             
             // Activate workflow
             activateNode(nodeStart, 'green');
@@ -915,6 +992,157 @@
             
             // Show report section
             const reportSection = document.getElementById('reportSection');
+            reportSection.classList.remove('hidden');
+            
+            // Parse and display tests
+            parseAndDisplayTests(report, data.iterations);
+            
+            // Display raw output
+            displayOutput(report);
+            
+            // Display metrics
+            displayMetrics(data);
+        }
+        
+        function parseAndDisplayTests(report, iterations) {
+            testResults.innerHTML = '';
+            
+            // Parse test cases from report
+            const testMatches = report.matchAll(/Test (\d+):(.*?)(?=Test \d+:|$)/gs);
+            let testIndex = 1;
+            
+            for (const match of testMatches) {
+                const testContent = match[2].trim();
+                const testName = testContent.split('\n')[0].trim();
+                const isPassed = testContent.includes('✓') || testContent.includes('PASS') || !testContent.includes('FAIL');
+                const isFailed = testContent.includes('✗') || testContent.includes('FAIL') || testContent.includes('Error');
+                const wasFixed = isFailed && iterations > 1;
+                
+                const testCard = document.createElement('div');
+                testCard.className = `border-2 ${isPassed ? 'border-success' : 'border-error'} rounded-lg p-4 bg-white`;
+                
+                testCard.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined text-2xl ${isPassed ? 'text-success' : 'text-error'}">
+                            ${isPassed ? 'check_circle' : 'cancel'}
+                        </span>
+                        <div class="flex-1">
+                            <div class="font-semibold text-on-surface mb-1">Test ${testIndex}: ${testName}</div>
+                            <div class="text-sm text-on-surface-variant font-mono mb-2">${testContent.split('\n').slice(1, 3).join('\n')}</div>
+                            <span class="inline-block px-3 py-1 rounded text-xs font-semibold ${isPassed ? 'bg-success/10 text-success' : 'bg-error/10 text-error'}">
+                                ${isPassed ? 'PASSED' : `FAILED ${wasFixed ? '(ITER ' + iterations + ')' : ''}`}
+                            </span>
+                            ${wasFixed ? '<div class="text-xs text-on-surface-variant italic mt-2">Corrected in iteration ' + iterations + '</div>' : ''}
+                        </div>
+                    </div>
+                `;
+                
+                testResults.appendChild(testCard);
+                testIndex++;
+            }
+            
+            // If no tests found, show general result
+            if (testIndex === 1) {
+                const hasSuccess = report.includes('✅') || report.includes('success');
+                const hasError = report.includes('❌') || report.includes('Error') || report.includes('FAIL');
+                
+                const resultCard = document.createElement('div');
+                resultCard.className = `border-2 ${hasSuccess && !hasError ? 'border-success' : 'border-error'} rounded-lg p-4 bg-white`;
+                resultCard.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined text-2xl ${hasSuccess && !hasError ? 'text-success' : 'text-error'}">
+                            ${hasSuccess && !hasError ? 'check_circle' : 'cancel'}
+                        </span>
+                        <div class="flex-1">
+                            <div class="font-semibold text-on-surface mb-1">Execution Result</div>
+                            <div class="text-sm text-on-surface-variant mb-2">${report.substring(0, 200)}...</div>
+                            <span class="inline-block px-3 py-1 rounded text-xs font-semibold ${hasSuccess && !hasError ? 'bg-success/10 text-success' : 'bg-error/10 text-error'}">
+                                ${hasSuccess && !hasError ? 'PASSED' : 'FAILED'}
+                            </span>
+                        </div>
+                    </div>
+                `;
+                testResults.appendChild(resultCard);
+            }
+            
+            // Update metrics
+            executionMetrics.testsTotal = testIndex - 1;
+            executionMetrics.testsPassed = document.querySelectorAll('.text-success').length;
+            executionMetrics.testsFailed = executionMetrics.testsTotal - executionMetrics.testsPassed;
+        }
+        
+        function displayOutput(report) {
+            outputDisplay.innerHTML = `<pre class="text-sm">${report}</pre>`;
+        }
+        
+        function displayMetrics(data) {
+            executionMetrics.endTime = Date.now();
+            executionMetrics.totalTime = ((executionMetrics.endTime - executionMetrics.startTime) / 1000).toFixed(2);
+            executionMetrics.iterations = data.iterations || 1;
+            
+            // Estimate tokens (rough approximation: 1 token ≈ 4 characters)
+            const totalChars = (data.code?.length || 0) + (data.report?.length || 0);
+            executionMetrics.tokensUsed = Math.round(totalChars / 4);
+            
+            metricsDisplay.innerHTML = `
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Run Matrix -->
+                    <div class="col-span-2 bg-primary/5 border border-primary/20 rounded-lg p-4">
+                        <div class="text-xs font-semibold text-primary mb-3">RUN MATRIX</div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <div class="text-2xl font-bold text-on-surface">${executionMetrics.testsTotal}</div>
+                                <div class="text-xs text-on-surface-variant">Total Tests</div>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-bold text-success">${executionMetrics.testsPassed}</div>
+                                <div class="text-xs text-on-surface-variant">Passed</div>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-bold text-error">${executionMetrics.testsFailed}</div>
+                                <div class="text-xs text-on-surface-variant">Failed</div>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-bold text-warning">${executionMetrics.iterations}</div>
+                                <div class="text-xs text-on-surface-variant">Iterations</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Total Time -->
+                    <div class="bg-tertiary/5 border border-tertiary/20 rounded-lg p-4">
+                        <div class="text-xs font-semibold text-tertiary mb-2">TOTAL TIME</div>
+                        <div class="text-3xl font-bold text-on-surface">${executionMetrics.totalTime}s</div>
+                        <div class="text-xs text-on-surface-variant mt-1">Execution Duration</div>
+                    </div>
+                    
+                    <!-- Tokens Used -->
+                    <div class="bg-secondary/5 border border-secondary/20 rounded-lg p-4">
+                        <div class="text-xs font-semibold text-secondary mb-2">TOKENS USED</div>
+                        <div class="text-3xl font-bold text-on-surface">${executionMetrics.tokensUsed.toLocaleString()}</div>
+                        <div class="text-xs text-on-surface-variant mt-1">Approx. Token Count</div>
+                    </div>
+                    
+                    <!-- Success Rate -->
+                    <div class="col-span-2 bg-success/5 border border-success/20 rounded-lg p-4">
+                        <div class="text-xs font-semibold text-success mb-2">SUCCESS RATE</div>
+                        <div class="flex items-center gap-3">
+                            <div class="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
+                                <div class="bg-success h-full transition-all duration-500" style="width: ${executionMetrics.testsTotal > 0 ? (executionMetrics.testsPassed / executionMetrics.testsTotal * 100) : 0}%"></div>
+                            </div>
+                            <div class="text-2xl font-bold text-on-surface">${executionMetrics.testsTotal > 0 ? Math.round((executionMetrics.testsPassed / executionMetrics.testsTotal) * 100) : 0}%</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function displayReport_OLD(data) {
+            // Parse report
+            const report = data.report || '';
+            
+            // Show report section
+            const reportSection = document.getElementById('reportSection');
             const reportDisplay = document.getElementById('reportDisplay');
             
             if (report && report.trim()) {
@@ -939,6 +1167,9 @@
             codeDisplay.innerHTML = '<div class="text-sm lg:text-base text-on-surface-variant italic">No code generated yet. Enter a task above and click "Generate Code".</div>';
             timeline.innerHTML = '<div class="text-sm text-on-surface-variant italic">No execution yet</div>';
             document.getElementById('reportSection').classList.add('hidden');
+            testResults.innerHTML = '';
+            outputDisplay.innerHTML = '<div class="text-on-surface-variant italic">No output yet</div>';
+            metricsDisplay.innerHTML = '<div class="text-sm text-on-surface-variant italic">No metrics yet</div>';
             iterationBadge.classList.add('hidden');
             retryArrow.classList.add('hidden');
             
@@ -947,6 +1178,18 @@
                 deactivateNode(node);
                 node.classList.remove('node-completed', 'node-error');
             });
+            
+            // Reset metrics
+            executionMetrics = {
+                startTime: null,
+                endTime: null,
+                totalTime: 0,
+                iterations: 0,
+                tokensUsed: 0,
+                testsTotal: 0,
+                testsPassed: 0,
+                testsFailed: 0
+            };
             
             showToast('Cleared', 'info');
         });
