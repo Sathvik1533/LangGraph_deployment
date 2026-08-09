@@ -170,10 +170,19 @@ def health_check():
     Returns:
         dict: Health status including circuit breaker state
     """
+    pages_status = {
+        "dashboard": os.path.exists("pages/dashboard.html"),
+        "generate": os.path.exists("pages/generate.html"),
+        "workflow": os.path.exists("pages/workflow.html"),
+        "execution": os.path.exists("pages/execution.html"),
+        "history": os.path.exists("pages/history.html")
+    }
+    
     return {
         "status": "healthy" if not _circuit_breaker_open else "degraded",
         "service": "LangGraph Self-Correcting Agent",
-        "version": "2.0.0",
+        "version": "3.0.0",
+        "pages": pages_status,
         "circuit_breaker": {
             "open": _circuit_breaker_open,
             "failures": _circuit_breaker_failures,
