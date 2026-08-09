@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History - LangGraph Agent</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/css/shared.css">
+    
+    <style>
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+        
+        .filter-chip {
+            padding: 8px 16px;
+            border: 2px solid #e5eeff;
+            border-radius: 20px;
+            background: white;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .filter-chip:hover {
+            border-color: #2563eb;
+            background: #f8f9ff;
+        }
+        
+        .filter-chip.active {
+            border-color: #2563eb;
+            background: #2563eb;
+            color: white;
+        }
+        
+        .search-box {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            border: 2px solid #e5eeff;
+            border-radius: 8px;
+            background: white;
+        }
+        
+        .search-box input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 14px;
+        }
+        
+        .history-item {
+            background: white;
+            border: 1px solid #e5eeff;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 16px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .history-item:hover {
+            border-color: #2563eb;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .history-item-header {
+            display: flex;
+            align-items: start;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        
+        .history-item-body {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e5eeff;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 500;
+        }
+        
+        .stat-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0b1c30;
+        }
+        
+        .code-preview {
+            background: #f8f9ff;
+            border: 1px solid #e5eeff;
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #434655;
+            margin-top: 12px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: 1px solid #e5eeff;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .icon-btn:hover {
+            background: #f8f9ff;
+            border-color: #2563eb;
+            color: #2563eb;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 64px 24px;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body class="h-full">
+    
+    <!-- Include Navigation -->
+    <div id="navigation"></div>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Page Header -->
+        <header class="page-header">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="page-title">
+                        <span class="material-symbols-outlined" style="font-size: 40px;">history</span>
+                        Generation History
+                    </h1>
+                    <p class="page-subtitle">View and manage your code generation history</p>
+                </div>
+                <button class="btn btn-secondary" onclick="clearHistory()">
+                    <span class="material-symbols-outlined">delete_sweep</span>
+                    Clear All
+                </button>
+            </div>
+        </header>
+        
+        <!-- Filters & Search -->
+        <div class="card mb-4">
+            <div class="filter-bar">
+                <!-- Search -->
+                <div class="search-box">
+                    <span class="material-symbols-outlined" style="color: #64748b;">search</span>
+                    <input type="text" id="searchInput" placeholder="Search by task description..." onkeyup="filterHistory()">
+                </div>
+                
+                <!-- Language Filters -->
+                <button class="filter-chip active" data-filter="all" onclick="setFilter('all')">
+                    All Languages
+                </button>
+                <button class="filter-chip" data-filter="python" onclick="setFilter('python')">
+                    🐍 Python
+                </button>
+                <button class="filter-chip" data-filter="java" onclick="setFilter('java')">
+                    ☕ Java
+                </button>
+                <button class="filter-chip" data-filter="cpp" onclick="setFilter('cpp')">
+                    ⚡ C++
+                </button>
+                
+                <!-- Status Filters -->
+                <button class="filter-chip" data-filter="success" onclick="setFilter('success')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span>
+                    Success Only
+                </button>
+            </div>
+        </div>
+        
+        <!-- History List -->
+        <div id="historyList">
+            <div class="empty-state">
+                <span class="material-symbols-outlined" style="font-size: 64px; opacity: 0.3;">history</span>
+                <p style="margin-top: 16px; font-size: 16px;">No generation history yet</p>
+                <p style="font-size: 14px; margin-top: 8px;">Start generating code to build your history</p>
+                <a href="/generate" class="btn btn-primary" style="margin-top: 24px; display: inline-flex;">
+                    <span class="material-symbols-outlined">auto_awesome</span>
+                    Generate Code
+                </a>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Scripts -->
+    <script src="/static/js/common.js"></script>
+    <script>
+        // Load navigation
+        fetch('/templates/navigation.html')
+            .then(res => res.text())
+            .then(html => {
+                document.getElementById('navigation').innerHTML = html;
+                setActiveNav('history');
+            });
+        
+        let currentFilter = 'all';
+        let allHistory = [];
+        
+        // Load history
+        function loadHistory() {
+            allHistory = JSON.parse(localStorage.getItem('recentGenerations') || '[]');
+            renderHistory(allHistory);
+        }
+        
+        function renderHistory(items) {
+            const container = document.getElementById('historyList');
+            
+            if (items.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <span class="material-symbols-outlined" style="font-size: 64px; opacity: 0.3;">history</span>
+                        <p style="margin-top: 16px; font-size: 16px;">No results found</p>
+                        <p style="font-size: 14px; margin-top: 8px;">Try adjusting your filters</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = items.map((item, index) => `
+                <div class="history-item" onclick="viewGeneration(${index})">
+                    <div class="history-item-header">
+                        <div style="flex: 1;">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="material-symbols-outlined" style="font-size: 28px; color: #2563eb;">code</span>
+                                <div>
+                                    <h3 class="font-semibold text-lg">${item.task || 'Code Generation'}</h3>
+                                    <p class="text-sm" style="color: #64748b;">${formatDate(item.timestamp)}</p>
+                                </div>
+                            </div>
+                            ${item.code ? `<div class="code-preview">${escapeHtml(item.code.substring(0, 100))}...</div>` : ''}
+                        </div>
+                        
+                        <div class="flex items-center gap-3">
+                            <span class="badge ${item.success ? 'badge-success' : 'badge-error'}">
+                                ${item.success ? '✓ Success' : '✗ Failed'}
+                            </span>
+                            <span class="badge badge-info">${getLanguageName(item.language)}</span>
+                            <div class="action-buttons" onclick="event.stopPropagation()">
+                                <button class="icon-btn" onclick="viewGeneration(${index})" title="View">
+                                    <span class="material-symbols-outlined">visibility</span>
+                                </button>
+                                <button class="icon-btn" onclick="downloadHistoryItem(${index})" title="Download">
+                                    <span class="material-symbols-outlined">download</span>
+                                </button>
+                                <button class="icon-btn" onclick="deleteHistoryItem(${index})" title="Delete">
+                                    <span class="material-symbols-outlined">delete</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="history-item-body">
+                        <div class="stat-item">
+                            <span class="stat-label">Language</span>
+                            <span class="stat-value">${getLanguageName(item.language)}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Status</span>
+                            <span class="stat-value" style="color: ${item.success ? '#10b981' : '#ef4444'};">
+                                ${item.success ? 'Passed' : 'Failed'}
+                            </span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Lines</span>
+                            <span class="stat-value">${item.code ? item.code.split('\n').length : 0}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Date</span>
+                            <span class="stat-value">${new Date(item.timestamp).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function setFilter(filter) {
+            currentFilter = filter;
+            
+            // Update active filter button
+            document.querySelectorAll('.filter-chip').forEach(chip => {
+                if (chip.dataset.filter === filter) {
+                    chip.classList.add('active');
+                } else {
+                    chip.classList.remove('active');
+                }
+            });
+            
+            filterHistory();
+        }
+        
+        function filterHistory() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            let filtered = allHistory;
+            
+            // Apply language filter
+            if (currentFilter !== 'all' && currentFilter !== 'success') {
+                filtered = filtered.filter(item => item.language === currentFilter);
+            }
+            
+            // Apply success filter
+            if (currentFilter === 'success') {
+                filtered = filtered.filter(item => item.success);
+            }
+            
+            // Apply search filter
+            if (searchTerm) {
+                filtered = filtered.filter(item => 
+                    (item.task || '').toLowerCase().includes(searchTerm) ||
+                    (item.code || '').toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            renderHistory(filtered);
+        }
+        
+        function viewGeneration(index) {
+            const item = allHistory[index];
+            
+            // Save as last generation for other pages
+            localStorage.setItem('lastGeneration', JSON.stringify({
+                code: item.code,
+                report: item.report,
+                execution_success: item.success,
+                iterations: 1,
+                language: item.language
+            }));
+            
+            // Navigate to generate page
+            window.location.href = '/generate';
+        }
+        
+        function downloadHistoryItem(index) {
+            const item = allHistory[index];
+            if (item.code) {
+                const ext = getFileExtension(item.language);
+                downloadFile(item.code, `generation_${index}${ext}`);
+            }
+        }
+        
+        function deleteHistoryItem(index) {
+            if (confirm('Delete this generation from history?')) {
+                allHistory.splice(index, 1);
+                localStorage.setItem('recentGenerations', JSON.stringify(allHistory));
+                filterHistory();
+                showToast('Generation deleted', 'success');
+            }
+        }
+        
+        function clearHistory() {
+            if (confirm('Clear all generation history? This cannot be undone.')) {
+                localStorage.removeItem('recentGenerations');
+                localStorage.removeItem('lastGeneration');
+                allHistory = [];
+                renderHistory([]);
+                showToast('History cleared', 'success');
+            }
+        }
+        
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+        
+        // Initialize
+        loadHistory();
+    </script>
+</body>
+</html>
