@@ -18,16 +18,18 @@
 
 ## 🎯 Overview
 
-A **multi-agent system** built with LangGraph that generates, tests, and automatically fixes Python code. The agent learns from execution failures and iteratively improves code quality through intelligent feedback loops.
+A **multi-agent system** built with LangGraph that generates, tests, and automatically fixes code in multiple programming languages (Python, Java, C++). The agent learns from execution failures and iteratively improves code quality through intelligent feedback loops.
 
 ### What Makes This Special?
 
 ✨ **Self-Healing**: Automatically debugs and fixes failed code (up to 3 iterations)  
 🔄 **Smart Routing**: Conditional workflow routing based on execution results  
-💪 **Resilient**: Exponential backoff retry logic for API failures  
-🧠 **Context-Aware**: Native LangGraph message history for intelligent conversations  
-⚡ **Fast**: Powered by Groq's lightning-fast LLM inference  
-🏭 **Production-Ready**: Comprehensive logging, error handling, and safety guards
+🌐 **Multi-Language**: Generate code in Python, Java, and C++  
+💪 **Resilient**: Exponential backoff retry logic, circuit breaker, rate limiting  
+🧠 **Context-Aware**: Thread-based conversation persistence with Redis support  
+⚡ **Fast**: Powered by Groq's Llama 3.3 70B Versatile model  
+🎨 **Professional UI**: Clean 5-page dashboard with workflow visualization  
+🏭 **Production-Ready**: Comprehensive error handling, logging, and monitoring
 
 ---
 
@@ -35,12 +37,17 @@ A **multi-agent system** built with LangGraph that generates, tests, and automat
 
 | Feature | Description |
 |---------|-------------|
-| **🔄 Self-Correction Loop** | If generated code fails tests, routes back to developer agent with error context |
+| **🎨 Multi-Page Dashboard** | Professional 5-page UI (Dashboard, Generator, Workflow, Execution, History) |
+| **🌍 Multi-Language Support** | Generate code in Python, Java, and C++ |
+| **🔄 Self-Correction Loop** | If code fails tests, routes back to developer agent with error context |
 | **🧪 Automated Testing** | Generates test cases using LLM and executes code in sandboxed environment |
+| **📊 Workflow Visualization** | Real-time agent execution flow with animated nodes and timeline |
+| **🧵 Thread Management** | Conversation persistence with Redis or in-memory storage |
 | **🔁 API Retry Logic** | Tenacity-based exponential backoff for transient network failures |
-| **💬 Conversation Memory** | Maintains full message history using LangGraph state reducers |
-| **🎛️ Configurable Guards** | Max iteration limits prevent infinite loops |
-| **📊 Execution Reports** | Detailed test results and execution logs |
+| **🛡️ Circuit Breaker** | Automatic service protection when LLM API is down |
+| **⏱️ Rate Limiting** | 10 requests/minute per IP to prevent abuse |
+| **💬 Execution Reports** | Detailed test results, output logs, and performance metrics |
+| **📚 History Management** | Search, filter, and manage all code generations |
 | **🔒 Sandboxed Execution** | Safe code execution with isolated scope |
 
 ---
@@ -74,27 +81,46 @@ cp .env.example .env
 uvicorn app:app --reload
 
 # Server will start at http://localhost:8000
+# Open in browser to access the dashboard
 ```
+
+### Use the Dashboard
+
+**5-Page Interface:**
+
+1. **Dashboard** (`/`) - Overview with stats and quick actions
+2. **Code Generator** (`/generate`) - Generate code in Python, Java, or C++
+3. **Workflow** (`/workflow`) - Visualize agent execution flow in real-time
+4. **Execution** (`/execution`) - View detailed test results and metrics
+5. **History** (`/history`) - Search and manage all code generations
 
 ### Test the Agent
 
-**Option 1: Interactive API Docs**
+**Option 1: Web Dashboard (Recommended)**
+```
+Visit http://localhost:8000
+Navigate to /generate page
+Enter task: "Write a function to calculate fibonacci numbers"
+Select language and click Generate
+```
+
+**Option 2: Interactive API Docs**
 ```
 Visit http://localhost:8000/docs
 ```
 
-**Option 2: cURL**
+**Option 3: cURL**
 ```bash
-curl -X POST "http://localhost:8000/agent/invoke" \
+curl -X POST "http://localhost:8000/invoke" \
   -H "Content-Type: application/json" \
   -d '{
-    "input": {
-      "task": "Write a function to calculate fibonacci numbers"
-    }
+    "task": "Write a function to calculate fibonacci numbers",
+    "language": "python",
+    "max_iterations": 3
   }'
 ```
 
-**Option 3: Python Script**
+**Option 4: Python Script**
 ```bash
 python test_agent.py "Write a function to reverse a list"
 ```
@@ -143,14 +169,25 @@ graph LR
 
 ## 📡 API Endpoints
 
-### Core Endpoints
+### Frontend Pages
+
+| Endpoint | Description |
+|----------|-------------|
+| `/` | Dashboard - Home page with stats and quick actions |
+| `/generate` | Code Generator - Create code in Python, Java, C++ |
+| `/workflow` | Workflow Visualization - Real-time agent execution flow |
+| `/execution` | Execution Report - Detailed test results and metrics |
+| `/history` | History - View and manage all code generations |
+
+### Core API Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/` | `GET` | Health check |
-| `/agent/invoke` | `POST` | Execute agent workflow (single request) |
-| `/agent/batch` | `POST` | Batch process multiple tasks |
-| `/agent/stream` | `POST` | Stream responses in real-time |
+| `/health` | `GET` | Health check with circuit breaker status |
+| `/invoke` | `POST` | Execute agent workflow (single request) |
+| `/threads` | `GET` | List all thread IDs (Redis checkpointing) |
+| `/threads/{id}` | `GET` | Get specific thread information |
+| `/threads/{id}` | `DELETE` | Delete thread and checkpoints |
 | `/docs` | `GET` | Interactive API documentation (Swagger UI) |
 | `/redoc` | `GET` | Alternative API docs (ReDoc) |
 
@@ -158,9 +195,11 @@ graph LR
 
 ```json
 {
-  "input": {
-    "task": "Write a function to check if a number is prime"
-  }
+  "task": "Write a function to check if a number is prime",
+  "language": "python",
+  "max_iterations": 3,
+  "thread_id": "optional_thread_id",
+  "thread_name": "Optional Thread Name"
 }
 ```
 
@@ -168,12 +207,13 @@ graph LR
 
 ```json
 {
-  "output": {
-    "code": "def is_prime(n):\n    if n < 2:\n        return False\n    for i in range(2, int(n**0.5) + 1):\n        if n % i == 0:\n            return False\n    return True",
-    "report": "### EXECUTION OUTPUT:\nTrue\n\n### TEST SCENARIOS EVALUATED:\n1. Test with n=2 (smallest prime)\n2. Test with n=17 (prime number)\n3. Test with n=1 (edge case)\n4. Test with n=100 (composite number)\n\n✅ Code executed successfully!",
-    "execution_success": true,
-    "iterations": 1
-  }
+  "success": true,
+  "code": "def is_prime(n):\n    if n < 2:\n        return False\n    for i in range(2, int(n**0.5) + 1):\n        if n % i == 0:\n            return False\n    return True",
+  "report": "### EXECUTION OUTPUT:\nTrue\n\n### TEST SCENARIOS EVALUATED:\n1. Test with n=2 (smallest prime)\n2. Test with n=17 (prime number)\n3. Test with n=1 (edge case)\n4. Test with n=100 (composite number)\n\n✅ Code executed successfully!",
+  "execution_success": true,
+  "iterations": 1,
+  "thread_id": "thread_abc123def456",
+  "checkpointed": false
 }
 ```
 
@@ -181,12 +221,31 @@ graph LR
 
 ## ⚙️ Configuration
 
-### State Persistence
+### Thread-Based Conversation Management
 
-The agent supports two modes of operation:
+The agent supports persistent conversations using thread IDs:
+
+**Automatic Thread Creation:**
+```json
+{
+  "task": "Write a function to sort a list"
+}
+// Returns: { "thread_id": "thread_abc123...", ... }
+```
+
+**Resume Existing Thread:**
+```json
+{
+  "task": "Now make it sort in descending order",
+  "thread_id": "thread_abc123..."
+}
+// Continues the conversation in same context
+```
+
+### State Persistence Modes
 
 **1. Development Mode (Default)**
-- Uses in-memory state storage
+- Uses in-memory state storage (MemorySaver)
 - Fast and simple
 - State is lost on server restart
 - Perfect for testing and development
@@ -195,7 +254,7 @@ The agent supports two modes of operation:
 - Persistent state storage with Redis
 - Survives server restarts
 - Enables multi-instance deployments
-- Supports conversation resumption
+- Supports conversation resumption across sessions
 
 To enable Redis persistence:
 ```bash
@@ -222,6 +281,10 @@ GROQ_MODEL=llama-3.3-70b-versatile
 # Optional - Redis for State Persistence (Production)
 # If not set, uses in-memory storage (development mode)
 # REDIS_URL=redis://localhost:6379
+
+# Optional - Rate Limiting
+RATE_LIMIT_REQUESTS=10
+RATE_LIMIT_WINDOW=60
 ```
 
 ### Available Models
@@ -327,23 +390,38 @@ docker run -p 8000:8000 -e GROQ_API_KEY=your_key langgraph-agent
 
 ```
 LangGraph_deployment/
-├── agent.py              # 🧠 LangGraph workflow & agent logic
-├── app.py                # 🌐 FastAPI application & API routes
-├── index.html            # 🎨 Interactive frontend dashboard
-├── test_agent.py         # 🧪 Testing script
-├── verify_setup.py       # ✅ Setup verification script
-├── requirements.txt      # 📦 Python dependencies
-├── runtime.txt           # 🐍 Python version specification
-├── .env.example          # 📝 Environment variables template
-├── .env                  # 🔒 Your API keys (gitignored)
-├── docs/                 # 📚 Comprehensive documentation
+├── pages/                        # 🎨 Multi-page dashboard
+│   ├── dashboard.html            # Home page with stats
+│   ├── generate.html             # Code generator interface
+│   ├── workflow.html             # Workflow visualization
+│   ├── execution.html            # Execution report with tabs
+│   └── history.html              # Generation history management
+├── static/                       # 📦 Shared assets
+│   ├── css/
+│   │   └── shared.css            # Professional design system
+│   └── js/
+│       └── common.js             # Reusable JavaScript utilities
+├── templates/                    # 🧩 Shared components
+│   └── navigation.html           # Sidebar navigation
+├── agent.py                      # 🧠 LangGraph workflow & agent logic
+├── app.py                        # 🌐 FastAPI application & API routes
+├── test_agent.py                 # 🧪 Testing script
+├── verify_setup.py               # ✅ Setup verification script
+├── requirements.txt              # 📦 Python dependencies
+├── runtime.txt                   # 🐍 Python version specification
+├── .env.example                  # 📝 Environment variables template
+├── .env                          # 🔒 Your API keys (gitignored)
+├── docs/                         # 📚 Comprehensive documentation
 │   ├── ARCHITECTURE.md
 │   ├── FRONTEND_EXPLAINED.md
 │   ├── ERROR_HANDLING_GUIDE.md
 │   ├── PRODUCTION_PATTERNS.md
+│   ├── THREAD_MANAGEMENT.md
 │   └── ...
-├── extras/               # 🎁 Optional components (Gradio UI)
-└── README.md             # 📖 This file
+├── extras/                       # 🎁 Optional components (Gradio UI)
+├── MULTI_PAGE_COMPLETION.md      # 📋 Multi-page implementation details
+├── TESTING_GUIDE.md              # 🧪 Comprehensive testing guide
+└── README.md                     # 📖 This file
 ```
 
 ---
@@ -447,11 +525,53 @@ def call_llm_with_retry(prompt):
 Comprehensive documentation is available in the [`docs/`](./docs) folder:
 
 - **[Architecture Guide](./docs/ARCHITECTURE.md)** - System design and workflow
+- **[Thread Management](./docs/THREAD_MANAGEMENT.md)** - Conversation persistence explained
 - **[Frontend Explained](./docs/FRONTEND_EXPLAINED.md)** - Complete UI architecture
 - **[Error Handling](./docs/ERROR_HANDLING_GUIDE.md)** - Multi-layer error handling strategy
 - **[Production Patterns](./docs/PRODUCTION_PATTERNS.md)** - Circuit breaker, rate limiting, jitter
 - **[Configuration](./docs/CONFIGURATION_EXPLAINED.md)** - Environment variables explained
 - **[FAQ](./docs/QUESTIONS_ANSWERED.md)** - Common questions answered
+- **[Multi-Page Implementation](./MULTI_PAGE_COMPLETION.md)** - Dashboard architecture details
+- **[Testing Guide](./TESTING_GUIDE.md)** - Comprehensive testing checklist
+
+---
+
+## 📸 Screenshots
+
+### Dashboard - Home Page
+<div align="center">
+<img src="https://via.placeholder.com/800x450/2563eb/ffffff?text=Dashboard+with+Stats+and+Quick+Actions" alt="Dashboard" width="800"/>
+</div>
+
+*Clean home page with statistics, production status panel, and quick action buttons*
+
+### Code Generator
+<div align="center">
+<img src="https://via.placeholder.com/800x450/10b981/ffffff?text=Code+Generator+with+Multi-Language+Support" alt="Code Generator" width="800"/>
+</div>
+
+*Generate code in Python, Java, or C++ with real-time syntax highlighting*
+
+### Workflow Visualization
+<div align="center">
+<img src="https://via.placeholder.com/800x450/8b5cf6/ffffff?text=Real-Time+Workflow+with+Animated+Nodes" alt="Workflow" width="800"/>
+</div>
+
+*Visual representation of agent execution flow with timeline of all steps*
+
+### Execution Report
+<div align="center">
+<img src="https://via.placeholder.com/800x450/f59e0b/ffffff?text=Detailed+Test+Results+and+Metrics" alt="Execution Report" width="800"/>
+</div>
+
+*Comprehensive test results with tabs for Tests, Output, and Metrics*
+
+### History Management
+<div align="center">
+<img src="https://via.placeholder.com/800x450/06b6d4/ffffff?text=Search+and+Filter+All+Generations" alt="History" width="800"/>
+</div>
+
+*Search, filter, and manage all code generations with download/delete actions*
 
 ---
 
