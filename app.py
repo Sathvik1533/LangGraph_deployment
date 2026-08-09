@@ -118,6 +118,16 @@ class TaskRequest(BaseModel):
         le=10,
         description="Maximum self-correction attempts (1-10, default: 3)"
     )
+    thread_id: Optional[str] = Field(
+        default=None,
+        description="Optional thread ID for conversation persistence. If provided, state will be loaded/saved for this thread.",
+        example="user_123_session_456"
+    )
+    thread_name: Optional[str] = Field(
+        default=None,
+        description="Optional human-readable thread name",
+        example="Fibonacci Implementation"
+    )
 
 
 class AgentResponse(BaseModel):
@@ -128,6 +138,8 @@ class AgentResponse(BaseModel):
     execution_success: bool = Field(False, description="Whether the code executed without errors")
     iterations: int = Field(0, description="Number of self-correction iterations")
     error: Optional[str] = Field(None, description="Error message if workflow failed")
+    thread_id: Optional[str] = Field(None, description="Thread ID used for this conversation")
+    checkpointed: bool = Field(False, description="Whether state was saved to checkpoint (Redis)")
 
 
 # ============================================================================
@@ -299,6 +311,17 @@ async def invoke_agent(request: TaskRequest, req: Request):
         logger.info(f"✅ Validated request from {client_ip}: {request.task[:50]}...")
         logger.info(f"Max iterations: {request.max_iterations}")
         
+        # Generate or use provided thread ID
+        import uuid
+        thread_id = request.thread_id or f"thread_{uuid.uuid4().hex[:12]}"
+        thread_name = request.thread_name or f"Task: {request.task[:30]}..."
+        
+        logger.info(f"🧵 Thread ID: {thread_id}")
+        if request.thread_id:
+            logger.info(f"📂 Resuming existing thread: {thread_name}")
+        else:
+            logger.info(f"🆕 Creating new thread: {thread_name}")
+        
         # Prepare initial state
         initial_state: CrewState = {
             "messages": [HumanMessage(content=request.task)],
@@ -309,23 +332,45 @@ async def invoke_agent(request: TaskRequest, req: Request):
             "max_iterations": request.max_iterations
         }
         
-        # Invoke the agent workflow
-        result = agent.invoke(initial_state)
+        # Configure with thread ID for checkpointing
+        config = {
+            "configurable": {
+                "thread_id": thread_id,
+                "thread_name": thread_name
+            }
+        }
+        
+        # Check if Redis checkpointing is available
+        redis_url = os.getenv("REDIS_URL", "").strip()
+        checkpointed = bool(redis_url)
+        
+        if checkpointed:
+            logger.info(f"💾 State will be saved to Redis with thread ID: {thread_id}")
+        else:
+            logger.info(f"🧠 Using in-memory state (no persistence)")
+        
+        # Invoke the agent workflow with thread configuration
+        result = agent.invoke(initial_state, config)
         
         logger.info(f"✅ Agent completed in {result.get('iterations', 0)} iterations")
+        
+        if checkpointed:
+            logger.info(f"✅ State saved to Redis under thread: {thread_id}")
         
         # Check if we got valid results
         if not result.get("code"):
             raise ValueError("Agent did not generate any code")
         
-        # Return structured response
+        # Return structured response with thread info
         return AgentResponse(
             success=result.get("execution_success", False),
             code=result.get("code"),
             report=result.get("report"),
             execution_success=result.get("execution_success", False),
             iterations=result.get("iterations", 0),
-            error=None if result.get("execution_success") else "Code generated but tests failed"
+            error=None if result.get("execution_success") else "Code generated but tests failed",
+            thread_id=thread_id,
+            checkpointed=checkpointed
         )
         
     except HTTPException:
@@ -370,6 +415,175 @@ async def stream_agent(request: TaskRequest):
     Note: Currently returns same as /invoke. Streaming to be implemented.
     """
     return await invoke_agent(request)
+
+
+@app.get("/threads", tags=["Thread Management"])
+async def list_threads():
+    """
+    List all saved thread IDs from Redis checkpointing.
+    
+    Returns:
+        List of thread IDs and metadata
+        
+    Note: Only works if Redis checkpointing is enabled (REDIS_URL set)
+    """
+    redis_url = os.getenv("REDIS_URL", "").strip()
+    
+    if not redis_url:
+        return {
+            "checkpointing_enabled": False,
+            "message": "Redis checkpointing not enabled. Set REDIS_URL to enable.",
+            "threads": []
+        }
+    
+    try:
+        import redis.asyncio as aioredis
+        
+        redis_client = aioredis.from_url(redis_url)
+        
+        # Get all checkpoint keys from Redis
+        keys = []
+        async for key in redis_client.scan_iter(match="checkpoint:*"):
+            keys.append(key.decode('utf-8') if isinstance(key, bytes) else key)
+        
+        await redis_client.close()
+        
+        # Extract thread IDs from keys
+        threads = []
+        seen_threads = set()
+        for key in keys:
+            # Keys are like: checkpoint:thread_abc123:step_1
+            parts = key.split(':')
+            if len(parts) >= 2:
+                thread_id = parts[1]
+                if thread_id not in seen_threads:
+                    seen_threads.add(thread_id)
+                    threads.append({
+                        "thread_id": thread_id,
+                        "checkpoint_key": key
+                    })
+        
+        return {
+            "checkpointing_enabled": True,
+            "total_threads": len(threads),
+            "threads": threads
+        }
+        
+    except Exception as e:
+        logger.error(f"Error listing threads: {e}")
+        return {
+            "checkpointing_enabled": True,
+            "error": str(e),
+            "threads": []
+        }
+
+
+@app.get("/threads/{thread_id}", tags=["Thread Management"])
+async def get_thread(thread_id: str):
+    """
+    Get information about a specific thread.
+    
+    Args:
+        thread_id: The thread ID to retrieve
+        
+    Returns:
+        Thread information and checkpoint status
+    """
+    redis_url = os.getenv("REDIS_URL", "").strip()
+    
+    if not redis_url:
+        raise HTTPException(
+            status_code=400,
+            detail="Redis checkpointing not enabled"
+        )
+    
+    try:
+        import redis.asyncio as aioredis
+        
+        redis_client = aioredis.from_url(redis_url)
+        
+        # Check if thread exists
+        keys = []
+        async for key in redis_client.scan_iter(match=f"checkpoint:{thread_id}:*"):
+            keys.append(key.decode('utf-8') if isinstance(key, bytes) else key)
+        
+        await redis_client.close()
+        
+        if not keys:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Thread '{thread_id}' not found"
+            )
+        
+        return {
+            "thread_id": thread_id,
+            "exists": True,
+            "checkpoint_count": len(keys),
+            "checkpoint_keys": keys
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving thread: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error retrieving thread: {str(e)}"
+        )
+
+
+@app.delete("/threads/{thread_id}", tags=["Thread Management"])
+async def delete_thread(thread_id: str):
+    """
+    Delete a thread and all its checkpoints from Redis.
+    
+    Args:
+        thread_id: The thread ID to delete
+        
+    Returns:
+        Deletion status
+    """
+    redis_url = os.getenv("REDIS_URL", "").strip()
+    
+    if not redis_url:
+        raise HTTPException(
+            status_code=400,
+            detail="Redis checkpointing not enabled"
+        )
+    
+    try:
+        import redis.asyncio as aioredis
+        
+        redis_client = aioredis.from_url(redis_url)
+        
+        # Find and delete all keys for this thread
+        deleted_count = 0
+        async for key in redis_client.scan_iter(match=f"checkpoint:{thread_id}:*"):
+            await redis_client.delete(key)
+            deleted_count += 1
+        
+        await redis_client.close()
+        
+        if deleted_count == 0:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Thread '{thread_id}' not found"
+            )
+        
+        return {
+            "thread_id": thread_id,
+            "deleted": True,
+            "checkpoints_deleted": deleted_count
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting thread: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error deleting thread: {str(e)}"
+        )
 
 
 # ============================================================================
