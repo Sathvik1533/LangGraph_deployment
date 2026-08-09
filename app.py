@@ -184,7 +184,7 @@ def health_check():
 
 
 @app.get("/", tags=["Frontend"])
-def root():
+async def root():
     """
     Serve the dashboard page (home)
     """
@@ -208,7 +208,7 @@ def root():
 
 
 @app.get("/generate", tags=["Frontend"])
-def generate_page():
+async def generate_page():
     """
     Serve the code generator page
     """
@@ -218,7 +218,7 @@ def generate_page():
 
 
 @app.get("/workflow", tags=["Frontend"])
-def workflow_page():
+async def workflow_page():
     """
     Serve the workflow visualization page
     """
@@ -228,7 +228,7 @@ def workflow_page():
 
 
 @app.get("/execution", tags=["Frontend"])
-def execution_page():
+async def execution_page():
     """
     Serve the execution report page
     """
@@ -238,7 +238,7 @@ def execution_page():
 
 
 @app.get("/history", tags=["Frontend"])
-def history_page():
+async def history_page():
     """
     Serve the generation history page
     """
