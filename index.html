@@ -469,8 +469,8 @@
                                 </h2>
                                 <p class="text-xs lg:text-sm text-on-surface-variant mt-1 hidden lg:block">Describe what code you want to generate</p>
                             </div>
-                            <button id="clearBtn" class="text-on-surface-variant hover:text-error text-sm flex items-center gap-1 lg:gap-2 px-2 lg:px-4 py-1 lg:py-2 rounded-lg hover:bg-surface-container transition-all">
-                                <span class="material-symbols-outlined text-base lg:text-lg">delete</span>
+                            <button id="clearBtn" class="text-on-surface-variant hover:text-error text-sm flex items-center gap-1 lg:gap-2 px-2 lg:px-4 py-1 lg:py-2 rounded-lg hover:bg-surface-container transition-all active:scale-95" onclick="clearAll()">
+                                <span class="material-symbols-outlined text-base lg:text-lg hover:animate-spin">delete</span>
                                 <span class="hidden sm:inline">Clear</span>
                             </button>
                         </div>
@@ -1228,11 +1228,17 @@
             currentIteration = 0;
             generateBtn.disabled = true;
             generateBtnText.textContent = 'Generating...';
+            // Add spinner to button
+            const btnIcon = generateBtn.querySelector('.material-symbols-outlined');
+            if (btnIcon) {
+                btnIcon.classList.remove('animate-pulse');
+                btnIcon.classList.add('animate-spin');
+            }
             
             // Reset UI
             timeline.innerHTML = '';
             if (timelineCounter) timelineCounter.classList.add('hidden');
-            codeDisplay.innerHTML = '<div class="text-sm lg:text-base text-on-surface-variant italic">Generating code...</div>';
+            codeDisplay.innerHTML = '<div class="text-sm lg:text-base text-on-surface-variant italic flex items-center gap-2"><span class="inline-block animate-spin">⏳</span>Generating code...</div>';
             const reportSection = document.getElementById('reportSection');
             reportSection.classList.add('hidden');
             testResults.innerHTML = '';
@@ -1388,6 +1394,12 @@
                 isGenerating = false;
                 generateBtn.disabled = false;
                 generateBtnText.textContent = 'Generate Code';
+                // Restore pulse animation to button icon
+                const btnIcon = generateBtn.querySelector('.material-symbols-outlined');
+                if (btnIcon) {
+                    btnIcon.classList.remove('animate-spin');
+                    btnIcon.classList.add('animate-pulse');
+                }
             }
         }
         
