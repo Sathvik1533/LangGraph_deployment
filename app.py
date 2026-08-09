@@ -109,7 +109,7 @@ class TaskRequest(BaseModel):
     """Request model for code generation tasks"""
     task: str = Field(
         ...,
-        description="Description of the Python code to generate",
+        description="Description of the code to generate",
         example="Write a function to calculate fibonacci numbers"
     )
     max_iterations: int = Field(
@@ -117,6 +117,11 @@ class TaskRequest(BaseModel):
         ge=1,
         le=10,
         description="Maximum self-correction attempts (1-10, default: 3)"
+    )
+    language: Optional[str] = Field(
+        default="python",
+        description="Programming language for code generation (python, java, cpp)",
+        example="python"
     )
     thread_id: Optional[str] = Field(
         default=None,
@@ -329,7 +334,8 @@ async def invoke_agent(request: TaskRequest, req: Request):
             "report": None,
             "execution_success": False,
             "iterations": 0,
-            "max_iterations": request.max_iterations
+            "max_iterations": request.max_iterations,
+            "language": request.language or "python"  # Pass language to agent
         }
         
         # Configure with thread ID for checkpointing
