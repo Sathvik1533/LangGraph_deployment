@@ -3,7 +3,7 @@
 ## ✅ FULLY IMPLEMENTED AND PRODUCTION-READY
 
 **Last Updated:** August 9, 2026  
-**Current Version:** 2.0.0  
+**Current Version:** 2.1.0  
 **Repository:** [LangGraph_deployment](https://github.com/Sathvik1533/LangGraph_deployment)
 
 ---
@@ -16,6 +16,7 @@
 |---------|--------|-------|-------------|
 | **Self-Correcting Agent** | ✅ Complete | `agent.py` | Multi-agent workflow with Developer → Tester → Router |
 | **Groq API Integration** | ✅ Complete | `agent.py`, `app.py` | Llama 3.3 70B with 0.1 temperature |
+| **Multi-Language Support** | ✅ Complete | `agent.py`, `app.py`, `index.html` | Python, Java, C++ code generation |
 | **Workflow Visualization** | ✅ Complete | `index.html` | Animated nodes with retry arrow and timeline |
 | **Redis Checkpointing** | ✅ Complete | `agent.py` | Persistent state with fallback to memory |
 | **Thread Management** | ✅ Complete | `app.py`, `index.html` | Per-user isolated conversations |
@@ -44,8 +45,29 @@
 - ✅ Workflow View (animated graph + timeline)
 - ✅ Editor View (code-focused)
 - ✅ Execution View (reports-focused)
-- ✅ History View (conversation history)
+- ✅ History View (conversation history - placeholder)
 - ✅ Mobile-responsive hamburger menu
+
+### **NEW in v2.1.0: Multi-Language Support** 🆕
+- ✅ Language selector with 3 options: 🐍 Python, ☕ Java, ⚡ C++
+- ✅ Language-specific syntax highlighting
+- ✅ Language-aware code generation
+- ✅ Smart file downloads (.py, .java, .cpp)
+- ✅ Language indicator badge in UI
+
+### **NEW in v2.1.0: Improved Layout** 🆕
+- ✅ Code and Report sections clearly separated (no overlapping)
+- ✅ Fixed max-height for each section (50vh code, 40vh report)
+- ✅ Independent scrolling for code and report
+- ✅ Visual separator (thick blue border) between sections
+- ✅ Minimalistic, non-congested layout
+
+### **NEW in v2.1.0: Professional Code Formatting** 🆕
+- ✅ Removes ALL markdown artifacts (###, **, *, <br>, ```)
+- ✅ Extracts pure code from markdown blocks
+- ✅ Clean, human-readable code display
+- ✅ Language-specific syntax highlighting (Python/Java/C++)
+- ✅ Stores clean code for copy/download operations
 
 ### **UI Components** ✅
 - ✅ Task input with quick examples
@@ -64,6 +86,61 @@
 1. **Tests Tab** - Individual test cards with pass/fail status
 2. **Output Tab** - Raw execution logs
 3. **Metrics Tab** - Run matrix, time, tokens, success rate
+
+---
+
+## 🌐 Multi-Language Support (NEW)
+
+### **Supported Languages**
+1. **Python** 🐍
+   - Syntax: def, class, import, lambda, etc.
+   - File extension: `.py`
+   - Backend: Executes with Python interpreter
+
+2. **Java** ☕
+   - Syntax: public, private, class, void, etc.
+   - File extension: `.java`
+   - Backend: Generates with proper class structure
+
+3. **C++** ⚡
+   - Syntax: int, std, namespace, template, etc.
+   - File extension: `.cpp`
+   - Backend: Includes #include directives
+
+### **How It Works**
+
+**Frontend:**
+```javascript
+// User selects language
+selectedLanguage = 'java';
+
+// Enhanced task prompt
+const enhancedTask = `${task}\n\n
+IMPORTANT: Generate this code in Java. 
+Return ONLY clean, working Java code.`;
+
+// Syntax highlighting based on language
+syntaxHighlightCode(code, selectedLanguage);
+```
+
+**Backend:**
+```python
+# Receive language parameter
+class TaskRequest(BaseModel):
+    language: Optional[str] = "python"
+
+# Pass to agent state
+initial_state: CrewState = {
+    "language": request.language or "python"
+}
+
+# Language-specific system prompts
+language_prompts = {
+    "python": "You are an expert Python developer...",
+    "java": "You are an expert Java developer...",
+    "cpp": "You are an expert C++ developer..."
+}
+```
 
 ---
 
@@ -102,7 +179,7 @@ updateThreadDisplay(data.thread_id, data.checkpointed);
 ```
 
 ### **API Endpoints** ✅
-- `POST /invoke` - Generate code (with optional thread_id)
+- `POST /invoke` - Generate code (with optional thread_id and language)
 - `GET /threads` - List all saved threads
 - `GET /threads/{thread_id}` - Get thread info
 - `DELETE /threads/{thread_id}` - Delete thread
@@ -113,15 +190,17 @@ updateThreadDisplay(data.thread_id, data.checkpointed);
 
 ```
 LangGraph_deployment/
-├── agent.py                           # Multi-agent workflow
-├── app.py                             # FastAPI backend with thread support
-├── index.html                         # Frontend dashboard with thread UI
+├── agent.py                           # Multi-agent workflow with language support
+├── app.py                             # FastAPI backend with language parameter
+├── index.html                         # Frontend with language selector
 ├── requirements.txt                   # Python dependencies
 ├── runtime.txt                        # Python version
 ├── .env.example                       # Environment template
 ├── README.md                          # Project overview
+├── STATUS.md                          # This file
 ├── DEPLOYMENT_CHECKLIST.md            # Deployment guide
 ├── THREAD_IMPLEMENTATION_SUMMARY.md   # Thread system documentation
+├── MULTI_LANGUAGE_FIX_SUMMARY.md      # Latest feature documentation
 ├── docs/
 │   ├── ARCHITECTURE.md                # System architecture
 │   ├── CONFIGURATION_EXPLAINED.md     # Config guide
@@ -171,19 +250,23 @@ python app.py
 http://localhost:8000
 ```
 
-### **3. Test**
+### **3. Test Multi-Language**
 
 ```bash
-# Health check
-curl http://localhost:8000/health
-
-# Generate code
+# Generate Python code
 curl -X POST http://localhost:8000/invoke \
   -H "Content-Type: application/json" \
-  -d '{"task": "Write a fibonacci function"}'
+  -d '{"task": "Write a fibonacci function", "language": "python"}'
 
-# List threads (requires Redis)
-curl http://localhost:8000/threads
+# Generate Java code
+curl -X POST http://localhost:8000/invoke \
+  -H "Content-Type: application/json" \
+  -d '{"task": "Write a fibonacci function", "language": "java"}'
+
+# Generate C++ code
+curl -X POST http://localhost:8000/invoke \
+  -H "Content-Type: application/json" \
+  -d '{"task": "Write a fibonacci function", "language": "cpp"}'
 ```
 
 ---
@@ -206,23 +289,30 @@ This project demonstrates:
    - Visual feedback loop with animated arrow
    - Timeline showing each retry attempt
 
-3. **Production Architecture** ✅
+3. **Multi-Language Code Generation** ✅ NEW
+   - Language-specific system prompts
+   - Syntax-aware highlighting
+   - Professional code formatting
+   - Smart file downloads
+
+4. **Production Architecture** ✅
    - Rate limiting (10 req/min)
    - Circuit breaker (auto-recovery)
    - Input validation
    - Error handling with user-friendly messages
    - Health monitoring
 
-4. **State Management** ✅
+5. **State Management** ✅
    - Redis checkpointing for persistence
    - Thread-based conversation isolation
    - Crash recovery capability
    - Session resumption
 
-5. **Professional UI** ✅
+6. **Professional UI** ✅
    - Real-time workflow visualization
    - Animated state transitions
    - Clean code output (no markdown)
+   - Clear section separation (no overlapping)
    - Comprehensive reporting with metrics
    - Thread management interface
 
@@ -235,6 +325,7 @@ This project demonstrates:
 - **Max Iterations:** 3 (configurable)
 - **Success Rate:** Displayed in metrics panel
 - **Token Usage:** Tracked per request
+- **Languages Supported:** 3 (Python, Java, C++)
 
 ### **Thread Management**
 - **Storage per Thread:** 3-6 KB (Redis)
@@ -277,16 +368,34 @@ temperature = 0.1  # Consistent code generation
 
 ## 🧪 Testing Guide
 
-### **Test 1: Basic Code Generation**
-1. Enter task: "Write a function to calculate factorial"
-2. Click "Generate Code"
-3. **Expected:**
-   - Workflow animates through all nodes
-   - Code appears without markdown formatting
-   - Tests tab shows validation results
-   - Timeline shows all steps
+### **Test 1: Multi-Language Code Generation** 🆕
+1. Select Python from language selector
+2. Enter task: "Write a function to calculate factorial"
+3. Click "Generate Code"
+4. **Expected:** Clean Python code with proper syntax
+5. Switch to Java and click Generate again
+6. **Expected:** Same logic in Java with class structure
+7. Switch to C++ and generate
+8. **Expected:** C++ code with #include directives
 
-### **Test 2: Self-Correction**
+### **Test 2: Code Formatting** 🆕
+1. Generate any code
+2. **Expected:**
+   - No ### headers visible
+   - No ** or * markdown markers
+   - No <br> tags or ``` fences
+   - Clean, professional code display
+   - Proper syntax highlighting for language
+
+### **Test 3: Section Separation** 🆕
+1. Generate code that produces a report
+2. **Expected:**
+   - Code section stays in its container (no overflow)
+   - Report section appears below with thick blue border
+   - Both sections scroll independently
+   - No overlapping or "mounting" of content
+
+### **Test 4: Self-Correction**
 1. Enter complex task that may fail first time
 2. Observe workflow
 3. **Expected:**
@@ -295,7 +404,7 @@ temperature = 0.1  # Consistent code generation
    - Iteration badge shows "1/3" → "2/3" → "3/3"
    - Timeline shows retry messages
 
-### **Test 3: Thread Persistence**
+### **Test 5: Thread Persistence**
 1. Generate code, note thread ID in sidebar
 2. Enter follow-up task
 3. **Expected:**
@@ -303,23 +412,15 @@ temperature = 0.1  # Consistent code generation
    - Agent has context from previous code
    - New code builds on existing work
 
-### **Test 4: New Run**
-1. Click "New Run" button
-2. **Expected:**
-   - Thread info panel disappears
-   - All state clears
-   - Next generation creates new thread
-
 ---
 
-## 📝 Recent Commits
+## 📝 Recent Commits (v2.1.0)
 
 ```
-e12fa88 - docs: add comprehensive thread implementation summary
-59fa141 - feat: add frontend thread management with UI integration
-d2811ed - feat: implement thread-based conversation management with Redis
-f86fb93 - feat: Add production Redis checkpointing for state persistence
-13c4259 - feat: Prove self-correcting agent with animated feedback loop
+7a097ce - docs: add comprehensive summary of multi-language and UI fixes
+30165e9 - feat: implement language-specific code generation in agent
+7acd3fd - feat: add language parameter support in backend API
+7d2ae49 - feat: separate code and report sections with clear visual boundaries
 ```
 
 ---
@@ -332,6 +433,7 @@ f86fb93 - feat: Add production Redis checkpointing for state persistence
 - [x] Multi-agent orchestration
 - [x] Automated testing and validation
 - [x] Error detection and fixing
+- [x] Multi-language support (Python, Java, C++) 🆕
 
 ### **Production Readiness**
 - [x] Rate limiting
@@ -352,7 +454,10 @@ f86fb93 - feat: Add production Redis checkpointing for state persistence
 - [x] Responsive layout
 - [x] Workflow visualization
 - [x] Animated feedback loop
-- [x] Clean code display
+- [x] Clean code display 🆕
+- [x] Section separation 🆕
+- [x] Language selector 🆕
+- [x] Syntax highlighting 🆕
 - [x] Report tabs
 - [x] Thread UI
 - [x] Timeline with auto-scroll
@@ -365,10 +470,11 @@ f86fb93 - feat: Add production Redis checkpointing for state persistence
 - [x] Deployment checklist
 - [x] Error handling guide
 - [x] Configuration guide
+- [x] Multi-language fix summary 🆕
 
 ### **Git & Repository**
 - [x] Clean commit history
-- [x] Descriptive commit messages
+- [x] Descriptive commit messages (individual commits per change) 🆕
 - [x] Professional repository structure
 - [x] No unnecessary files
 - [x] .gitignore configured
@@ -384,23 +490,31 @@ Not a single LLM call, but orchestrated workflow:
 - Router decides retry vs. complete
 - State flows between agents
 
-### **2. Visual Proof of Self-Correction**
+### **2. Multi-Language Code Generation** 🆕
+- Python, Java, C++ support
+- Language-specific system prompts
+- Syntax-aware highlighting
+- Professional code formatting
+
+### **3. Visual Proof of Self-Correction**
 - Animated retry arrow showing feedback loop
 - Node status updates in real-time
 - Timeline documenting each iteration
 - Iteration badge (1/3, 2/3, 3/3)
 
-### **3. Production-Grade Architecture**
+### **4. Production-Grade Architecture**
 - Rate limiting prevents abuse
 - Circuit breaker protects from cascading failures
 - Redis persistence enables scaling
 - Thread isolation supports multi-user
 
-### **4. Professional Frontend**
+### **5. Professional Frontend** 🆕
 - No markdown clutter in code display
+- Clear visual separation (no overlapping sections)
 - Clean, modern Material Design 3 UI
 - Responsive across devices
 - Real-time status indicators
+- Minimalistic layout
 
 ---
 
@@ -424,12 +538,13 @@ See `DEPLOYMENT_CHECKLIST.md` for detailed steps.
 
 ## 📊 Project Statistics
 
-- **Total Files:** 20+ (code + docs)
-- **Lines of Code:** ~2000 (agent.py + app.py + index.html)
-- **Documentation:** 15+ comprehensive guides
+- **Total Files:** 22+ (code + docs)
+- **Lines of Code:** ~2200 (agent.py + app.py + index.html)
+- **Documentation:** 16+ comprehensive guides
 - **API Endpoints:** 7 (invoke, health, info, threads)
 - **Frontend Views:** 4 (workflow, editor, execution, history)
 - **Agents:** 3 (Developer, Tester, Router)
+- **Languages:** 3 (Python, Java, C++) 🆕
 - **Max Iterations:** 3 (configurable)
 
 ---
@@ -440,6 +555,9 @@ See `DEPLOYMENT_CHECKLIST.md` for detailed steps.
 
 ✅ Multi-agent orchestration  
 ✅ Automated testing and fixing  
+✅ Multi-language support (Python, Java, C++) 🆕  
+✅ Professional code formatting 🆕  
+✅ Clear UI section separation 🆕  
 ✅ Visual workflow representation  
 ✅ Thread-based conversation management  
 ✅ Redis-backed persistence  
@@ -447,12 +565,14 @@ See `DEPLOYMENT_CHECKLIST.md` for detailed steps.
 ✅ Production-grade patterns  
 ✅ Comprehensive documentation  
 
-**This is NOT a ChatGPT wrapper - it's a sophisticated multi-agent system with state management, self-correction capabilities, and production architecture.**
+**This is NOT a ChatGPT wrapper - it's a sophisticated multi-agent system with state management, self-correction capabilities, multi-language support, and production architecture.**
 
 ---
 
 **Status:** ✅ PRODUCTION READY  
+**Version:** 2.1.0  
 **Commits:** All pushed to `main`  
 **Repository:** Clean and professional  
 **Documentation:** Comprehensive  
-**Next Steps:** Optional enhancements (see THREAD_IMPLEMENTATION_SUMMARY.md)
+**Latest Features:** Multi-language support, improved UI separation, professional code formatting
+
