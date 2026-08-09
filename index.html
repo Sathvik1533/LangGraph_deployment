@@ -273,6 +273,19 @@
                 <span class="material-symbols-outlined text-lg">add</span>
                 New Run
             </button>
+            
+            <!-- Thread Info Display -->
+            <div id="threadInfo" class="hidden mt-3 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs font-semibold text-primary mb-1">Active Thread</div>
+                        <div id="threadIdDisplay" class="text-xs font-mono text-on-surface-variant truncate" title="">-</div>
+                    </div>
+                    <button id="endThreadBtn" class="shrink-0 text-on-surface-variant hover:text-error" title="End thread">
+                        <span class="material-symbols-outlined text-base">close</span>
+                    </button>
+                </div>
+            </div>
         </div>
         
         <!-- Navigation Group -->
@@ -587,11 +600,14 @@
     <script>
         // Configuration
         const API_URL = window.location.origin + '/invoke';  // Use same domain as frontend
+        const THREADS_API_URL = window.location.origin + '/threads';  // Thread management endpoint
         
         // State
         let currentIteration = 1;
         let isGenerating = false;
         let startTime = null;
+        let currentThreadId = null;  // Track current conversation thread
+        let threadHistory = [];  // Store thread list
         
         // DOM Elements
         const taskInput = document.getElementById('taskInput');
@@ -611,6 +627,11 @@
         const toastIcon = document.getElementById('toastIcon');
         const menuToggle = document.getElementById('menuToggle');
         const sidebar = document.getElementById('sidebar');
+        
+        // Thread management elements
+        const threadInfo = document.getElementById('threadInfo');
+        const threadIdDisplay = document.getElementById('threadIdDisplay');
+        const endThreadBtn = document.getElementById('endThreadBtn');
         
         // Nodes
         const nodeStart = document.getElementById('nodeStart');
@@ -786,10 +807,30 @@
             // Rebind New Run button
             if (newRunBtn && !newRunBtn.hasAttribute('data-bound')) {
                 newRunBtn.addEventListener('click', () => {
+                    clearThread();  // Clear thread when starting new run
                     clearAll();
                     if (taskInput) taskInput.focus();
+                    showToast('New conversation started', 'info');
                 });
                 newRunBtn.setAttribute('data-bound', 'true');
+            }
+            
+            // Rebind End Thread button
+            const endThreadBtn = document.getElementById('endThreadBtn');
+            if (endThreadBtn && !endThreadBtn.hasAttribute('data-bound')) {
+                endThreadBtn.addEventListener('click', async () => {
+                    if (currentThreadId) {
+                        const confirmed = confirm(`End and delete thread ${currentThreadId.substring(0, 16)}...?`);
+                        if (confirmed) {
+                            const deleted = await deleteThread(currentThreadId);
+                            if (deleted) {
+                                clearThread();
+                                clearAll();
+                            }
+                        }
+                    }
+                });
+                endThreadBtn.setAttribute('data-bound', 'true');
             }
             
             // Rebind Copy button
@@ -1207,12 +1248,19 @@
             addTimelineItem('👨‍💻 Developer Agent: Analyzing task requirements', 'active');
             
             try {
+                const requestBody = { task };
+                
+                // Include thread_id if continuing conversation
+                if (currentThreadId) {
+                    requestBody.thread_id = currentThreadId;
+                }
+                
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ task })
+                    body: JSON.stringify(requestBody)
                 });
                 
                 if (!response.ok) {
@@ -1220,6 +1268,12 @@
                 }
                 
                 const data = await response.json();
+                
+                // Update thread tracking
+                if (data.thread_id) {
+                    currentThreadId = data.thread_id;
+                    updateThreadDisplay(data.thread_id, data.checkpointed);
+                }
                 
                 // Hide developer status
                 hideNodeStatus(developerStatus);
@@ -1330,6 +1384,66 @@
         
         function sleep(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        // Thread Management Functions
+        function updateThreadDisplay(threadId, checkpointed) {
+            if (threadInfo && threadIdDisplay) {
+                threadInfo.classList.remove('hidden');
+                threadIdDisplay.textContent = threadId;
+                threadIdDisplay.title = threadId;
+                
+                if (checkpointed) {
+                    addTimelineItem(`💾 Thread persisted: ${threadId.substring(0, 16)}...`, 'info');
+                }
+            }
+        }
+        
+        function clearThread() {
+            currentThreadId = null;
+            if (threadInfo) {
+                threadInfo.classList.add('hidden');
+            }
+            if (threadIdDisplay) {
+                threadIdDisplay.textContent = '-';
+                threadIdDisplay.title = '';
+            }
+        }
+        
+        async function deleteThread(threadId) {
+            if (!threadId) return;
+            
+            try {
+                const response = await fetch(`${THREADS_API_URL}/${threadId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showToast(`Thread ${threadId.substring(0, 12)}... deleted`, 'success');
+                    return true;
+                } else {
+                    showToast('Failed to delete thread', 'error');
+                    return false;
+                }
+            } catch (error) {
+                console.error('Error deleting thread:', error);
+                showToast('Error deleting thread', 'error');
+                return false;
+            }
+        }
+        
+        async function loadThreadHistory() {
+            try {
+                const response = await fetch(THREADS_API_URL);
+                if (response.ok) {
+                    const data = await response.json();
+                    threadHistory = data.threads || [];
+                    return threadHistory;
+                }
+            } catch (error) {
+                console.error('Error loading thread history:', error);
+            }
+            return [];
         }
         
         function displayReport(data) {
@@ -1514,10 +1628,28 @@
         clearBtn.setAttribute('data-bound', 'true');
         
         newRunBtn.addEventListener('click', () => {
+            clearThread();  // Clear current thread to start fresh
             clearAll();
             taskInput.focus();
+            showToast('New conversation started', 'info');
         });
         newRunBtn.setAttribute('data-bound', 'true');
+        
+        // End thread button
+        if (endThreadBtn) {
+            endThreadBtn.addEventListener('click', async () => {
+                if (currentThreadId) {
+                    const confirmed = confirm(`End and delete thread ${currentThreadId.substring(0, 16)}...?`);
+                    if (confirmed) {
+                        const deleted = await deleteThread(currentThreadId);
+                        if (deleted) {
+                            clearThread();
+                            clearAll();
+                        }
+                    }
+                }
+            });
+        }
         
         // Example buttons
         document.querySelectorAll('.example-btn').forEach(btn => {
