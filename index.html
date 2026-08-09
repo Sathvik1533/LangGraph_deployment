@@ -493,13 +493,18 @@
                 </div>
                 
                 <!-- Enhanced Report Panel with Tabs -->
-                <div id="reportSection" class="hidden bg-white border-t border-outline-variant flex flex-col" style="max-height: 400px;">
+                <div id="reportSection" class="hidden bg-white border-t border-outline-variant flex flex-col">
                     <!-- Report Header with Tabs -->
                     <div class="px-4 lg:px-6 py-3 lg:py-4 border-b border-outline-variant shrink-0">
-                        <h3 class="text-base lg:text-lg font-bold text-on-surface flex items-center gap-2 mb-3">
-                            <span class="material-symbols-outlined text-lg lg:text-xl">analytics</span>
-                            Report
-                        </h3>
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-base lg:text-lg font-bold text-on-surface flex items-center gap-2">
+                                <span class="material-symbols-outlined text-lg lg:text-xl">analytics</span>
+                                Report
+                            </h3>
+                            <button id="collapseReportBtn" class="text-on-surface-variant hover:text-on-surface p-1 rounded-lg hover:bg-surface-container transition-all" title="Minimize Report">
+                                <span class="material-symbols-outlined text-lg">expand_more</span>
+                            </button>
+                        </div>
                         
                         <!-- Tab Navigation -->
                         <div class="flex gap-1 border-b border-outline-variant">
@@ -516,7 +521,7 @@
                     </div>
                     
                     <!-- Tab Content Container -->
-                    <div class="flex-1 overflow-y-auto custom-scrollbar">
+                    <div id="reportContent" class="flex-1 overflow-y-auto custom-scrollbar" style="max-height: 350px;">
                         <!-- Tests Tab -->
                         <div id="testsTab" class="tab-content p-4 lg:p-6">
                             <div id="testResults" class="space-y-3">
@@ -644,6 +649,8 @@
         }
         
         function showWorkflowView() {
+            // Restore content if coming from History
+            restoreOriginalContent();
             // Show workflow column, show task/code column
             if (workflowSection) workflowSection.classList.remove('hidden');
             if (taskCodeSection) taskCodeSection.classList.remove('hidden');
@@ -651,6 +658,8 @@
         }
         
         function showEditorView() {
+            // Restore content if coming from History
+            restoreOriginalContent();
             // Hide workflow, show task/code
             if (workflowSection) workflowSection.classList.add('hidden');
             if (taskCodeSection) taskCodeSection.classList.remove('hidden');
@@ -658,6 +667,8 @@
         }
         
         function showExecutionView() {
+            // Restore content if coming from History
+            restoreOriginalContent();
             // Hide workflow, show task/code with focus on report
             if (workflowSection) workflowSection.classList.add('hidden');
             if (taskCodeSection) {
@@ -672,12 +683,18 @@
         }
         
         function showHistoryView() {
-            // Show history placeholder
+            // Hide workflow
             if (workflowSection) workflowSection.classList.add('hidden');
+            
+            // Store original content if not stored yet
+            if (!window.originalTaskCodeContent) {
+                window.originalTaskCodeContent = taskCodeSection ? taskCodeSection.innerHTML : '';
+            }
+            
             if (taskCodeSection) {
                 // Show placeholder content
                 taskCodeSection.innerHTML = `
-                    <div class="flex-1 flex items-center justify-center p-8">
+                    <div class="flex-1 flex items-center justify-center p-8 bg-white">
                         <div class="text-center max-w-md">
                             <span class="material-symbols-outlined text-9xl text-outline-variant mb-4 block">history</span>
                             <h2 class="text-2xl font-bold text-on-surface mb-2">Execution History</h2>
@@ -688,6 +705,156 @@
                 `;
             }
             showToast('Viewing History - Feature coming soon', 'info');
+        }
+        
+        function restoreOriginalContent() {
+            // Restore original content when switching away from History
+            if (window.originalTaskCodeContent && taskCodeSection) {
+                taskCodeSection.innerHTML = window.originalTaskCodeContent;
+            }
+        }
+        
+        function rebindEventListeners() {
+            // Re-get DOM elements after content restoration
+            const taskInput = document.getElementById('taskInput');
+            const generateBtn = document.getElementById('generateBtn');
+            const generateBtnText = document.getElementById('generateBtnText');
+            const clearBtn = document.getElementById('clearBtn');
+            const newRunBtn = document.getElementById('newRunBtn');
+            const copyCodeBtn = document.getElementById('copyCodeBtn');
+            const downloadCodeBtn = document.getElementById('downloadCodeBtn');
+            const codeDisplay = document.getElementById('codeDisplay');
+            
+            // Rebind Generate button
+            if (generateBtn && !generateBtn.hasAttribute('data-bound')) {
+                generateBtn.addEventListener('click', generateCode);
+                generateBtn.setAttribute('data-bound', 'true');
+            }
+            
+            // Rebind keyboard shortcut
+            if (taskInput && !taskInput.hasAttribute('data-bound')) {
+                taskInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                        generateCode();
+                    }
+                });
+                taskInput.setAttribute('data-bound', 'true');
+            }
+            
+            // Rebind Clear button
+            if (clearBtn && !clearBtn.hasAttribute('data-bound')) {
+                clearBtn.addEventListener('click', clearAll);
+                clearBtn.setAttribute('data-bound', 'true');
+            }
+            
+            // Rebind New Run button
+            if (newRunBtn && !newRunBtn.hasAttribute('data-bound')) {
+                newRunBtn.addEventListener('click', () => {
+                    clearAll();
+                    if (taskInput) taskInput.focus();
+                });
+                newRunBtn.setAttribute('data-bound', 'true');
+            }
+            
+            // Rebind Copy button
+            if (copyCodeBtn && !copyCodeBtn.hasAttribute('data-bound')) {
+                copyCodeBtn.addEventListener('click', copyCode);
+                copyCodeBtn.setAttribute('data-bound', 'true');
+            }
+            
+            // Rebind Download button
+            if (downloadCodeBtn && !downloadCodeBtn.hasAttribute('data-bound')) {
+                downloadCodeBtn.addEventListener('click', downloadCode);
+                downloadCodeBtn.setAttribute('data-bound', 'true');
+            }
+            
+            // Rebind example buttons
+            document.querySelectorAll('.example-btn').forEach(btn => {
+                if (!btn.hasAttribute('data-bound')) {
+                    btn.addEventListener('click', () => {
+                        if (taskInput) {
+                            taskInput.value = btn.dataset.task;
+                            taskInput.focus();
+                            showToast('Example loaded', 'info');
+                        }
+                    });
+                    btn.setAttribute('data-bound', 'true');
+                }
+            });
+        }
+        
+        function clearAll() {
+            const taskInput = document.getElementById('taskInput');
+            const codeDisplay = document.getElementById('codeDisplay');
+            const timeline = document.getElementById('timeline');
+            const reportSection = document.getElementById('reportSection');
+            const testResults = document.getElementById('testResults');
+            const outputDisplay = document.getElementById('outputDisplay');
+            const metricsDisplay = document.getElementById('metricsDisplay');
+            const iterationBadge = document.getElementById('iterationBadge');
+            const retryArrow = document.getElementById('retryArrow');
+            
+            if (taskInput) taskInput.value = '';
+            if (codeDisplay) codeDisplay.innerHTML = '<div class="text-sm lg:text-base text-on-surface-variant italic">No code generated yet. Enter a task above and click "Generate Code".</div>';
+            if (timeline) timeline.innerHTML = '<div class="text-sm text-on-surface-variant italic">No execution yet</div>';
+            if (reportSection) reportSection.classList.add('hidden');
+            if (testResults) testResults.innerHTML = '';
+            if (outputDisplay) outputDisplay.innerHTML = '<div class="text-on-surface-variant italic">No output yet</div>';
+            if (metricsDisplay) metricsDisplay.innerHTML = '<div class="text-sm text-on-surface-variant italic">No metrics yet</div>';
+            if (iterationBadge) iterationBadge.classList.add('hidden');
+            if (retryArrow) retryArrow.classList.add('hidden');
+            
+            // Reset nodes
+            [nodeStart, nodeDeveloper, nodeTester, nodeDecision, nodeEnd].forEach(node => {
+                if (node) {
+                    deactivateNode(node);
+                    node.classList.remove('node-completed', 'node-error');
+                }
+            });
+            
+            // Reset metrics
+            executionMetrics = {
+                startTime: null,
+                endTime: null,
+                totalTime: 0,
+                iterations: 0,
+                tokensUsed: 0,
+                testsTotal: 0,
+                testsPassed: 0,
+                testsFailed: 0
+            };
+            
+            showToast('Cleared', 'info');
+        }
+        
+        async function copyCode() {
+            const codeText = codeDisplay ? codeDisplay.textContent : '';
+            if (codeText && !codeText.includes('No code generated')) {
+                try {
+                    await navigator.clipboard.writeText(codeText);
+                    showToast('Code copied to clipboard!', 'success');
+                    if (copyCodeBtn) {
+                        copyCodeBtn.classList.add('text-success');
+                        setTimeout(() => copyCodeBtn.classList.remove('text-success'), 2000);
+                    }
+                } catch (err) {
+                    showToast('Failed to copy code', 'error');
+                }
+            }
+        }
+        
+        function downloadCode() {
+            const codeText = codeDisplay ? codeDisplay.textContent : '';
+            if (codeText && !codeText.includes('No code generated')) {
+                const blob = new Blob([codeText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'generated_code.py';
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('Code downloaded!', 'success');
+            }
         }
         
         // Report tab switching
@@ -709,6 +876,24 @@
                 document.getElementById(`${tabName}Tab`).classList.remove('hidden');
             });
         });
+        
+        // Collapse report button
+        const collapseReportBtn = document.getElementById('collapseReportBtn');
+        const reportContent = document.getElementById('reportContent');
+        if (collapseReportBtn && reportContent) {
+            collapseReportBtn.addEventListener('click', () => {
+                const isCollapsed = reportContent.classList.contains('hidden');
+                if (isCollapsed) {
+                    reportContent.classList.remove('hidden');
+                    collapseReportBtn.querySelector('.material-symbols-outlined').textContent = 'expand_more';
+                    collapseReportBtn.title = 'Minimize Report';
+                } else {
+                    reportContent.classList.add('hidden');
+                    collapseReportBtn.querySelector('.material-symbols-outlined').textContent = 'expand_less';
+                    collapseReportBtn.title = 'Expand Report';
+                }
+            });
+        }
         
         // Navigation click handlers
         document.querySelectorAll('.nav-item').forEach(item => {
@@ -842,9 +1027,38 @@
         }
         
         function displayCode(code) {
-            // Backend returns HTML with <br> and <span> tags for formatting
-            // Use innerHTML to render these HTML tags properly (not as plain text)
-            codeDisplay.innerHTML = `<div class="code-container"><pre class="font-mono text-sm leading-relaxed bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">${code}</pre></div>`;
+            if (!code) {
+                codeDisplay.innerHTML = '<div class="text-sm lg:text-base text-on-surface-variant italic">No code generated yet.</div>';
+                return;
+            }
+            
+            // Clean up markdown formatting (remove ### headers, etc.)
+            let cleanCode = code
+                .replace(/###\s*/g, '')  // Remove ### markdown headers
+                .replace(/##\s*/g, '')   // Remove ## markdown headers
+                .replace(/#\s+/g, '')    // Remove # markdown headers at start of lines
+                .replace(/\*\*(.+?)\*\*/g, '$1')  // Remove **bold** markdown
+                .replace(/\*(.+?)\*/g, '$1')      // Remove *italic* markdown
+                .replace(/<br\s*\/?>/gi, '\n')    // Convert <br> to newlines
+                .trim();
+            
+            // Extract only Python code if wrapped in markdown code blocks
+            const codeBlockMatch = cleanCode.match(/```python\s*([\s\S]*?)```/);
+            if (codeBlockMatch) {
+                cleanCode = codeBlockMatch[1].trim();
+            } else {
+                // Try generic code block
+                const genericMatch = cleanCode.match(/```\s*([\s\S]*?)```/);
+                if (genericMatch) {
+                    cleanCode = genericMatch[1].trim();
+                }
+            }
+            
+            // Apply syntax highlighting
+            const highlighted = syntaxHighlight(cleanCode);
+            
+            // Display with proper formatting
+            codeDisplay.innerHTML = `<div class="code-container"><pre class="font-mono text-sm leading-relaxed bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">${highlighted}</pre></div>`;
         }
         
         function celebrateSuccess() {
@@ -1155,49 +1369,23 @@
         
         // Event Listeners
         generateBtn.addEventListener('click', generateCode);
+        generateBtn.setAttribute('data-bound', 'true');
         
         taskInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                 generateCode();
             }
         });
+        taskInput.setAttribute('data-bound', 'true');
         
-        clearBtn.addEventListener('click', () => {
-            taskInput.value = '';
-            codeDisplay.innerHTML = '<div class="text-sm lg:text-base text-on-surface-variant italic">No code generated yet. Enter a task above and click "Generate Code".</div>';
-            timeline.innerHTML = '<div class="text-sm text-on-surface-variant italic">No execution yet</div>';
-            document.getElementById('reportSection').classList.add('hidden');
-            testResults.innerHTML = '';
-            outputDisplay.innerHTML = '<div class="text-on-surface-variant italic">No output yet</div>';
-            metricsDisplay.innerHTML = '<div class="text-sm text-on-surface-variant italic">No metrics yet</div>';
-            iterationBadge.classList.add('hidden');
-            retryArrow.classList.add('hidden');
-            
-            // Reset nodes
-            [nodeStart, nodeDeveloper, nodeTester, nodeDecision, nodeEnd].forEach(node => {
-                deactivateNode(node);
-                node.classList.remove('node-completed', 'node-error');
-            });
-            
-            // Reset metrics
-            executionMetrics = {
-                startTime: null,
-                endTime: null,
-                totalTime: 0,
-                iterations: 0,
-                tokensUsed: 0,
-                testsTotal: 0,
-                testsPassed: 0,
-                testsFailed: 0
-            };
-            
-            showToast('Cleared', 'info');
-        });
+        clearBtn.addEventListener('click', clearAll);
+        clearBtn.setAttribute('data-bound', 'true');
         
         newRunBtn.addEventListener('click', () => {
-            clearBtn.click();
+            clearAll();
             taskInput.focus();
         });
+        newRunBtn.setAttribute('data-bound', 'true');
         
         // Example buttons
         document.querySelectorAll('.example-btn').forEach(btn => {
@@ -1206,37 +1394,16 @@
                 taskInput.focus();
                 showToast('Example loaded', 'info');
             });
+            btn.setAttribute('data-bound', 'true');
         });
         
         // Copy code
-        copyCodeBtn.addEventListener('click', async () => {
-            const codeText = codeDisplay.textContent;
-            if (codeText && !codeText.includes('No code generated')) {
-                try {
-                    await navigator.clipboard.writeText(codeText);
-                    showToast('Code copied to clipboard!', 'success');
-                    copyCodeBtn.classList.add('text-success');
-                    setTimeout(() => copyCodeBtn.classList.remove('text-success'), 2000);
-                } catch (err) {
-                    showToast('Failed to copy code', 'error');
-                }
-            }
-        });
+        copyCodeBtn.addEventListener('click', copyCode);
+        copyCodeBtn.setAttribute('data-bound', 'true');
         
         // Download code
-        downloadCodeBtn.addEventListener('click', () => {
-            const codeText = codeDisplay.textContent;
-            if (codeText && !codeText.includes('No code generated')) {
-                const blob = new Blob([codeText], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'generated_code.py';
-                a.click();
-                URL.revokeObjectURL(url);
-                showToast('Code downloaded!', 'success');
-            }
-        });
+        downloadCodeBtn.addEventListener('click', downloadCode);
+        downloadCodeBtn.setAttribute('data-bound', 'true');
         
         
         // Initialize
