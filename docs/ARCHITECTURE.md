@@ -12,22 +12,23 @@
 └──────┬──────┘
        │
        │ HTTP Request (JSON)
-       │ POST /agent/invoke
-       │ {"input": {"task": "..."}}
+       │ POST /invoke
+       │ {"task": "...", "thread_id": "..."}
        ▼
 ┌─────────────────────────────────────────┐
 │           FastAPI Server                │
 │              (app.py)                   │
 │                                         │
 │  ┌──────────────────────────────────┐  │
-│  │  API Layer                       │  │
+│  │  Production Patterns             │  │
+│  │  • Rate limiting (10 req/min)    │  │
+│  │  • Circuit breaker               │  │
 │  │  • Input validation (Pydantic)   │  │
-│  │  • JSON ↔ State transformation   │  │
-│  │  • Response formatting           │  │
+│  │  • Error handling                │  │
 │  └────────────┬─────────────────────┘  │
 └───────────────┼─────────────────────────┘
                 │
-                │ State Dict
+                │ State Dict + Config
                 ▼
 ┌─────────────────────────────────────────┐
 │         LangGraph Workflow              │
@@ -48,18 +49,40 @@
 │                       │ Test Report     │
 │                       ▼                 │
 │                  ┌──────────┐          │
-│                  │   END    │          │
-│                  └──────────┘          │
-└─────────────────────────────────────────┘
+│                  │ Decision │◄─┐       │
+│                  │  Router  │  │       │
+│                  └────┬─────┘  │       │
+│                       │         │       │
+│               Success │ Failure │       │
+│                       │   (max  │       │
+│                       │    3x)  │       │
+│                       ▼         │       │
+│                  ┌──────────┐  │       │
+│                  │   END    │  │       │
+│                  └──────────┘  │       │
+│                                │       │
+│        Self-Correction Loop ───┘       │
+└────────────────┬────────────────────────┘
+                 │
+                 ▼
+         ┌──────────────┐
+         │    Redis     │  (Optional - State Persistence)
+         │ Checkpointer │  • Thread management
+         └──────────────┘  • Conversation history
+                │           • Crash recovery
                 │
                 │ Final State
                 ▼
 ┌─────────────────────────────────────────┐
 │           Response                      │
-│  {"output": {                          │
+│  {                                     │
+│    "success": true,                    │
 │    "code": "...",                      │
-│    "report": "..."                     │
-│  }}                                    │
+│    "report": "...",                    │
+│    "iterations": 2,                    │
+│    "thread_id": "thread_abc123",       │
+│    "checkpointed": true                │
+│  }                                     │
 └─────────────────────────────────────────┘
 ```
 
@@ -596,3 +619,364 @@ Request → Check Cache → Hit? Return : Generate → Store → Return
 ---
 
 **Next**: Open START_HERE.md to begin your learning journey! 🚀
+
+---
+
+## 🔄 Self-Correction Loop Architecture
+
+### Decision Router Logic
+
+```python
+def should_continue(state: CrewState) -> Literal["developer", "end"]:
+    """
+    Conditional routing based on test results
+    """
+    MAX_ITERATIONS = 3
+    
+    # Guard: Prevent infinite loops
+    if state.get("iterations", 0) >= MAX_ITERATIONS:
+        return "end"
+    
+    # Success: Tests passed
+    if state.get("execution_success", False):
+        return "end"
+    
+    # Failure: Route back to developer with error feedback
+    return "developer"
+```
+
+### Self-Correction Flow
+
+```
+Iteration 1:
+Developer → Tester → Decision
+                      ↓
+                   Tests fail?
+                      ↓
+              Loop back to Developer
+                      ↓
+              (with error feedback)
+
+Iteration 2:
+Developer (fixes code) → Tester → Decision
+                                    ↓
+                                 Tests fail?
+                                    ↓
+                            Loop back again
+
+Iteration 3 (max):
+Developer (fixes again) → Tester → Decision
+                                     ↓
+                                  Pass/Fail
+                                     ↓
+                                    END
+```
+
+**Key Features:**
+- ✅ Maximum 3 iterations (prevents infinite loops)
+- ✅ Error feedback included in messages
+- ✅ Agent learns from previous attempts
+- ✅ Timeline shows each retry attempt
+
+---
+
+## 🧵 Thread Management Architecture
+
+### Thread-Based State Persistence
+
+```
+User Session A                User Session B
+     ↓                             ↓
+thread_id: "user_alice"      thread_id: "user_bob"
+     ↓                             ↓
+     ├─ Checkpoint 1               ├─ Checkpoint 1
+     ├─ Checkpoint 2               ├─ Checkpoint 2
+     └─ Checkpoint 3               └─ Checkpoint 3
+     
+     Completely isolated! ✅
+```
+
+### Thread Storage (Redis)
+
+```
+Redis Keys:
+checkpoint:thread_abc123:step_1  → State after Developer
+checkpoint:thread_abc123:step_2  → State after Tester
+checkpoint:thread_abc123:step_3  → State after Decision
+
+Each checkpoint contains:
+- messages: Full conversation history
+- code: Generated code
+- report: Test results
+- iterations: Retry count
+- execution_success: Pass/fail status
+```
+
+### Thread API Endpoints
+
+```
+POST /invoke
+  - Body: {"task": "...", "thread_id": "optional"}
+  - Auto-generates thread_id if not provided
+  - Returns: thread_id in response
+
+GET /threads
+  - Lists all saved threads
+  - Returns: thread_id list with metadata
+
+GET /threads/{thread_id}
+  - Gets specific thread info
+  - Returns: checkpoint count, keys
+
+DELETE /threads/{thread_id}
+  - Deletes thread and all checkpoints
+  - Returns: deletion confirmation
+```
+
+---
+
+## 🏭 Production Patterns
+
+### 1. Rate Limiting
+
+```python
+class RateLimiter:
+    def __init__(self, max_requests=10, window=60):
+        # 10 requests per 60 seconds per IP
+        
+    def is_allowed(self, client_ip):
+        # Track request counts
+        # Return True/False
+```
+
+**Benefits:**
+- Prevents abuse
+- Protects API from overload
+- Per-IP tracking
+
+### 2. Circuit Breaker
+
+```python
+# Global state
+_circuit_breaker_open = False
+_circuit_breaker_failures = 0
+
+# Open after 5 failures
+if _circuit_breaker_failures >= 5:
+    _circuit_breaker_open = True
+    
+# Auto-close after 60 seconds
+reset_time = time.time() + 60
+```
+
+**Benefits:**
+- Prevents cascading failures
+- Auto-recovery mechanism
+- Protects downstream services
+
+### 3. Input Validation
+
+```python
+def validate_task_input(task: str):
+    if not task or len(task.strip()) == 0:
+        return False, "Task cannot be empty"
+        
+    if len(task) > 5000:
+        return False, "Task too long (max 5000 chars)"
+        
+    return True, None
+```
+
+**Benefits:**
+- Fail fast on bad input
+- Clear error messages
+- Prevents resource waste
+
+### 4. Error Handling Layers
+
+```
+Layer 1: Input Validation
+  ↓ (HTTPException 422)
+  
+Layer 2: Rate Limiting
+  ↓ (HTTPException 429)
+  
+Layer 3: Circuit Breaker
+  ↓ (HTTPException 503)
+  
+Layer 4: Agent Execution
+  ↓ (Try/Catch → User-friendly error)
+  
+Layer 5: LLM Calls (Tenacity)
+  ↓ (Exponential backoff with jitter)
+```
+
+---
+
+## 💾 Checkpointing Architecture
+
+### Memory Checkpointer (Default)
+
+```python
+from langgraph.checkpoint.memory import MemorySaver
+
+checkpointer = MemorySaver()
+# State stored in RAM
+# Fast but ephemeral
+# Lost on restart
+```
+
+**Use Case:**
+- Development
+- Testing
+- Single-user applications
+- When persistence not needed
+
+### Redis Checkpointer (Production)
+
+```python
+from langgraph.checkpoint.redis import RedisSaver
+import redis.asyncio as aioredis
+
+redis_client = aioredis.from_url("redis://localhost:6379")
+checkpointer = RedisSaver(redis_client)
+# State persisted to disk
+# Survives restarts
+# Enables multi-instance
+```
+
+**Use Case:**
+- Production deployments
+- Multi-user applications
+- Conversation resumption
+- Crash recovery
+
+### Automatic Fallback
+
+```python
+def get_agent():
+    redis_url = os.getenv("REDIS_URL", "")
+    
+    if redis_url:
+        try:
+            # Try Redis
+            checkpointer = RedisSaver(redis_client)
+            logger.info("✅ Redis checkpointing enabled")
+        except:
+            # Fallback to memory
+            checkpointer = MemorySaver()
+            logger.info("⬇️ Falling back to memory")
+    else:
+        # Default: memory
+        checkpointer = MemorySaver()
+        logger.info("🧠 Using in-memory checkpointing")
+    
+    return workflow.compile(checkpointer=checkpointer)
+```
+
+**Benefits:**
+- Graceful degradation
+- No hard Redis requirement
+- Works in all environments
+
+---
+
+## 📊 Updated Performance Characteristics
+
+### Latency Breakdown (With Production Features)
+
+```
+Total: ~3-7 seconds
+
+├─ API Processing: ~15ms
+│  ├─ Rate limit check: 1ms
+│  ├─ Circuit breaker check: 1ms
+│  ├─ Input validation: 2ms
+│  ├─ Transformation: 1ms
+│  └─ Response formatting: 2ms
+│
+├─ Thread Management: ~5-10ms
+│  ├─ Generate/load thread_id: 1ms
+│  └─ Redis checkpoint lookup: 5-10ms
+│
+├─ Developer Agent: ~2-4s
+│  └─ (same as before)
+│
+├─ Tester Agent: ~1-3s
+│  └─ (same as before)
+│
+├─ Checkpointing: ~10-20ms
+│  ├─ Memory: ~1ms
+│  └─ Redis: ~10-20ms
+│
+└─ Network overhead: ~50-200ms
+```
+
+**Total Overhead from Production Patterns:** ~30-50ms (minimal impact!)
+
+---
+
+## 🔒 Security Enhancements
+
+### 1. API Key Protection
+```
+✅ Never logged or exposed
+✅ Server-side only
+✅ Environment variables
+✅ Not in git history
+```
+
+### 2. Rate Limiting Per IP
+```
+✅ 10 requests per minute
+✅ Per-IP tracking
+✅ 429 Too Many Requests
+```
+
+### 3. Input Sanitization
+```
+✅ Length limits (5000 chars)
+✅ Content validation
+✅ Prevent injection attacks
+```
+
+### 4. Circuit Breaker Protection
+```
+✅ Stops calling failing services
+✅ Prevents cascading failures
+✅ Auto-recovery after 60s
+```
+
+---
+
+## 🎓 Updated Learning Checkpoints
+
+### Understanding Level 5: Production Ready
+- [ ] Explain rate limiting implementation
+- [ ] Describe circuit breaker pattern
+- [ ] Configure Redis checkpointing
+- [ ] Implement thread management
+- [ ] Handle production errors gracefully
+
+### Understanding Level 6: Can Deploy
+- [ ] Deploy to Render/Railway/Heroku
+- [ ] Configure environment variables
+- [ ] Set up Redis (optional)
+- [ ] Monitor production metrics
+- [ ] Debug production issues
+
+---
+
+## 📚 Related Documentation (Updated)
+
+- **THREAD MANAGEMENT**: See docs/THREAD_MANAGEMENT.md
+- **REDIS SETUP**: See docs/REDIS_CHECKPOINTING.md  
+- **PRODUCTION PATTERNS**: See docs/PRODUCTION_PATTERNS.md
+- **DEPLOYMENT**: See DEPLOYMENT_GUIDE.md
+- **API REFERENCE**: http://localhost:8000/docs
+
+---
+
+**Last Updated:** August 9, 2026  
+**Version:** 2.0.0 (Production Ready)  
+**New Features:** Thread Management, Redis Checkpointing, Self-Correction Loop, Production Patterns
