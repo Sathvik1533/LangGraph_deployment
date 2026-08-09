@@ -434,11 +434,12 @@ class CrewState(TypedDict):
     With add_messages, each node can append new messages while preserving history.
     """
     messages: Annotated[List[BaseMessage], add]  # Conversation history (appended, not overwritten)
-    code: Optional[str]                           # Generated Python code
+    code: Optional[str]                           # Generated code
     report: Optional[str]                         # Test execution report
     execution_success: bool                       # Whether code executed without errors
     iterations: int                               # Number of self-correction loops
     max_iterations: int                           # Maximum allowed iterations (configurable, default 3)
+    language: Optional[str]                       # Target programming language (python, java, cpp)
 
 
 # ============================================================================
@@ -582,28 +583,48 @@ def _make_user_friendly_error(exception: Exception) -> str:
 
 def developer_node(state: CrewState) -> Dict[str, Any]:
     """
-    Developer Agent: Generates Python code with output validation.
+    Developer Agent: Generates code in the specified language with output validation.
     
     Pattern: Output Validation + Graceful Error Handling
     Why: Don't pass garbage from one agent to another. Validate outputs.
     
     Flow:
     1. Pass entire message history to LLM
-    2. LLM generates code
-    3. **VALIDATE** code is actually Python
+    2. LLM generates code in requested language
+    3. **VALIDATE** code is actually valid
     4. If invalid, add error message and mark for retry
     5. If valid, proceed normally
     
     V2: Simplified - no manual error parsing
     V3: Added output validation - prevents bad data flowing through system
+    V4: Added multi-language support (Python, Java, C++)
     """
     from langchain_core.messages import SystemMessage
     
+    # Get target language from state
+    target_language = state.get("language", "python").lower()
+    
+    # Language-specific system prompts
+    language_prompts = {
+        "python": "You are an expert Python developer. Generate clean, working Python code.",
+        "java": "You are an expert Java developer. Generate clean, working Java code with proper class structure.",
+        "cpp": "You are an expert C++ developer. Generate clean, working C++ code with proper includes and namespaces."
+    }
+    
+    language_instructions = {
+        "python": "Return ONLY the Python code, no explanations or markdown formatting.",
+        "java": "Return ONLY the Java code including the class definition. No explanations or markdown formatting.",
+        "cpp": "Return ONLY the C++ code including necessary #include directives. No explanations or markdown formatting."
+    }
+    
+    base_prompt = language_prompts.get(target_language, language_prompts["python"])
+    instructions = language_instructions.get(target_language, language_instructions["python"])
+    
     system_msg = SystemMessage(
         content=(
-            "You are an expert Python developer. Generate clean, working Python code. "
-            "If you see execution errors in the conversation history, analyze them and fix the code. "
-            "Return ONLY the Python code, no explanations or markdown formatting."
+            f"{base_prompt} "
+            f"If you see execution errors in the conversation history, analyze them and fix the code. "
+            f"{instructions}"
         )
     )
     
@@ -617,8 +638,8 @@ def developer_node(state: CrewState) -> Dict[str, Any]:
         # Extract code
         code = _extract_text(response.content)
         
-        # Clean markdown formatting (same as run_python_code tool)
-        clean_code = code.replace("```python", "").replace("```", "").strip()
+        # Clean markdown formatting
+        clean_code = code.replace("```python", "").replace("```java", "").replace("```cpp", "").replace("```c++", "").replace("```", "").strip()
         
         # VALIDATION: Check if output is actually code
         is_valid, error_msg = validate_code_output(clean_code)
@@ -637,7 +658,7 @@ def developer_node(state: CrewState) -> Dict[str, Any]:
         # Valid code - proceed normally (use cleaned code)
         return {
             "code": clean_code,
-            "messages": [AIMessage(content=f"✅ Generated code (iteration {state.get('iterations', 0) + 1})")],
+            "messages": [AIMessage(content=f"✅ Generated {target_language.upper()} code (iteration {state.get('iterations', 0) + 1})")],
             "iterations": state.get("iterations", 0) + 1
         }
         
