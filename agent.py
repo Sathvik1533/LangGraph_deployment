@@ -843,16 +843,62 @@ def create_workflow() -> StateGraph:
 
 def get_agent():
     """
-    Compile and return the executable agent workflow.
+    Compile and return the executable agent workflow with persistence.
     
-    Pattern: Factory function
-    Why: Encapsulates workflow creation, easy to test
+    Pattern: Factory function with production-grade checkpointing
+    Why: Enables state persistence, recovery, and human-in-the-loop features
+    
+    Checkpointing Strategy:
+    - Development: MemorySaver (fast, ephemeral)
+    - Production: RedisSaver (persistent, scalable)
     
     Returns:
-        Compiled LangGraph workflow ready to invoke
+        Compiled LangGraph workflow with checkpointing enabled
     """
+    from langgraph.checkpoint.memory import MemorySaver
+    
     workflow = create_workflow()
-    return workflow.compile()
+    
+    # Try Redis checkpointing for production (optional)
+    checkpointer = None
+    redis_url = os.getenv("REDIS_URL", "").strip()
+    
+    if redis_url:
+        try:
+            # Production: Redis-backed persistence
+            import redis.asyncio as aioredis
+            from langgraph.checkpoint.redis import RedisSaver
+            
+            logger.info(f"🔴 Connecting to Redis for persistent checkpointing: {redis_url}")
+            
+            # Connect to Redis (local or cloud)
+            redis_client = aioredis.from_url(
+                redis_url,
+                encoding="utf-8",
+                decode_responses=False,
+                socket_connect_timeout=5,
+                socket_timeout=5
+            )
+            
+            # Create Redis checkpointer
+            checkpointer = RedisSaver(redis_client)
+            logger.info("✅ Redis checkpointing enabled - state persisted to disk")
+            
+        except ImportError:
+            logger.warning("⚠️ Redis checkpointing unavailable: install 'langgraph-checkpoint-redis'")
+            logger.info("💡 Run: pip install langgraph-checkpoint-redis redis")
+            checkpointer = MemorySaver()
+        except Exception as e:
+            logger.error(f"❌ Redis connection failed: {e}")
+            logger.info("⬇️ Falling back to in-memory checkpointing")
+            checkpointer = MemorySaver()
+    else:
+        # Development: In-memory checkpointing
+        logger.info("🧠 Using in-memory checkpointing (development mode)")
+        checkpointer = MemorySaver()
+    
+    # Compile workflow with checkpointer
+    return workflow.compile(checkpointer=checkpointer)
 
 
 # ============================================================================

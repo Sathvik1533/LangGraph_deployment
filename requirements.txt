@@ -16,3 +16,8 @@ httpx==0.27.2
 # Utilities
 typing_extensions==4.12.2
 tenacity==8.2.3
+
+# Production Checkpointing (Optional for persistence)
+# Install with: pip install langgraph-checkpoint-redis redis
+langgraph-checkpoint-redis>=2.0.0  # Redis-backed state persistence
+redis>=5.0.0                        # Async Redis client
