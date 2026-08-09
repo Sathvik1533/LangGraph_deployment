@@ -464,7 +464,7 @@
                         <div class="flex justify-between items-center mb-3 lg:mb-4">
                             <div>
                                 <h2 class="text-lg lg:text-xl font-bold text-on-surface flex items-center gap-2 lg:gap-3">
-                                    <span class="material-symbols-outlined text-xl lg:text-2xl">edit_note</span>
+                                    <span class="material-symbols-outlined text-xl lg:text-2xl animate-pulse">edit_note</span>
                                     Task Definition
                                 </h2>
                                 <p class="text-xs lg:text-sm text-on-surface-variant mt-1 hidden lg:block">Describe what code you want to generate</p>
@@ -484,9 +484,10 @@
                             
                             <button 
                                 id="generateBtn" 
-                                class="absolute bottom-2 lg:bottom-3 right-2 lg:right-3 bg-primary text-white px-4 lg:px-6 py-2 lg:py-3 rounded-lg lg:rounded-xl text-sm lg:text-base font-semibold hover:bg-blue-600 transition-all flex items-center gap-2 shadow-lg btn-hover disabled:opacity-50 disabled:cursor-not-allowed"
+                                class="absolute bottom-2 lg:bottom-3 right-2 lg:right-3 bg-primary text-white px-4 lg:px-6 py-2 lg:py-3 rounded-lg lg:rounded-xl text-sm lg:text-base font-semibold hover:bg-blue-600 active:scale-95 transition-all flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                onclick="generateCode()"
                             >
-                                <span class="material-symbols-outlined text-base lg:text-xl">magic_button</span>
+                                <span class="material-symbols-outlined text-base lg:text-xl animate-pulse">magic_button</span>
                                 <span id="generateBtnText" class="hidden sm:inline">Generate Code</span>
                             </button>
                         </div>
@@ -518,11 +519,11 @@
                             <p class="text-xs text-on-surface-variant mt-1 hidden lg:block">AI-generated Python code</p>
                         </div>
                         <div class="flex gap-2">
-                            <button id="copyCodeBtn" class="text-on-surface-variant hover:text-primary p-1.5 lg:p-2 rounded-lg hover:bg-surface-container transition-all" title="Copy Code">
-                                <span class="material-symbols-outlined text-lg lg:text-xl">content_copy</span>
+                            <button id="copyCodeBtn" class="text-on-surface-variant hover:text-primary active:scale-90 p-1.5 lg:p-2 rounded-lg hover:bg-surface-container transition-all" title="Copy Code" onclick="copyCode()">
+                                <span class="material-symbols-outlined text-lg lg:text-xl hover:animate-bounce">content_copy</span>
                             </button>
-                            <button id="downloadCodeBtn" class="text-on-surface-variant hover:text-primary p-1.5 lg:p-2 rounded-lg hover:bg-surface-container transition-all" title="Download">
-                                <span class="material-symbols-outlined text-lg lg:text-xl">download</span>
+                            <button id="downloadCodeBtn" class="text-on-surface-variant hover:text-primary active:scale-90 p-1.5 lg:p-2 rounded-lg hover:bg-surface-container transition-all" title="Download" onclick="downloadCode()">
+                                <span class="material-symbols-outlined text-lg lg:text-xl hover:animate-bounce">download</span>
                             </button>
                         </div>
                     </div>
@@ -1202,15 +1203,23 @@
         
         // Main API Call Function
         async function generateCode() {
+            console.log('🚀 Generate Code button clicked!');
             const task = taskInput.value.trim();
+            console.log('📝 Task:', task);
             
             if (!task) {
+                console.warn('⚠️ No task entered');
                 showToast('Please enter a task description', 'warning');
                 taskInput.focus();
                 return;
             }
             
-            if (isGenerating) return;
+            if (isGenerating) {
+                console.warn('⚠️ Already generating');
+                return;
+            }
+            
+            console.log('✅ Starting generation...');
             
             // Reset state
             isGenerating = true;
