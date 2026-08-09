@@ -100,6 +100,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount static files (CSS, JS)
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Mount templates (shared navigation component)
+if os.path.exists("templates"):
+    app.mount("/templates", StaticFiles(directory="templates"), name="templates")
+
 
 # ============================================================================
 # REQUEST/RESPONSE MODELS
@@ -175,12 +183,14 @@ def health_check():
     }
 
 
-@app.get("/", tags=["Health"])
+@app.get("/", tags=["Frontend"])
 def root():
     """
-    Serve the frontend UI
+    Serve the dashboard page (home)
     """
-    if os.path.exists("index.html"):
+    if os.path.exists("pages/dashboard.html"):
+        return FileResponse("pages/dashboard.html")
+    elif os.path.exists("index.html"):
         return FileResponse("index.html")
     else:
         return {
@@ -195,6 +205,46 @@ def root():
                 "info": "/info"
             }
         }
+
+
+@app.get("/generate", tags=["Frontend"])
+def generate_page():
+    """
+    Serve the code generator page
+    """
+    if os.path.exists("pages/generate.html"):
+        return FileResponse("pages/generate.html")
+    raise HTTPException(status_code=404, detail="Generate page not found")
+
+
+@app.get("/workflow", tags=["Frontend"])
+def workflow_page():
+    """
+    Serve the workflow visualization page
+    """
+    if os.path.exists("pages/workflow.html"):
+        return FileResponse("pages/workflow.html")
+    raise HTTPException(status_code=404, detail="Workflow page not found")
+
+
+@app.get("/execution", tags=["Frontend"])
+def execution_page():
+    """
+    Serve the execution report page
+    """
+    if os.path.exists("pages/execution.html"):
+        return FileResponse("pages/execution.html")
+    raise HTTPException(status_code=404, detail="Execution page not found")
+
+
+@app.get("/history", tags=["Frontend"])
+def history_page():
+    """
+    Serve the generation history page
+    """
+    if os.path.exists("pages/history.html"):
+        return FileResponse("pages/history.html")
+    raise HTTPException(status_code=404, detail="History page not found")
 
 
 @app.get("/health", tags=["Health"])
