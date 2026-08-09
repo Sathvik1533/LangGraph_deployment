@@ -3,9 +3,16 @@
 ## ✅ What's Been Done
 
 ### 1. Fixed Dependencies ✅
-- **Added** `langchain-groq==0.1.9` to requirements.txt
-- **Removed** old Gemini packages
-- **Ready** for Render deployment
+- **Updated** `langchain-groq==0.2.0` for compatibility
+- **Updated** `langgraph>=0.2.45` for latest features
+- **Made Redis optional** (commented out in requirements.txt)
+- **Ready** for Render deployment without Redis
+
+### 2. Redis Checkpointing (Optional) ℹ️
+- **NOT required** for deployment
+- Agent works perfectly with in-memory storage
+- Can add later if you need persistent state
+- See `DEPLOYMENT_GUIDE.md` for Redis setup instructions
 
 ### 2. Organized Repository ✅
 - **Root:** Only essential code files (17 files total)

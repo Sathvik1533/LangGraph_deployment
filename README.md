@@ -181,6 +181,33 @@ graph LR
 
 ## ⚙️ Configuration
 
+### State Persistence
+
+The agent supports two modes of operation:
+
+**1. Development Mode (Default)**
+- Uses in-memory state storage
+- Fast and simple
+- State is lost on server restart
+- Perfect for testing and development
+
+**2. Production Mode (Optional - Redis)**
+- Persistent state storage with Redis
+- Survives server restarts
+- Enables multi-instance deployments
+- Supports conversation resumption
+
+To enable Redis persistence:
+```bash
+# Install Redis dependencies (optional)
+pip install langgraph-checkpoint-redis redis
+
+# Add to .env
+REDIS_URL=redis://localhost:6379
+```
+
+**Note:** Redis is NOT required for deployment. The agent works perfectly fine with in-memory storage for most use cases.
+
 ### Environment Variables
 
 Create a `.env` file in the root directory:
@@ -189,8 +216,12 @@ Create a `.env` file in the root directory:
 # Required
 GROQ_API_KEY=gsk_your_api_key_here
 
-# Optional (defaults shown)
+# Optional - Model Configuration
 GROQ_MODEL=llama-3.3-70b-versatile
+
+# Optional - Redis for State Persistence (Production)
+# If not set, uses in-memory storage (development mode)
+# REDIS_URL=redis://localhost:6379
 ```
 
 ### Available Models

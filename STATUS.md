@@ -31,8 +31,10 @@
 | Circuit Breaker | ✅ | Auto-recovery after failures |
 | Error Handling | ✅ | User-friendly error messages |
 | Health Checks | ✅ | `/health` endpoint |
-| Checkpointing | ✅ | Redis with memory fallback |
+| Checkpointing | ✅ | Memory (default) + Redis (optional) |
 | Thread Isolation | ✅ | Per-user/session threads |
+
+**Note:** Redis checkpointing is OPTIONAL. The agent works perfectly with in-memory storage for development and most production use cases. Redis is only needed if you require state persistence across server restarts.
 
 ---
 
