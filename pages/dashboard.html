@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - LangGraph Agent</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/css/shared.css">
+    
+    <style>
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e5eeff;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: #0b1c30;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #434655;
+            font-weight: 500;
+        }
+        
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-center;
+            font-size: 24px;
+        }
+        
+        .recent-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #e5eeff;
+            background: white;
+            transition: all 0.2s;
+        }
+        
+        .recent-item:hover {
+            border-color: #2563eb;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+        }
+        
+        .quick-action {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: 24px;
+            border-radius: 12px;
+            border: 2px dashed #e5eeff;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .quick-action:hover {
+            border-color: #2563eb;
+            border-style: solid;
+            background: #f8f9ff;
+        }
+    </style>
+</head>
+<body class="h-full">
+    
+    <!-- Include Navigation -->
+    <div id="navigation"></div>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Page Header -->
+        <header class="page-header">
+            <h1 class="page-title">
+                <span class="material-symbols-outlined" style="font-size: 40px;">dashboard</span>
+                Dashboard
+            </h1>
+            <p class="page-subtitle">Welcome to your self-correcting code generation agent</p>
+        </header>
+        
+        <!-- Stats Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; margin-bottom: 32px;">
+            <!-- Total Generations -->
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div class="stat-icon" style="background: #dbeafe; color: #2563eb;">
+                        <span class="material-symbols-outlined">code</span>
+                    </div>
+                    <span class="badge badge-info">All Time</span>
+                </div>
+                <div class="stat-value" id="totalGenerations">0</div>
+                <div class="stat-label">Total Generations</div>
+            </div>
+            
+            <!-- Success Rate -->
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div class="stat-icon" style="background: #d1fae5; color: #059669;">
+                        <span class="material-symbols-outlined">check_circle</span>
+                    </div>
+                    <span class="badge badge-success">Success</span>
+                </div>
+                <div class="stat-value" id="successRate">0%</div>
+                <div class="stat-label">Success Rate</div>
+            </div>
+            
+            <!-- Active Threads -->
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div class="stat-icon" style="background: #e9ddff; color: #8b5cf6;">
+                        <span class="material-symbols-outlined">forum</span>
+                    </div>
+                    <span class="badge badge-info">Active</span>
+                </div>
+                <div class="stat-value" id="activeThreads">0</div>
+                <div class="stat-label">Active Threads</div>
+            </div>
+            
+            <!-- Avg Response Time -->
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div class="stat-icon" style="background: #fef3c7; color: #d97706;">
+                        <span class="material-symbols-outlined">speed</span>
+                    </div>
+                    <span class="badge badge-warning">Performance</span>
+                </div>
+                <div class="stat-value" id="avgTime">0s</div>
+                <div class="stat-label">Avg Response Time</div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="card mb-4">
+            <h2 class="font-bold text-lg mb-4">Quick Actions</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                <a href="/generate" class="quick-action">
+                    <span class="material-symbols-outlined" style="font-size: 48px; color: #2563eb;">auto_awesome</span>
+                    <span class="font-semibold">New Generation</span>
+                    <span class="text-xs" style="color: #64748b;">Create new code</span>
+                </a>
+                
+                <a href="/history" class="quick-action">
+                    <span class="material-symbols-outlined" style="font-size: 48px; color: #8b5cf6;">history</span>
+                    <span class="font-semibold">View History</span>
+                    <span class="text-xs" style="color: #64748b;">Past generations</span>
+                </a>
+                
+                <a href="/workflow" class="quick-action">
+                    <span class="material-symbols-outlined" style="font-size: 48px; color: #06b6d4;">account_tree</span>
+                    <span class="font-semibold">Workflow</span>
+                    <span class="text-xs" style="color: #64748b;">Visualize agents</span>
+                </a>
+                
+                <a href="/execution" class="quick-action">
+                    <span class="material-symbols-outlined" style="font-size: 48px; color: #059669;">analytics</span>
+                    <span class="font-semibold">Reports</span>
+                    <span class="text-xs" style="color: #64748b;">View metrics</span>
+                </a>
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="card">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="font-bold text-lg">Recent Activity</h2>
+                <a href="/history" class="text-sm" style="color: #2563eb; text-decoration: none;">View All →</a>
+            </div>
+            
+            <div id="recentActivity" style="display: flex; flex-direction: column; gap: 12px;">
+                <div class="text-center" style="padding: 48px; color: #64748b;">
+                    <span class="material-symbols-outlined" style="font-size: 64px; opacity: 0.3;">history</span>
+                    <p class="mt-4">No recent activity</p>
+                    <p class="text-sm">Generate your first code to get started</p>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Scripts -->
+    <script src="/static/js/common.js"></script>
+    <script>
+        // Load navigation
+        fetch('/templates/navigation.html')
+            .then(res => res.text())
+            .then(html => {
+                document.getElementById('navigation').innerHTML = html;
+                setActiveNav('dashboard');
+            });
+        
+        // Load dashboard stats
+        async function loadDashboardStats() {
+            // This would fetch real data from your backend
+            // For now, using placeholder data
+            
+            // You'll need to add these endpoints to app.py:
+            // GET /api/stats - returns { total, successRate, activeThreads, avgTime }
+            
+            document.getElementById('totalGenerations').textContent = '0';
+            document.getElementById('successRate').textContent = '0%';
+            document.getElementById('activeThreads').textContent = '0';
+            document.getElementById('avgTime').textContent = '0s';
+        }
+        
+        // Load recent activity
+        async function loadRecentActivity() {
+            // This would fetch from localStorage or backend
+            const recent = JSON.parse(localStorage.getItem('recentGenerations') || '[]');
+            
+            if (recent.length === 0) return;
+            
+            const container = document.getElementById('recentActivity');
+            container.innerHTML = recent.slice(0, 5).map(item => `
+                <div class="recent-item">
+                    <div class="stat-icon" style="background: #dbeafe; color: #2563eb; width: 40px; height: 40px; font-size: 20px;">
+                        <span class="material-symbols-outlined">code</span>
+                    </div>
+                    <div style="flex: 1;">
+                        <div class="font-semibold">${item.task || 'Code Generation'}</div>
+                        <div class="text-xs" style="color: #64748b;">${getLanguageName(item.language)} • ${formatDate(item.timestamp)}</div>
+                    </div>
+                    <span class="badge ${item.success ? 'badge-success' : 'badge-error'}">
+                        ${item.success ? '✓ Success' : '✗ Failed'}
+                    </span>
+                </div>
+            `).join('');
+        }
+        
+        // Initialize
+        loadDashboardStats();
+        loadRecentActivity();
+        
+        // Refresh stats every 30 seconds
+        setInterval(loadDashboardStats, 30000);
+    </script>
+</body>
+</html>
