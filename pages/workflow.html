@@ -185,7 +185,14 @@
     <script src="/static/js/common.js"></script>
     <script>
         let currentTaskSpec = "Write a function to check if a number is prime";
-        let currentLang = "python";
+
+        function getCurrentSelectedLanguage() {
+            const select = document.getElementById('canvasLangSelect');
+            if (select && select.value) {
+                return select.value.toLowerCase();
+            }
+            return (localStorage.getItem('langgraph_last_lang') || 'python').toLowerCase();
+        }
 
         document.addEventListener('DOMContentLoaded', async () => {
             const navbarRes = await fetch('/templates/navigation.html');
@@ -203,9 +210,8 @@
                 document.getElementById('canvasTaskInput').value = savedTask;
             }
             if (savedLang) {
-                currentLang = savedLang.toLowerCase();
                 const select = document.getElementById('canvasLangSelect');
-                if (select) select.value = currentLang;
+                if (select) select.value = savedLang.toLowerCase();
             }
 
             updateDynamicTaskSpec(currentTaskSpec);
@@ -220,13 +226,11 @@
             if (!taskText || !taskText.trim) taskText = "Write a function to check if a number is prime";
             currentTaskSpec = taskText.trim();
             
-            const select = document.getElementById('canvasLangSelect');
-            if (select) currentLang = select.value.toLowerCase();
-
-            document.getElementById('canvasLangBadge').textContent = `TARGET: ${currentLang.toUpperCase()}`;
+            const activeLang = getCurrentSelectedLanguage();
+            document.getElementById('canvasLangBadge').textContent = `TARGET: ${activeLang.toUpperCase()}`;
 
             selectNode(STEPS[currentStepIndex]);
-            showToast(`Canvas updated for ${currentLang.toUpperCase()} specification`, 'info');
+            showToast(`Canvas updated for ${activeLang.toUpperCase()} specification`, 'info');
         }
 
         function getDynamicNodeData(nodeKey, task, lang) {
@@ -282,7 +286,7 @@
                 'START': {
                     title: 'START Node (Workflow Entry)',
                     badge: 'ENTRY POINT',
-                    desc: 'Workflow entry point. Receives initial CrewState payload with user task specification and target programming language.',
+                    desc: `Workflow entry point. Receives initial CrewState payload with user task specification (${task}) and target programming language (${lang.toUpperCase()}).`,
                     inputs: `{\n  "task": "${task}",\n  "language": "${lang}",\n  "max_iterations": 3\n}`,
                     outputs: `{\n  "messages": [HumanMessage("${task}")],\n  "iterations": 0,\n  "execution_success": false,\n  "thread_id": "thread_d68077c38bcb"\n}`
                 },
@@ -324,7 +328,8 @@
         let autoPlayTimer = null;
 
         function selectNode(nodeKey) {
-            const data = getDynamicNodeData(nodeKey, currentTaskSpec, currentLang);
+            const activeLang = getCurrentSelectedLanguage();
+            const data = getDynamicNodeData(nodeKey, currentTaskSpec, activeLang);
             if (!data) return;
 
             STEPS.forEach(key => {
@@ -347,7 +352,8 @@
             const nodeKey = STEPS[currentStepIndex];
             selectNode(nodeKey);
 
-            document.getElementById('simStepStatus').textContent = `Step ${currentStepIndex + 1} of ${STEPS.length}: ${nodeKey} Node Active (${currentLang.toUpperCase()})`;
+            const activeLang = getCurrentSelectedLanguage();
+            document.getElementById('simStepStatus').textContent = `Step ${currentStepIndex + 1} of ${STEPS.length}: ${nodeKey} Node Active (${activeLang.toUpperCase()})`;
             showToast(`Step ${currentStepIndex + 1}: ${nodeKey} Node Active`, 'info');
         }
 
