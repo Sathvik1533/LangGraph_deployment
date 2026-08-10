@@ -243,18 +243,18 @@ const FULL_PLATFORM_TOUR = [
         steps: [
             {
                 selector: '#taskInput',
-                title: '2/5 Task Specification Input',
-                desc: 'Enter any coding task specification in natural language for the Developer agent to draft.'
+                title: '2/5 Task Specification Requirement',
+                desc: 'Specify your task by typing in this box OR click one of the quick preset buttons below (Fibonacci, Palindrome, Safe Division) before proceeding!'
             },
             {
-                selector: '#languageSelect',
-                title: '2/5 Target Language Selector',
-                desc: 'Choose target language syntax (Python 3.11, Java 17, or C++ 20).'
+                selector: '#langSelectWrapper',
+                title: '2/5 Custom Target Language Dropdown',
+                desc: 'Bespoke custom web dropdown selector for Python 3.11, Java 17, or C++ 20 target syntax.'
             },
             {
-                selector: '#maxIterationsSelect',
-                title: '2/5 Self-Fix Ceiling Dropdown',
-                desc: 'Configure maximum self-correction loops (1, 3, or 5 iterations).'
+                selector: '#ceilingSelectWrapper',
+                title: '2/5 Custom Self-Fix Ceiling Dropdown',
+                desc: 'Custom studio dropdown configuring maximum self-correction loops (1, 3, or 5 iterations).'
             },
             {
                 selector: '#generateBtn',
@@ -355,10 +355,7 @@ function autoAwakenSpotlightTour() {
     const hasSeen = localStorage.getItem(TOUR_SEEN_KEY) === 'true';
     const isTourActiveParam = urlParams.get('tour') === 'active';
 
-    // FIRST-TIME VISITOR LOGIC:
-    // Auto-trigger ONLY if the user is a NEW visitor (has NOT completed/closed tour) OR tour parameter is active!
     if (hasSeen && !isTourActiveParam) {
-        console.log('💡 User has already completed the platform guide. Auto-trigger skipped.');
         return;
     }
 
@@ -455,6 +452,16 @@ function renderSpotlightStep() {
 
 function nextSpotlightStep() {
     const pageTour = FULL_PLATFORM_TOUR[currentTourPageIndex];
+    
+    // Check if on Task Input step on Code Workbench
+    if (window.location.pathname === '/generate' && currentTourStepIndex === 0) {
+        const taskInput = document.getElementById('taskInput');
+        if (taskInput && !taskInput.value.trim()) {
+            taskInput.value = 'Write a function to calculate fibonacci numbers with self-validation assertions';
+            showToast('Auto-populated Fibonacci specification for tour!', 'info');
+        }
+    }
+
     if (currentTourStepIndex < pageTour.steps.length - 1) {
         currentTourStepIndex++;
         renderSpotlightStep();
