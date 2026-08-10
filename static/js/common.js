@@ -673,3 +673,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // Auto-Awaken Multi-Page Tour after 600ms for First Visit
     setTimeout(autoAwakenSpotlightTour, 600);
 });
+
+// Mobile Navigation Drawer Toggle
+function toggleMobileNav() {
+    const overlay = document.getElementById('mobileNavOverlay');
+    const drawer = document.getElementById('mobileNavDrawer');
+    const icon = document.getElementById('mobileMenuIcon');
+    if (!drawer) return;
+    const isOpen = drawer.classList.contains('open');
+    if (isOpen) {
+        drawer.classList.remove('open');
+        if (overlay) overlay.classList.remove('open');
+        if (icon) icon.textContent = 'menu';
+    } else {
+        drawer.classList.add('open');
+        if (overlay) overlay.classList.add('open');
+        if (icon) icon.textContent = 'close';
+    }
+}
+
