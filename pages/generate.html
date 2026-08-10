@@ -146,6 +146,32 @@
             </div>
 
         </div>
+
+        <!-- Dynamic Language Conversion Bar (shown after generation) -->
+        <div id="conversionBar" style="display: none; margin-top: 20px;">
+            <div class="studio-card" style="padding: 16px 24px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="material-symbols-outlined" style="color: var(--accent-indigo); font-size: 20px;">translate</span>
+                        <span style="font-size: 13.5px; font-weight: 600; color: var(--text-secondary);">Convert this code to another language:</span>
+                    </div>
+                    <div style="display: flex; gap: 8px;" id="conversionBtns">
+                        <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 16px; border-radius: var(--radius-pill);" onclick="handleConvert('python')" id="convertPythonBtn">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">code</span>
+                            Python
+                        </button>
+                        <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 16px; border-radius: var(--radius-pill);" onclick="handleConvert('java')" id="convertJavaBtn">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">coffee</span>
+                            Java
+                        </button>
+                        <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 16px; border-radius: var(--radius-pill);" onclick="handleConvert('cpp')" id="convertCppBtn">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">memory</span>
+                            C++
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script src="/static/js/common.js"></script>

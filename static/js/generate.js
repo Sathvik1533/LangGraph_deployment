@@ -210,6 +210,7 @@ async function handleGenerate() {
             });
 
             showToast(`${language.toUpperCase()} Code verified successfully!`, 'success');
+            showConversionBar(language);
 
         } else {
             statusBanner.className = 'studio-card';
@@ -245,8 +246,139 @@ async function handleGenerate() {
         generateBtn.disabled = false;
         generateBtn.innerHTML = `
             <span class="material-symbols-outlined">code_blocks</span>
-            <span>Execute & Verify Specification</span>
+            <span>Generate Code</span>
             <span class="kbd-badge" style="margin-left: 4px; background: #ffffff; color: #0f172a;">⌘↵</span>
         `;
+    }
+}
+
+// Show conversion bar and hide the button for the current language
+function showConversionBar(currentLang) {
+    const bar = document.getElementById('conversionBar');
+    if (!bar) return;
+    bar.style.display = 'block';
+    updateConversionButtons(currentLang);
+}
+
+function updateConversionButtons(currentLang) {
+    const normalized = currentLang.toLowerCase();
+    document.getElementById('convertPythonBtn').style.display = normalized === 'python' ? 'none' : 'inline-flex';
+    document.getElementById('convertJavaBtn').style.display = normalized === 'java' ? 'none' : 'inline-flex';
+    document.getElementById('convertCppBtn').style.display = (normalized === 'cpp' || normalized === 'c++') ? 'none' : 'inline-flex';
+}
+
+// Dynamic code conversion — re-sends the same task in a different language
+async function handleConvert(targetLang) {
+    const taskInput = document.getElementById('taskInput');
+    const task = taskInput?.value.trim();
+    if (!task) {
+        showToast('No task to convert. Generate code first!', 'warning');
+        return;
+    }
+
+    const statusBanner = document.getElementById('statusBanner');
+    const codeDisplay = document.getElementById('codeDisplay');
+    const reportDisplay = document.getElementById('reportDisplay');
+    const codeTabHeader = document.querySelector('.code-editor-header span');
+    const maxIterationsSelect = document.getElementById('maxIterationsSelect');
+    const maxIterations = maxIterationsSelect ? (parseInt(maxIterationsSelect.value) || 3) : 3;
+
+    const langLabels = { python: 'Python 3.11', java: 'Java 17', cpp: 'C++ 20' };
+
+    // Update language dropdown to reflect conversion target
+    const hidden = document.getElementById('languageSelect');
+    if (hidden) hidden.value = targetLang;
+    const valSpan = document.getElementById('langSelectValue');
+    if (valSpan) valSpan.textContent = langLabels[targetLang] || targetLang;
+
+    // Update code tab filename
+    if (codeTabHeader) {
+        codeTabHeader.textContent = LANG_FILENAME_MAP[targetLang.toLowerCase()] || 'solution_code.txt';
+    }
+
+    // Show converting status
+    statusBanner.style.display = 'flex';
+    statusBanner.className = 'studio-card';
+    statusBanner.style.borderColor = 'var(--accent-indigo)';
+    statusBanner.style.background = 'var(--accent-indigo-bg)';
+    statusBanner.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <span class="material-symbols-outlined spin" style="color: var(--accent-indigo); font-size: 22px;">sync</span>
+            <div>
+                <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">Converting to ${langLabels[targetLang] || targetLang}...</div>
+                <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Re-generating the same task in a different language</div>
+            </div>
+        </div>
+    `;
+
+    // Disable conversion buttons during conversion
+    document.querySelectorAll('#conversionBtns button').forEach(btn => btn.disabled = true);
+
+    try {
+        const payload = { task, language: targetLang, max_iterations: maxIterations };
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        currentResponseData = data;
+
+        if (response.ok && data.code) {
+            statusBanner.style.borderColor = 'rgba(5, 150, 105, 0.4)';
+            statusBanner.style.background = 'var(--accent-emerald-bg)';
+            statusBanner.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span class="material-symbols-outlined" style="color: var(--accent-emerald); font-size: 24px;">check_circle</span>
+                        <div>
+                            <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">Converted to ${(langLabels[targetLang] || targetLang).toUpperCase()} successfully!</div>
+                            <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Completed in ${data.iterations} loop(s) • Thread: ${data.thread_id}</div>
+                        </div>
+                    </div>
+                    <span class="cyber-badge cyber-badge-emerald">CONVERTED</span>
+                </div>
+            `;
+
+            codeDisplay.textContent = data.code;
+            reportDisplay.textContent = data.report || 'No detailed report.';
+
+            saveRunToHistory({
+                task, language: targetLang, success: data.execution_success,
+                iterations: data.iterations, code: data.code, report: data.report, thread_id: data.thread_id
+            });
+
+            showConversionBar(targetLang);
+            showToast(`Code converted to ${langLabels[targetLang]}!`, 'success');
+        } else {
+            statusBanner.style.borderColor = 'rgba(220, 38, 38, 0.4)';
+            statusBanner.style.background = 'var(--accent-rose-bg)';
+            statusBanner.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span class="material-symbols-outlined" style="color: var(--accent-rose); font-size: 24px;">error</span>
+                    <div>
+                        <div style="font-weight: 700; font-size: 14px;">Conversion Error</div>
+                        <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">${data.detail?.message || data.error || 'Failed to convert.'}</div>
+                    </div>
+                </div>
+            `;
+            showToast('Conversion failed', 'error');
+        }
+    } catch (err) {
+        statusBanner.style.borderColor = 'rgba(220, 38, 38, 0.4)';
+        statusBanner.style.background = 'var(--accent-rose-bg)';
+        statusBanner.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span class="material-symbols-outlined" style="color: var(--accent-rose); font-size: 24px;">wifi_off</span>
+                <div>
+                    <div style="font-weight: 700; font-size: 14px;">Connection Error</div>
+                    <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">${err.message}</div>
+                </div>
+            </div>
+        `;
+        showToast('Connection error', 'error');
+    } finally {
+        document.querySelectorAll('#conversionBtns button').forEach(btn => btn.disabled = false);
     }
 }
