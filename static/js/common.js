@@ -1,4 +1,4 @@
-// Executive Engineering Platform Controller & Proactive Page Guide
+// Executive Engineering Platform Controller & Autonomous Spotlight Tour Engine
 
 const API_URL = window.location.origin + '/invoke';
 const HEALTH_API_URL = window.location.origin + '/health';
@@ -178,84 +178,179 @@ document.addEventListener('keydown', (e) => {
         openCommandPalette();
     } else if (e.key === 'Escape') {
         closeCommandPalette();
-        closeProactiveGuide();
+        closeSpotlightTour();
     }
 });
 
-// Page-Aware Proactive Guide Explanations
-const PAGE_GUIDE_DATA = {
-    '/': {
-        title: "Overview Command Center",
-        badge: "PAGE GUIDE: 1 / 5",
-        desc: "Welcome to LangGraph Studio! This Command Center summarizes live platform health, total code verification runs, self-correction limits, and one-click task specification presets.",
-        nextPage: "/generate",
-        nextText: "Go to Code Workbench →"
-    },
-    '/generate': {
-        title: "Code Workbench & Verification Studio",
-        badge: "PAGE GUIDE: 2 / 5",
-        desc: "This workbench lets you submit natural language code specifications in Python, Java, or C++. The Developer agent drafts code, while the Sandbox Verifier executes automated assertion tests.",
-        nextPage: "/workflow",
-        nextText: "Go to State Graph →"
-    },
-    '/workflow': {
-        title: "Interactive State Graph Canvas",
-        badge: "PAGE GUIDE: 3 / 5",
-        desc: "This interactive canvas visualizes the LangGraph state machine. Click 'Simulate Backend Execution Step' to step through nodes (START → Developer → Tester → Router → END) and inspect CrewState variables.",
-        nextPage: "/execution",
-        nextText: "Go to Telemetry →"
-    },
-    '/execution': {
-        title: "System Telemetry & Diagnostics",
-        badge: "PAGE GUIDE: 4 / 5",
-        desc: "Monitors production API health, circuit breaker status, sliding-window rate limiters, and live streaming diagnostics logs.",
-        nextPage: "/history",
-        nextText: "Go to Audit Log →"
-    },
-    '/history': {
-        title: "Verification Audit Log",
-        badge: "PAGE GUIDE: 5 / 5",
-        desc: "Searchable and filterable history of all past verification runs. Click any table row to open the complete source code and execution report modal.",
-        nextPage: "/",
-        nextText: "Return to Command Center →"
-    }
+// Autonomous Element Spotlight Tour Steps per Page
+const PAGE_SPOTLIGHT_STEPS = {
+    '/': [
+        {
+            selector: '.top-navbar',
+            title: '1. Floating Navigation Header',
+            desc: 'Seamlessly switch between Overview, Code Workbench, State Graph, Telemetry, and Audit Logs.',
+            nextText: 'Next: Command Center Stats →'
+        },
+        {
+            selector: '.studio-card-hover',
+            title: '2. Operational Telemetry Metrics',
+            desc: 'Real-time indicators tracking total multi-agent runs, assertion success rate, self-correction ceiling limits, and sandbox language support.',
+            nextText: 'Next: Task Presets →'
+        },
+        {
+            selector: '[data-tooltip*="Task Specification Presets"]',
+            title: '3. Task Specification Presets',
+            desc: 'Pre-configured algorithms (Fibonacci, Palindrome, Safe Division, Data Aggregator) ready for instant multi-agent execution.',
+            nextText: 'Next: Audit Table →'
+        }
+    ],
+    '/generate': [
+        {
+            selector: '#taskInput',
+            title: '1. Task Specification Input',
+            desc: 'Describe what algorithm or program you want the Developer agent to draft and validate.',
+            nextText: 'Next: Language Selector →'
+        },
+        {
+            selector: '#languageSelect',
+            title: '2. Multi-Language Target',
+            desc: 'Choose target programming language (Python 3.11, Java 17, or C++ 20).',
+            nextText: 'Next: Execute Button →'
+        },
+        {
+            selector: '#generateBtn',
+            title: '3. Execute & Verify Action',
+            desc: 'Triggers the Developer agent, Sandbox execution, and automated assertion checks.',
+            nextText: 'Next: Dual Code & Log Viewers →'
+        },
+        {
+            selector: '.code-editor-pane',
+            title: '4. Code & Log Workbench',
+            desc: 'View generated source code on the left and real-time execution stdout/assertion logs on the right.',
+            nextText: 'Finish Tour'
+        }
+    ],
+    '/workflow': [
+        {
+            selector: 'svg',
+            title: '1. State Graph Canvas',
+            desc: 'Visual state machine showing node transitions (START → Developer → Tester → Router → END).',
+            nextText: 'Next: Step Simulator →'
+        },
+        {
+            selector: '#simStepBtn',
+            title: '2. Step Simulator Controls',
+            desc: 'Click to advance execution node-by-node or toggle Auto-Play to stream state updates.',
+            nextText: 'Next: High-Legibility Inspector →'
+        },
+        {
+            selector: '#inspectorCard',
+            title: '3. High-Legibility State Inspector',
+            desc: 'Syntax-highlighted dark containers displaying exact CrewState inputs and reducer outputs.',
+            nextText: 'Finish Tour'
+        }
+    ]
 };
 
-function autoAwakenPageGuide() {
-    const currentPath = window.location.pathname;
-    const pageKey = Object.keys(PAGE_GUIDE_DATA).find(p => p === currentPath) || '/';
-    const guide = PAGE_GUIDE_DATA[pageKey];
+let currentTourIndex = 0;
+let currentTourPageSteps = [];
 
-    if (!document.getElementById('proactiveGuideCard')) {
-        const cardHtml = `
-            <div id="proactiveGuideCard" class="proactive-guide-card">
+function autoAwakenSpotlightTour() {
+    const currentPath = window.location.pathname;
+    const pageKey = Object.keys(PAGE_SPOTLIGHT_STEPS).find(p => p === currentPath) || '/';
+    currentTourPageSteps = PAGE_SPOTLIGHT_STEPS[pageKey] || PAGE_SPOTLIGHT_STEPS['/'];
+
+    if (!document.getElementById('tourCalloutCard')) {
+        const calloutHtml = `
+            <div id="tourCalloutCard" class="tour-callout-card" style="display: none;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <span class="material-symbols-outlined" style="color: var(--accent-terracotta); font-size: 20px;">explore</span>
-                        <h3 style="font-size: 15px; font-weight: 700;" id="proactiveTitle">${guide.title}</h3>
+                        <span class="material-symbols-outlined" style="color: var(--accent-terracotta); font-size: 22px;">flag</span>
+                        <h3 style="font-size: 16px; font-weight: 700;" id="tourTitle">Feature Spotlight</h3>
                     </div>
-                    <button onclick="closeProactiveGuide()" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer;">
+                    <button onclick="closeSpotlightTour()" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer;">
                         <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
                     </button>
                 </div>
 
-                <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.55; margin-bottom: 16px;" id="proactiveDesc">${guide.desc}</p>
+                <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 18px;" id="tourDesc"></p>
 
                 <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <span class="cyber-badge cyber-badge-terracotta" style="font-size: 10px;" id="proactiveBadge">${guide.badge}</span>
-                    <button class="cyber-btn cyber-btn-primary" style="font-size: 12px; padding: 6px 14px;" onclick="window.location.href='${guide.nextPage}'" id="proactiveNextBtn">${guide.nextText}</button>
+                    <span class="cyber-badge cyber-badge-terracotta" id="tourCounter">Step 1 of 3</span>
+                    <button class="cyber-btn cyber-btn-primary" style="font-size: 12.5px; padding: 6px 14px;" onclick="nextSpotlightStep()" id="tourNextBtn">Next Step →</button>
                 </div>
             </div>
         `;
-        document.body.insertAdjacentHTML('beforeend', cardHtml);
+        document.body.insertAdjacentHTML('beforeend', calloutHtml);
+    }
+
+    currentTourIndex = 0;
+    renderSpotlightStep();
+}
+
+function renderSpotlightStep() {
+    if (!currentTourPageSteps || currentTourPageSteps.length === 0) return;
+
+    // Clear existing highlights
+    document.querySelectorAll('.element-highlighted').forEach(el => el.classList.remove('element-highlighted'));
+
+    const step = currentTourPageSteps[currentTourIndex];
+    if (!step) {
+        closeSpotlightTour();
+        return;
+    }
+
+    const targetEl = document.querySelector(step.selector);
+    const callout = document.getElementById('tourCalloutCard');
+
+    if (targetEl) {
+        targetEl.classList.add('element-highlighted');
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        const rect = targetEl.getBoundingClientRect();
+        callout.style.display = 'block';
+
+        let top = rect.bottom + 16;
+        let left = rect.left;
+
+        if (left + 380 > window.innerWidth) left = window.innerWidth - 400;
+        if (left < 20) left = 20;
+        if (top + 200 > window.innerHeight) top = rect.top - 210;
+
+        callout.style.top = top + 'px';
+        callout.style.left = left + 'px';
+
+        document.getElementById('tourTitle').textContent = step.title;
+        document.getElementById('tourDesc').textContent = step.desc;
+        document.getElementById('tourCounter').textContent = `Step ${currentTourIndex + 1} of ${currentTourPageSteps.length}`;
+        document.getElementById('tourNextBtn').textContent = step.nextText;
+    } else {
+        // Fallback positioning
+        callout.style.display = 'block';
+        callout.style.bottom = '28px';
+        callout.style.left = '28px';
+        callout.style.top = 'auto';
+        document.getElementById('tourTitle').textContent = step.title;
+        document.getElementById('tourDesc').textContent = step.desc;
+        document.getElementById('tourCounter').textContent = `Step ${currentTourIndex + 1} of ${currentTourPageSteps.length}`;
+        document.getElementById('tourNextBtn').textContent = step.nextText;
     }
 }
 
-function closeProactiveGuide() {
-    const card = document.getElementById('proactiveGuideCard');
-    if (card) {
-        card.style.display = 'none';
+function nextSpotlightStep() {
+    if (currentTourIndex < currentTourPageSteps.length - 1) {
+        currentTourIndex++;
+        renderSpotlightStep();
+    } else {
+        closeSpotlightTour();
+        showToast('Autonomous spotlight tour completed!', 'success');
     }
+}
+
+function closeSpotlightTour() {
+    document.querySelectorAll('.element-highlighted').forEach(el => el.classList.remove('element-highlighted'));
+    const callout = document.getElementById('tourCalloutCard');
+    if (callout) callout.style.display = 'none';
 }
 
 // Global Hover Tooltip System
@@ -311,6 +406,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initCommandPalette();
     initHoverTooltips();
 
-    // Auto-Awaken Proactive Guide after 600ms
-    setTimeout(autoAwakenPageGuide, 600);
+    // Auto-Awaken Spotlight Tour after 800ms
+    setTimeout(autoAwakenSpotlightTour, 800);
 });
