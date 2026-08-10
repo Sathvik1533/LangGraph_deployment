@@ -868,16 +868,16 @@ def tester_node(state: CrewState) -> Dict[str, Any]:
         # Create comprehensive report
         if execution_success:
             report = (
-                f"### EXECUTION OUTPUT:\n{execution_result}\n\n"
-                f"### TEST SCENARIOS EVALUATED:\n{cases_str}\n\n"
-                f"✅ Code executed successfully!"
+                f"[SANDBOX EXECUTION OUTPUT]\n{execution_result}\n\n"
+                f"[EVALUATED TEST SCENARIOS]\n{cases_str}\n\n"
+                f"[VERIFICATION STATUS] All test scenarios evaluated successfully. Code approved."
             )
             feedback_message = "✅ Code passed all checks and executed successfully."
         else:
             report = (
-                f"### EXECUTION ERROR:\n{execution_result}\n\n"
-                f"### TEST SCENARIOS (not executed due to error):\n{cases_str}\n\n"
-                f"❌ Code failed - needs fixing."
+                f"[SANDBOX EXECUTION ERROR]\n{execution_result}\n\n"
+                f"[EVALUATED TEST SCENARIOS]\n{cases_str}\n\n"
+                f"[VERIFICATION STATUS] Code execution error encountered. Self-correction loop triggered."
             )
             feedback_message = (
                 f"❌ The code has an execution error. Please fix it.\n\n"
