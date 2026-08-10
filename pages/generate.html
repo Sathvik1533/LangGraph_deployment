@@ -3,11 +3,11 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>LangGraph Studio | Code Workbench & Verifier</title>
+    <title>LangGraph | Code Workbench & Verification Studio</title>
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="/static/css/shared.css"/>
 </head>
@@ -19,7 +19,7 @@
         <header class="page-header">
             <div>
                 <h1 class="page-title">
-                    <span class="material-symbols-outlined" style="color: var(--cyan-glow);">code_blocks</span>
+                    <span class="material-symbols-outlined" style="color: var(--primary-blue);">code_blocks</span>
                     Code Workbench & Verification Studio
                 </h1>
                 <p class="page-subtitle">Submit task specifications to trigger multi-agent code generation, sandbox execution, and assertion loops.</p>
@@ -41,14 +41,14 @@
                 <div>
                     <label style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">
                         <span>Task Specification</span>
-                        <span class="cyber-badge cyber-badge-cyan" style="font-size: 10px;">⌘ + Enter to execute</span>
+                        <span class="kbd-badge">Press ⌘ + Enter to execute</span>
                     </label>
-                    <textarea id="taskInput" rows="3" style="width: 100%; background: #050609; border: 1px solid var(--border-hairline); border-radius: 8px; padding: 12px; color: var(--text-pure); font-family: var(--font-sans); font-size: 14px; outline: none; resize: vertical;" placeholder="e.g. Write a function to calculate fibonacci numbers with self-validation assertions..."></textarea>
+                    <textarea id="taskInput" rows="3" style="width: 100%; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px; color: var(--text-primary); font-family: var(--font-sans); font-size: 14px; outline: none; resize: vertical;" placeholder="e.g. Write a function to calculate fibonacci numbers with self-validation assertions..."></textarea>
                 </div>
 
                 <div>
                     <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Target Language</label>
-                    <select id="languageSelect" style="width: 100%; background: #050609; border: 1px solid var(--border-hairline); border-radius: 8px; padding: 12px; color: var(--text-pure); font-size: 14px; outline: none;">
+                    <select id="languageSelect" style="width: 100%; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px; color: var(--text-primary); font-size: 14px; outline: none;">
                         <option value="python" selected>Python 3.11</option>
                         <option value="java">Java 17</option>
                         <option value="cpp">C++ 20</option>
@@ -57,7 +57,7 @@
 
                 <div>
                     <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Self-Fix Ceiling</label>
-                    <select id="maxIterationsSelect" style="width: 100%; background: #050609; border: 1px solid var(--border-hairline); border-radius: 8px; padding: 12px; color: var(--text-pure); font-size: 14px; outline: none;">
+                    <select id="maxIterationsSelect" style="width: 100%; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px; color: var(--text-primary); font-size: 14px; outline: none;">
                         <option value="3" selected>3 Loops (Default)</option>
                         <option value="5">5 Loops</option>
                         <option value="1">1 Loop (No Retry)</option>
@@ -76,7 +76,7 @@
                 <button id="generateBtn" class="cyber-btn cyber-btn-primary">
                     <span class="material-symbols-outlined">code_blocks</span>
                     <span>Execute & Verify Specification</span>
-                    <span class="cyber-badge" style="margin-left: 4px; background: #000000; color: #00f2fe;">⌘↵</span>
+                    <span class="kbd-badge" style="margin-left: 4px; background: #ffffff; color: #000000; border: none;">⌘↵</span>
                 </button>
             </div>
         </div>
@@ -88,14 +88,14 @@
             
             <div class="code-editor-pane">
                 <div class="code-editor-header">
-                    <span style="font-size: 12px; font-weight: 600; color: var(--cyan-glow); font-family: var(--font-code);">solution_code.py</span>
+                    <span style="font-size: 12px; font-weight: 600; color: #60a5fa; font-family: var(--font-mono);">solution_code.py</span>
 
                     <div style="display: flex; gap: 8px;">
-                        <button id="copyCodeBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 10px;">
+                        <button id="copyCodeBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 10px; background: #334155; color: #ffffff; border: none;">
                             <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span>
                             Copy
                         </button>
-                        <button id="downloadCodeBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 10px;">
+                        <button id="downloadCodeBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 10px; background: #334155; color: #ffffff; border: none;">
                             <span class="material-symbols-outlined" style="font-size: 14px;">download</span>
                             Download
                         </button>
@@ -107,11 +107,11 @@
 
             <div class="code-editor-pane">
                 <div class="code-editor-header">
-                    <span style="font-size: 12px; font-weight: 600; color: var(--text-secondary); font-family: var(--font-code);">verification_report.log</span>
-                    <span class="cyber-badge cyber-badge-cyan" id="reportBadge">READY</span>
+                    <span style="font-size: 12px; font-weight: 600; color: #94a3b8; font-family: var(--font-mono);">verification_report.log</span>
+                    <span class="cyber-badge cyber-badge-blue" id="reportBadge">READY</span>
                 </div>
 
-                <div class="code-editor-body" id="reportDisplay" style="color: var(--text-muted);"># Test execution output, captured stdout/stderr, and assertion evaluations will appear here.</div>
+                <div class="code-editor-body" id="reportDisplay" style="color: #94a3b8;"># Test execution output, captured stdout/stderr, and assertion evaluations will appear here.</div>
             </div>
 
         </div>
