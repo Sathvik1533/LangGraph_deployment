@@ -154,8 +154,18 @@ function displayGeneratedCode(code, success) {
             .join(' ');
     }
 
-    // Clean code - remove markdown and ALL error-related comments
-    let cleanCode = code.replace(/```python|```java|```cpp|```c\+\+|```/g, '').trim();
+    // Clean code - remove markdown and ALL formatting artifacts
+    let cleanCode = code
+        .replace(/```python|```java|```cpp|```c\+\+|```/g, '')
+        // Remove ALL HTML tags and inline styles
+        .replace(/<[^>]+>/g, '')
+        .replace(/"color:\s*#[0-9a-fA-F]+;"\s*>/g, '')
+        .replace(/"color:\s*#[0-9a-fA-F]+;"/g, '')
+        .replace(/color:\s*#[0-9a-fA-F]+;/g, '')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&')
+        .trim();
     
     // Remove ALL error-related comments
     cleanCode = cleanCode.split('\n').filter(line => {
@@ -175,8 +185,10 @@ function displayGeneratedCode(code, success) {
         }
     }
     
+    // Store the CLEAN code (no HTML) for copy/download
     generatedCode = cleanCode;
     
+    // Display with syntax highlighting (HTML spans for visual only)
     if (codeContainer) {
         codeContainer.innerHTML = syntaxHighlight(cleanCode, selectedLanguage);
     }
