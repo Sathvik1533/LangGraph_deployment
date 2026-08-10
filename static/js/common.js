@@ -1,4 +1,4 @@
-// Executive Engineering Platform Controller & Strict One-Time Guided Tour Engine
+// Executive Engineering Platform Controller & Strict Guided Tour Engine
 
 const API_URL = window.location.origin + '/invoke';
 const HEALTH_API_URL = window.location.origin + '/health';
@@ -245,7 +245,7 @@ const FULL_PLATFORM_TOUR = [
             {
                 selector: '#taskInput',
                 title: '2/5 Task Specification Requirement',
-                desc: 'Specify your task by typing in this box OR click one of the quick preset buttons below (Fibonacci, Palindrome, Safe Division) before proceeding!'
+                desc: 'Please specify your coding task by typing in this box OR clicking a quick preset button (Fibonacci, Palindrome, Safe Division) below to unlock the tour!'
             },
             {
                 selector: '#langSelectWrapper',
@@ -356,17 +356,13 @@ function autoAwakenSpotlightTour() {
     const isPageSeen = localStorage.getItem(TOUR_PAGE_SEEN_PREFIX + currentPath) === 'true';
     const isManualSession = sessionStorage.getItem('langgraph_manual_tour_session') === 'true';
 
-    // STRICT ONE-TIME VISITOR GUARD:
-    // If globally disabled OR if page has already been seen, DO NOT AUTO-TRIGGER!
     if ((isGloballyDisabled || isPageSeen) && !isManualSession) {
-        console.log(`💡 Tour skipped for ${currentPath}: Already seen or tour completed.`);
         return;
     }
 
     currentTourPageIndex = FULL_PLATFORM_TOUR.findIndex(p => p.path === currentPath);
     if (currentTourPageIndex === -1) currentTourPageIndex = 0;
 
-    // Immediately mark this page as seen in localStorage so it NEVER triggers on revisit!
     localStorage.setItem(TOUR_PAGE_SEEN_PREFIX + currentPath, 'true');
 
     if (!document.getElementById('tourCalloutCard')) {
@@ -411,6 +407,7 @@ function renderSpotlightStep() {
 
     const targetEl = document.querySelector(step.selector);
     const callout = document.getElementById('tourCalloutCard');
+    const nextBtn = document.getElementById('tourNextBtn');
 
     const isLastStepOnPage = currentTourStepIndex === pageTour.steps.length - 1;
     const isLastPage = currentTourPageIndex === FULL_PLATFORM_TOUR.length - 1;
@@ -421,6 +418,50 @@ function renderSpotlightStep() {
             buttonText = 'Finish Platform Tour 🎉';
         } else {
             buttonText = `Proceed to ${FULL_PLATFORM_TOUR[currentTourPageIndex + 1]?.pageName || 'Next Page'} →`;
+        }
+    }
+
+    // STRICT USER REQUIREMENT CHECK FOR CODE WORKBENCH (#taskInput Step):
+    if (window.location.pathname === '/generate' && currentTourStepIndex === 0) {
+        const taskInput = document.getElementById('taskInput');
+        const hasText = taskInput && taskInput.value.trim() !== '';
+
+        if (!hasText) {
+            if (nextBtn) {
+                nextBtn.disabled = true;
+                nextBtn.style.opacity = '0.5';
+                nextBtn.style.cursor = 'not-allowed';
+                nextBtn.title = 'Please enter a task or click a preset button first';
+            }
+
+            // Bind input listener to dynamically enable next button when text is provided
+            if (taskInput && !taskInput.dataset.tourBound) {
+                taskInput.dataset.tourBound = 'true';
+                taskInput.addEventListener('input', () => {
+                    if (taskInput.value.trim() !== '') {
+                        if (nextBtn) {
+                            nextBtn.disabled = false;
+                            nextBtn.style.opacity = '1';
+                            nextBtn.style.cursor = 'pointer';
+                            nextBtn.title = '';
+                        }
+                    }
+                });
+            }
+        } else {
+            if (nextBtn) {
+                nextBtn.disabled = false;
+                nextBtn.style.opacity = '1';
+                nextBtn.style.cursor = 'pointer';
+                nextBtn.title = '';
+            }
+        }
+    } else {
+        if (nextBtn) {
+            nextBtn.disabled = false;
+            nextBtn.style.opacity = '1';
+            nextBtn.style.cursor = 'pointer';
+            nextBtn.title = '';
         }
     }
 
@@ -444,7 +485,7 @@ function renderSpotlightStep() {
         document.getElementById('tourTitle').textContent = step.title;
         document.getElementById('tourDesc').textContent = step.desc;
         document.getElementById('tourCounter').textContent = `${pageTour.pageName} (${currentTourStepIndex + 1}/${pageTour.steps.length})`;
-        document.getElementById('tourNextBtn').textContent = buttonText;
+        if (nextBtn) nextBtn.textContent = buttonText;
     } else {
         callout.style.display = 'block';
         callout.style.bottom = '28px';
@@ -453,19 +494,24 @@ function renderSpotlightStep() {
         document.getElementById('tourTitle').textContent = step.title;
         document.getElementById('tourDesc').textContent = step.desc;
         document.getElementById('tourCounter').textContent = `${pageTour.pageName} (${currentTourStepIndex + 1}/${pageTour.steps.length})`;
-        document.getElementById('tourNextBtn').textContent = buttonText;
+        if (nextBtn) nextBtn.textContent = buttonText;
     }
 }
 
 function nextSpotlightStep() {
     const pageTour = FULL_PLATFORM_TOUR[currentTourPageIndex];
     
-    // Auto-populate Task Input if empty on Code Workbench
+    // Check if on Task Input step on Code Workbench
     if (window.location.pathname === '/generate' && currentTourStepIndex === 0) {
         const taskInput = document.getElementById('taskInput');
-        if (taskInput && !taskInput.value.trim()) {
-            taskInput.value = 'Write a function to calculate fibonacci numbers with self-validation assertions';
-            showToast('Auto-populated Fibonacci specification for tour!', 'info');
+        if (!taskInput || !taskInput.value.trim()) {
+            const inlineAlert = document.getElementById('taskInlineAlert');
+            if (inlineAlert) {
+                inlineAlert.style.display = 'flex';
+                document.getElementById('taskInlineAlertText').textContent = 'Please enter a task specification or click a quick preset button (Fibonacci, Palindrome, Safe Division) before proceeding.';
+            }
+            taskInput?.focus();
+            return; // STRICT BLOCK: Do not advance until user specifies requirement!
         }
     }
 
