@@ -140,7 +140,29 @@ function displayGeneratedCode(code, success) {
         fileNameEl.textContent = `generated_code${extensions[selectedLanguage] || '.txt'}`;
     }
 
-    const cleanCode = code.replace(/```python|```java|```cpp|```c\+\+|```/g, '').trim();
+    // Check if code contains error messages
+    let errorMessage = '';
+    if (code.includes('# ERROR:')) {
+        // Extract the error message
+        const errorLines = code.split('\n').filter(line => line.trim().startsWith('# ERROR:'));
+        errorMessage = errorLines.map(line => line.replace('# ERROR:', '').trim()).join(' ');
+    }
+
+    // Clean code - remove markdown and error prefixes
+    let cleanCode = code.replace(/```python|```java|```cpp|```c\+\+|```/g, '').trim();
+    
+    // Remove error comments that start with # ERROR:
+    cleanCode = cleanCode.split('\n').filter(line => !line.trim().startsWith('# ERROR:')).join('\n').trim();
+    
+    // If code is empty or too short after cleaning, show appropriate message
+    if (!cleanCode || cleanCode.length < 10) {
+        if (errorMessage) {
+            cleanCode = `# Code generation failed\n# ${errorMessage}`;
+        } else {
+            cleanCode = '# Code generation in progress...\n# Please check the report for details.';
+        }
+    }
+    
     generatedCode = cleanCode;
     
     if (codeContainer) {
@@ -158,12 +180,15 @@ function displayGeneratedCode(code, success) {
                 </div>
             `;
         } else {
+            // Use extracted error message if available
+            const errorDetail = errorMessage || 'The agent encountered errors. Code may be incomplete or invalid.';
             statusBox.className = 'mt-4 p-4 bg-error-container border-3 border-on-background neo-shadow flex items-start gap-3 rounded-DEFAULT';
             statusBox.innerHTML = `
                 <span class="material-symbols-outlined text-on-error-container font-bold mt-1">warning</span>
                 <div>
-                    <h4 class="font-display-lg text-[18px] text-on-error-container font-bold">Generation with Warnings</h4>
-                    <p class="font-body-md text-body-md text-on-error-container mt-1">Code generated but may need review.</p>
+                    <h4 class="font-display-lg text-[18px] text-on-error-container font-bold">Generation Failed</h4>
+                    <p class="font-body-md text-body-md text-on-error-container mt-1">${errorDetail}</p>
+                    ${lastGenerationData?.report ? `<details class="mt-2"><summary class="cursor-pointer font-bold">View Execution Report</summary><pre class="mt-2 text-xs whitespace-pre-wrap">${lastGenerationData.report}</pre></details>` : ''}
                 </div>
             `;
         }
