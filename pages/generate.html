@@ -36,7 +36,7 @@
 
         <!-- Controls Panel -->
         <div class="studio-card" style="margin-bottom: 28px;">
-            <div style="display: grid; grid-template-columns: 1fr 200px 160px; gap: 20px; margin-bottom: 20px;">
+            <div style="display: grid; grid-template-columns: 1fr 220px 200px; gap: 20px; margin-bottom: 20px;">
                 
                 <div>
                     <label style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">
@@ -46,31 +46,56 @@
                     <textarea id="taskInput" rows="3" style="width: 100%; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px; color: var(--text-primary); font-family: var(--font-sans); font-size: 14.5px; line-height: 1.6; outline: none; resize: vertical;" placeholder="e.g. Write a function to calculate fibonacci numbers with self-validation assertions..." data-tooltip="Task Specification: Describe what function, class, or algorithm you want the Developer agent to draft and validate."></textarea>
                 </div>
 
+                <!-- Custom Studio Web Dropdown: Target Language -->
                 <div>
                     <label style="display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Target Language</label>
-                    <select id="languageSelect" style="width: 100%; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px; color: var(--text-primary); font-size: 14px; outline: none;" data-tooltip="Target Language: Choose target syntax (Python 3.11, Java 17, or C++ 20).">
-                        <option value="python" selected>Python 3.11</option>
-                        <option value="java">Java 17</option>
-                        <option value="cpp">C++ 20</option>
-                    </select>
+                    <div class="custom-select-wrapper" id="langSelectWrapper" data-tooltip="Target Language: Choose target syntax (Python 3.11, Java 17, or C++ 20).">
+                        <input type="hidden" id="languageSelect" value="python"/>
+                        <div class="custom-select-trigger" onclick="toggleCustomSelect(this)">
+                            <span class="custom-select-value">Python 3.11</span>
+                            <span class="material-symbols-outlined" style="font-size: 18px; color: var(--text-muted);">expand_more</span>
+                        </div>
+                        <div class="custom-select-menu">
+                            <div class="custom-select-option selected" onclick="selectCustomOption(this, 'python', 'Python 3.11')">
+                                <span>Python 3.11</span>
+                                <span class="cyber-badge cyber-badge-indigo" style="font-size: 10px;">DEFAULT</span>
+                            </div>
+                            <div class="custom-select-option" onclick="selectCustomOption(this, 'java', 'Java 17')">
+                                <span>Java 17</span>
+                                <span class="cyber-badge cyber-badge-terracotta" style="font-size: 10px;">JVM</span>
+                            </div>
+                            <div class="custom-select-option" onclick="selectCustomOption(this, 'cpp', 'C++ 20')">
+                                <span>C++ 20</span>
+                                <span class="cyber-badge cyber-badge-emerald" style="font-size: 10px;">NATIVE</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
+                <!-- Custom Studio Web Dropdown: Self-Fix Ceiling -->
                 <div>
                     <label style="display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Self-Fix Ceiling</label>
-                    <select id="maxIterationsSelect" style="width: 100%; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px; color: var(--text-primary); font-size: 14px; outline: none;" data-tooltip="Self-Fix Ceiling: Max retries allowed before the conditional router terminates the loop.">
-                        <option value="3" selected>3 Loops (Default)</option>
-                        <option value="5">5 Loops</option>
-                        <option value="1">1 Loop (No Retry)</option>
-                    </select>
+                    <div class="custom-select-wrapper" id="ceilingSelectWrapper" data-tooltip="Self-Fix Ceiling: Max retries allowed before the conditional router terminates the loop.">
+                        <input type="hidden" id="maxIterationsSelect" value="3"/>
+                        <div class="custom-select-trigger" onclick="toggleCustomSelect(this)">
+                            <span class="custom-select-value">3 Loops (Default)</span>
+                            <span class="material-symbols-outlined" style="font-size: 18px; color: var(--text-muted);">expand_more</span>
+                        </div>
+                        <div class="custom-select-menu">
+                            <div class="custom-select-option selected" onclick="selectCustomOption(this, '3', '3 Loops (Default)')">3 Loops (Default)</div>
+                            <div class="custom-select-option" onclick="selectCustomOption(this, '5', '5 Loops')">5 Loops</div>
+                            <div class="custom-select-option" onclick="selectCustomOption(this, '1', '1 Loop (No Retry)')">1 Loop (No Retry)</div>
+                        </div>
+                    </div>
                 </div>
 
             </div>
 
             <div style="display: flex; align-items: center; justify-content: space-between;">
                 <div style="display: flex; gap: 8px;">
-                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="document.getElementById('taskInput').value='Write a function to calculate fibonacci numbers'" data-tooltip="Pre-fill Fibonacci calculation prompt.">Fibonacci</button>
-                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="document.getElementById('taskInput').value='Create a function that checks if a string is a palindrome'" data-tooltip="Pre-fill Palindrome validator prompt.">Palindrome</button>
-                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="document.getElementById('taskInput').value='Write a function to divide two numbers with proper error handling'" data-tooltip="Pre-fill Safe division exception handling prompt.">Safe Division</button>
+                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Write a function to calculate fibonacci numbers')" data-tooltip="Pre-fill Fibonacci calculation prompt.">Fibonacci</button>
+                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Create a function that checks if a string is a palindrome')" data-tooltip="Pre-fill Palindrome validator prompt.">Palindrome</button>
+                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Write a function to divide two numbers with proper error handling')" data-tooltip="Pre-fill Safe division exception handling prompt.">Safe Division</button>
                 </div>
 
                 <button id="generateBtn" class="cyber-btn cyber-btn-primary" data-tooltip="Execute & Verify: Triggers multi-agent code generation, sandbox testing, and assertion loops.">
@@ -126,6 +151,39 @@
                 document.getElementById('navbarContainer').innerHTML = await navbarRes.text();
                 setActiveNav('generator');
             }
+        });
+
+        function toggleCustomSelect(trigger) {
+            const wrapper = trigger.closest('.custom-select-wrapper');
+            document.querySelectorAll('.custom-select-wrapper').forEach(w => {
+                if (w !== wrapper) w.classList.remove('open');
+            });
+            wrapper.classList.toggle('open');
+        }
+
+        function selectCustomOption(opt, val, label) {
+            const wrapper = opt.closest('.custom-select-wrapper');
+            const hidden = wrapper.querySelector('input[type="hidden"]');
+            const valSpan = wrapper.querySelector('.custom-select-value');
+
+            wrapper.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
+            opt.classList.add('selected');
+
+            if (hidden) hidden.value = val;
+            if (valSpan) valSpan.textContent = label;
+
+            wrapper.classList.remove('open');
+        }
+
+        function fillPreset(text) {
+            const input = document.getElementById('taskInput');
+            input.value = text;
+            input.focus();
+            showToast('Task specification pre-filled', 'info');
+        }
+
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
         });
     </script>
 </body>
