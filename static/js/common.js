@@ -349,6 +349,20 @@ const FULL_PLATFORM_TOUR = [
 let currentTourPageIndex = 0;
 let currentTourStepIndex = 0;
 
+function getTouredPages() {
+    try {
+        return JSON.parse(sessionStorage.getItem('langgraph_toured_pages') || '[]');
+    } catch(e) { return []; }
+}
+
+function markPageToured(path) {
+    const pages = getTouredPages();
+    if (!pages.includes(path)) {
+        pages.push(path);
+        sessionStorage.setItem('langgraph_toured_pages', JSON.stringify(pages));
+    }
+}
+
 function autoAwakenSpotlightTour() {
     const currentPath = window.location.pathname;
     const isCompleted = localStorage.getItem(TOUR_COMPLETED_KEY) === 'true';
@@ -356,15 +370,25 @@ function autoAwakenSpotlightTour() {
     const isTourInProgress = sessionStorage.getItem('langgraph_tour_in_progress') === 'true';
     const isManualSession = sessionStorage.getItem('langgraph_manual_tour_session') === 'true';
 
-    // IF TOUR WAS COMPLETED OR EXPLICITLY DISMISSED, DO NOT AUTO-TRIGGER AGAIN ON PAGE REVISITS
+    // IF TOUR WAS COMPLETED OR EXPLICITLY DISMISSED, DO NOT AUTO-TRIGGER AGAIN
     if ((isCompleted || isDismissed) && !isManualSession) {
         console.log(`💡 Tour completed or dismissed. Stopping auto-trigger on ${currentPath}.`);
+        return;
+    }
+
+    // IF THIS SPECIFIC PAGE WAS ALREADY TOURED IN THIS SESSION, DO NOT RE-TRIGGER
+    const touredPages = getTouredPages();
+    if (touredPages.includes(currentPath) && !isManualSession) {
+        console.log(`💡 Page ${currentPath} already toured. Skipping auto-trigger.`);
         return;
     }
 
     if (!isTourInProgress && !isManualSession) {
         sessionStorage.setItem('langgraph_tour_in_progress', 'true');
     }
+
+    // Mark this page as toured
+    markPageToured(currentPath);
 
     currentTourPageIndex = FULL_PLATFORM_TOUR.findIndex(p => p.path === currentPath);
     if (currentTourPageIndex === -1) currentTourPageIndex = 0;
@@ -568,6 +592,7 @@ function closeSpotlightTour() {
 function startFullTourManually() {
     localStorage.removeItem(TOUR_COMPLETED_KEY);
     sessionStorage.removeItem('langgraph_tour_dismissed');
+    sessionStorage.removeItem('langgraph_toured_pages');
     sessionStorage.setItem('langgraph_tour_in_progress', 'true');
     sessionStorage.setItem('langgraph_manual_tour_session', 'true');
     window.location.href = '/';
