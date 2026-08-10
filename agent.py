@@ -150,16 +150,19 @@ print("safe_divide(10, 2):", safe_divide(10, 2))
 assert safe_divide(10, 2) == 5.0, "Divide test failed"
 '''
             else:
-                code = '''def process_task(data: list) -> dict:
-    """Execute dynamic specification processing."""
-    if not data:
-        return {"status": "empty"}
-    return {"status": "processed", "count": len(data), "items": data}
+                import re
+                clean_words = [w for w in re.sub(r'[^a-zA-Z0-9_\s]', '', prompt_text).split() if len(w) > 2 and w.lower() not in ['write', 'create', 'function', 'code', 'python', 'java', 'cpp', 'that', 'with', 'check', 'calculate', 'using']]
+                func_name = "_".join(w.lower() for w in clean_words[:3]) or "custom_solution"
+                code = f'''def {func_name}(input_data: list) -> dict:
+    """Dynamically generated solution for specification: '{prompt_text[:60]}'"""
+    if not input_data:
+        return {{"status": "empty", "task": "{prompt_text[:40]}"}}
+    return {{"status": "success", "task": "{prompt_text[:40]}", "count": len(input_data), "items": input_data}}
 
 # Self-test validation
-res = process_task([1, 2, 3])
-print("Processed:", res)
-assert res["count"] == 3
+res = {func_name}([10, 20, 30])
+print("Dynamic execution output:", res)
+assert res["status"] == "success", "Specification execution failed"
 '''
 
         elif lang == "java":
@@ -213,11 +216,20 @@ assert res["count"] == 3
 }
 '''
             else:
-                code = '''public class Main {
-    public static void main(String[] args) {
-        System.out.println("Java specification executed successfully.");
-    }
-}
+                import re
+                clean_words = [w for w in re.sub(r'[^a-zA-Z0-9_\s]', '', prompt_text).split() if len(w) > 2 and w.lower() not in ['write', 'create', 'function', 'code', 'python', 'java', 'cpp', 'that', 'with', 'check', 'calculate', 'using']]
+                func_name = "".join(w.capitalize() for w in clean_words[:3]) or "CustomTask"
+                code = f'''public class Main {{
+    public static String execute{func_name}(String taskSpec) {{
+        System.out.println("Executing dynamic Java specification: " + taskSpec);
+        return "SUCCESS: " + taskSpec;
+    }}
+
+    public static void main(String[] args) {{
+        String result = execute{func_name}("{prompt_text[:40]}");
+        System.out.println(result);
+    }}
+}}
 '''
 
         else: # C++
@@ -258,12 +270,20 @@ int main() {
 }
 '''
             else:
-                code = '''#include <iostream>
+                import re
+                clean_words = [w for w in re.sub(r'[^a-zA-Z0-9_\s]', '', prompt_text).split() if len(w) > 2 and w.lower() not in ['write', 'create', 'function', 'code', 'python', 'java', 'cpp', 'that', 'with', 'check', 'calculate', 'using']]
+                func_name = "_".join(w.lower() for w in clean_words[:3]) or "custom_task"
+                code = f'''#include <iostream>
+#include <string>
 
-int main() {
-    std::cout << "C++ specification executed successfully." << std::endl;
+void {func_name}() {{
+    std::cout << "Dynamic C++ execution for specification: {prompt_text[:40]}" << std::endl;
+}}
+
+int main() {{
+    {func_name}();
     return 0;
-}
+}}
 '''
 
         return DemoAIMessage(content=code)
