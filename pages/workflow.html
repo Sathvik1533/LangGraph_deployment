@@ -36,15 +36,15 @@
             </div>
 
             <div style="display: flex; gap: 10px;">
-                <button id="simAutoBtn" class="cyber-btn cyber-btn-primary" onclick="toggleAutoPlay()">
+                <button id="simAutoBtn" class="cyber-btn cyber-btn-primary" onclick="toggleAutoPlay()" data-tooltip="Auto-Play Tour: Watch active nodes illuminate in real time step-by-step.">
                     <span class="material-symbols-outlined" id="simAutoIcon">play_circle</span>
                     <span id="simAutoText">Auto-Play Tour</span>
                 </button>
-                <button id="simStepBtn" class="cyber-btn cyber-btn-secondary" onclick="stepSimulation()">
+                <button id="simStepBtn" class="cyber-btn cyber-btn-secondary" onclick="stepSimulation()" data-tooltip="Step Forward: Step node-by-node through the graph workflow.">
                     <span class="material-symbols-outlined">skip_next</span>
                     Step Forward
                 </button>
-                <button class="cyber-btn cyber-btn-secondary" onclick="resetSimulation()">
+                <button class="cyber-btn cyber-btn-secondary" onclick="resetSimulation()" data-tooltip="Reset State: Reset graph simulation back to START node.">
                     <span class="material-symbols-outlined">restart_alt</span>
                     Reset State
                 </button>
@@ -55,11 +55,19 @@
         <div class="studio-card" style="margin-bottom: 28px;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                 <label style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.04em;">Dynamic Task Simulation Input</label>
-                <span class="cyber-badge cyber-badge-terracotta">LIVE SIMULATOR ENGINE</span>
+                <span class="cyber-badge cyber-badge-terracotta" id="canvasLangBadge">TARGET: PYTHON</span>
             </div>
 
             <div style="display: flex; gap: 12px; margin-bottom: 14px;">
                 <input id="canvasTaskInput" type="text" value="Write a function to check if a number is prime" style="flex: 1; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px 18px; font-size: 14px; font-family: var(--font-sans); color: var(--text-primary); outline: none;" placeholder="Enter any coding task to update state graph..." oninput="updateDynamicTaskSpec(this.value)"/>
+                
+                <!-- Target Language Select for Simulator -->
+                <select id="canvasLangSelect" style="background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 0 14px; font-size: 13.5px; font-weight: 600; color: var(--text-primary); outline: none;" onchange="updateDynamicTaskSpec(document.getElementById('canvasTaskInput').value)">
+                    <option value="python">Python 3.11</option>
+                    <option value="java">Java 17</option>
+                    <option value="cpp">C++ 20</option>
+                </select>
+
                 <button class="cyber-btn cyber-btn-primary" onclick="updateDynamicTaskSpec(document.getElementById('canvasTaskInput').value)">Update Canvas</button>
             </div>
 
@@ -176,16 +184,32 @@
 
     <script src="/static/js/common.js"></script>
     <script>
+        let currentTaskSpec = "Write a function to check if a number is prime";
+        let currentLang = "python";
+
         document.addEventListener('DOMContentLoaded', async () => {
             const navbarRes = await fetch('/templates/navigation.html');
             if (navbarRes.ok) {
                 document.getElementById('navbarContainer').innerHTML = await navbarRes.text();
                 setActiveNav('workflow');
             }
-            selectNode('START');
-        });
 
-        let currentTaskSpec = "Write a function to check if a number is prime";
+            // Sync from workbench execution if present
+            const savedTask = localStorage.getItem('langgraph_last_task');
+            const savedLang = localStorage.getItem('langgraph_last_lang');
+
+            if (savedTask) {
+                currentTaskSpec = savedTask;
+                document.getElementById('canvasTaskInput').value = savedTask;
+            }
+            if (savedLang) {
+                currentLang = savedLang.toLowerCase();
+                const select = document.getElementById('canvasLangSelect');
+                if (select) select.value = currentLang;
+            }
+
+            updateDynamicTaskSpec(currentTaskSpec);
+        });
 
         function applyPresetTask(taskText) {
             document.getElementById('canvasTaskInput').value = taskText;
@@ -193,29 +217,65 @@
         }
 
         function updateDynamicTaskSpec(taskText) {
-            if (!taskText || !taskText.strip) taskText = "Write a function to check if a number is prime";
-            currentTaskSpec = taskText;
+            if (!taskText || !taskText.trim) taskText = "Write a function to check if a number is prime";
+            currentTaskSpec = taskText.trim();
+            
+            const select = document.getElementById('canvasLangSelect');
+            if (select) currentLang = select.value.toLowerCase();
+
+            document.getElementById('canvasLangBadge').textContent = `TARGET: ${currentLang.toUpperCase()}`;
+
             selectNode(STEPS[currentStepIndex]);
-            showToast('Canvas updated for task specification', 'info');
+            showToast(`Canvas updated for ${currentLang.toUpperCase()} specification`, 'info');
         }
 
-        function getDynamicNodeData(nodeKey, task) {
+        function getDynamicNodeData(nodeKey, task, lang) {
             const lower = task.toLowerCase();
-            let codeSnippet = `def solution(n):\n    return n * 2`;
-            let stdoutSnippet = `solution(5): 10`;
+            let codeSnippet = "";
+            let stdoutSnippet = "";
 
-            if (lower.includes("prime")) {
-                codeSnippet = `def is_prime(n: int) -> bool:\n    if n <= 1:\n        return False\n    for i in range(2, int(n ** 0.5) + 1):\n        if n % i == 0:\n            return False\n    return True\n\n# Self-test validation\nprint("is_prime(29):", is_prime(29))\nassert is_prime(29) == True`;
-                stdoutSnippet = `is_prime(29): True\n\n✓ Assertion test passed: is_prime(29) == True`;
-            } else if (lower.includes("fibonacci")) {
-                codeSnippet = `def fibonacci(n: int) -> list[int]:\n    if n <= 0: return []\n    if n == 1: return [0]\n    seq = [0, 1]\n    while len(seq) < n:\n        seq.append(seq[-1] + seq[-2])\n    return seq\n\n# Self-test validation\nprint("fibonacci(7):", fibonacci(7))\nassert fibonacci(5) == [0, 1, 1, 2, 3]`;
-                stdoutSnippet = `fibonacci(7): [0, 1, 1, 2, 3, 5, 8]\n\n✓ Assertion test passed: fibonacci(5) == [0, 1, 1, 2, 3]`;
-            } else if (lower.includes("palindrome")) {
-                codeSnippet = `def is_palindrome(s: str) -> bool:\n    cleaned = ''.join(c.lower() for c in s if c.isalnum())\n    return cleaned == cleaned[::-1]\n\n# Self-test validation\nprint("is_palindrome('racecar'):", is_palindrome('racecar'))\nassert is_palindrome('racecar') == True`;
-                stdoutSnippet = `is_palindrome('racecar'): True\n\n✓ Assertion test passed: is_palindrome('racecar') == True`;
-            } else if (lower.includes("factorial")) {
-                codeSnippet = `def factorial(n: int) -> int:\n    if n < 0: raise ValueError("Negative input")\n    return 1 if n <= 1 else n * factorial(n - 1)\n\n# Self-test validation\nprint("factorial(5):", factorial(5))\nassert factorial(5) == 120`;
-                stdoutSnippet = `factorial(5): 120\n\n✓ Assertion test passed: factorial(5) == 120`;
+            if (lang === "java") {
+                if (lower.includes("prime")) {
+                    codeSnippet = `public class Main {\n    public static boolean isPrime(int n) {\n        if (n <= 1) return false;\n        for (int i = 2; i * i <= n; i++) {\n            if (n % i == 0) return false;\n        }\n        return true;\n    }\n\n    public static void main(String[] args) {\n        System.out.println("isPrime(29): " + isPrime(29));\n    }\n}`;
+                    stdoutSnippet = `isPrime(29): true\n\n✓ Java assertion passed: isPrime(29) == true`;
+                } else if (lower.includes("fibonacci")) {
+                    codeSnippet = `public class Main {\n    public static int fibonacci(int n) {\n        if (n <= 1) return n;\n        int a = 0, b = 1;\n        for (int i = 2; i <= n; i++) {\n            int temp = a + b;\n            a = b;\n            b = temp;\n        }\n        return b;\n    }\n\n    public static void main(String[] args) {\n        System.out.println("fibonacci(7): " + fibonacci(7));\n    }\n}`;
+                    stdoutSnippet = `fibonacci(7): 13\n\n✓ Java assertion passed: fibonacci(7) == 13`;
+                } else if (lower.includes("palindrome")) {
+                    codeSnippet = `public class Main {\n    public static boolean isPalindrome(String s) {\n        String cleaned = s.replaceAll("[^a-zA-Z0-9]", "").toLowerCase();\n        return cleaned.equals(new StringBuilder(cleaned).reverse().toString());\n    }\n\n    public static void main(String[] args) {\n        System.out.println("isPalindrome('racecar'): " + isPalindrome("racecar"));\n    }\n}`;
+                    stdoutSnippet = `isPalindrome('racecar'): true\n\n✓ Java assertion passed: isPalindrome('racecar') == true`;
+                } else {
+                    codeSnippet = `public class Main {\n    public static void main(String[] args) {\n        System.out.println("Java specification executed.");\n    }\n}`;
+                    stdoutSnippet = `Java specification executed successfully.`;
+                }
+            } else if (lang === "cpp") {
+                if (lower.includes("prime")) {
+                    codeSnippet = `#include <iostream>\n\nbool isPrime(int n) {\n    if (n <= 1) return false;\n    for (int i = 2; i * i <= n; i++) {\n        if (n % i == 0) return false;\n    }\n    return true;\n}\n\nint main() {\n    std::cout << "isPrime(29): " << (isPrime(29) ? "true" : "false") << std::endl;\n    return 0;\n}`;
+                    stdoutSnippet = `isPrime(29): true\n\n✓ C++ assertion passed: isPrime(29) == true`;
+                } else if (lower.includes("fibonacci")) {
+                    codeSnippet = `#include <iostream>\n#include <vector>\n\nstd::vector<int> fibonacci(int n) {\n    if (n <= 0) return {};\n    std::vector<int> seq = {0, 1};\n    while (seq.size() < n) seq.push_back(seq.back() + seq[seq.size() - 2]);\n    return seq;\n}\n\nint main() {\n    std::cout << "Fibonacci terms: " << fibonacci(7).size() << std::endl;\n    return 0;\n}`;
+                    stdoutSnippet = `Fibonacci terms: 7\n\n✓ C++ assertion passed: terms count == 7`;
+                } else {
+                    codeSnippet = `#include <iostream>\n\nint main() {\n    std::cout << "C++ specification executed." << std::endl;\n    return 0;\n}`;
+                    stdoutSnippet = `C++ specification executed successfully.`;
+                }
+            } else { // Python
+                if (lower.includes("prime")) {
+                    codeSnippet = `def is_prime(n: int) -> bool:\n    if n <= 1:\n        return False\n    for i in range(2, int(n ** 0.5) + 1):\n        if n % i == 0:\n            return False\n    return True\n\n# Self-test validation\nprint("is_prime(29):", is_prime(29))\nassert is_prime(29) == True`;
+                    stdoutSnippet = `is_prime(29): True\n\n✓ Assertion test passed: is_prime(29) == True`;
+                } else if (lower.includes("fibonacci")) {
+                    codeSnippet = `def fibonacci(n: int) -> list[int]:\n    if n <= 0: return []\n    if n == 1: return [0]\n    seq = [0, 1]\n    while len(seq) < n:\n        seq.append(seq[-1] + seq[-2])\n    return seq\n\n# Self-test validation\nprint("fibonacci(7):", fibonacci(7))\nassert fibonacci(5) == [0, 1, 1, 2, 3]`;
+                    stdoutSnippet = `fibonacci(7): [0, 1, 1, 2, 3, 5, 8]\n\n✓ Assertion test passed: fibonacci(5) == [0, 1, 1, 2, 3]`;
+                } else if (lower.includes("palindrome")) {
+                    codeSnippet = `def is_palindrome(s: str) -> bool:\n    cleaned = ''.join(c.lower() for c in s if c.isalnum())\n    return cleaned == cleaned[::-1]\n\n# Self-test validation\nprint("is_palindrome('racecar'):", is_palindrome('racecar'))\nassert is_palindrome('racecar') == True`;
+                    stdoutSnippet = `is_palindrome('racecar'): True\n\n✓ Assertion test passed: is_palindrome('racecar') == True`;
+                } else if (lower.includes("factorial")) {
+                    codeSnippet = `def factorial(n: int) -> int:\n    if n < 0: raise ValueError("Negative input")\n    return 1 if n <= 1 else n * factorial(n - 1)\n\n# Self-test validation\nprint("factorial(5):", factorial(5))\nassert factorial(5) == 120`;
+                    stdoutSnippet = `factorial(5): 120\n\n✓ Assertion test passed: factorial(5) == 120`;
+                } else {
+                    codeSnippet = `def process_task(data):\n    return {"task": "${task}", "status": "processed"}`;
+                    stdoutSnippet = `Task processed successfully.`;
+                }
             }
 
             const NODE_DATA = {
@@ -223,22 +283,22 @@
                     title: 'START Node (Workflow Entry)',
                     badge: 'ENTRY POINT',
                     desc: 'Workflow entry point. Receives initial CrewState payload with user task specification and target programming language.',
-                    inputs: `{\n  "task": "${task}",\n  "language": "python",\n  "max_iterations": 3\n}`,
+                    inputs: `{\n  "task": "${task}",\n  "language": "${lang}",\n  "max_iterations": 3\n}`,
                     outputs: `{\n  "messages": [HumanMessage("${task}")],\n  "iterations": 0,\n  "execution_success": false,\n  "thread_id": "thread_d68077c38bcb"\n}`
                 },
                 'Developer': {
-                    title: 'Developer Engine Node',
+                    title: `Developer Engine Node (${lang.toUpperCase()})`,
                     badge: 'CODE GENERATOR',
-                    desc: 'Engine responsible for drafting and refining solution code. Automatically incorporates traceback feedback if self-correction is triggered.',
-                    inputs: `{\n  "messages": [HumanMessage("${task}")],\n  "language": "python",\n  "report": null\n}`,
-                    outputs: `{\n  "code":\n${codeSnippet.split('\n').map(l => '  ' + l).join('\n')},\n  "messages": [AIMessage("Generated Python code (iteration 1)")]\n}`
+                    desc: `Engine responsible for drafting and refining solution code in ${lang.toUpperCase()}. Automatically incorporates traceback feedback if self-correction is triggered.`,
+                    inputs: `{\n  "messages": [HumanMessage("${task}")],\n  "language": "${lang}",\n  "report": null\n}`,
+                    outputs: `{\n  "code":\n${codeSnippet.split('\n').map(l => '  ' + l).join('\n')},\n  "messages": [AIMessage("Generated ${lang.toUpperCase()} code (iteration 1)")]\n}`
                 },
                 'Tester': {
-                    title: 'Sandbox Execution & Verifier Node',
+                    title: `Sandbox Execution & Verifier Node (${lang.toUpperCase()})`,
                     badge: 'CODE VERIFIER',
-                    desc: 'Executes generated solution code in an isolated scope. Validates syntax, captures stdout/stderr, and executes self-contained assertion tests.',
-                    inputs: `{\n  "code": "${codeSnippet.split('\n')[0]} ...",\n  "language": "python"\n}`,
-                    outputs: `{\n  "execution_success": true,\n  "report": "[SANDBOX STDOUT]\\n${stdoutSnippet}",\n  "iterations": 1\n}`
+                    desc: `Executes generated solution code in isolated ${lang.toUpperCase()} sandbox. Validates syntax, captures stdout/stderr, and executes assertion tests.`,
+                    inputs: `{\n  "code": "${codeSnippet.split('\n')[0]} ...",\n  "language": "${lang}"\n}`,
+                    outputs: `{\n  "execution_success": true,\n  "report": "[${lang.toUpperCase()} SANDBOX STDOUT]\\n${stdoutSnippet}",\n  "iterations": 1\n}`
                 },
                 'Router': {
                     title: 'Conditional Edge Router Node',
@@ -251,8 +311,8 @@
                     title: 'END Node (Terminal State)',
                     badge: 'TERMINAL STATE',
                     desc: 'Workflow terminal state. Returns final validated code, test execution report, and total iteration count to API caller.',
-                    inputs: `{\n  "final_code": "${codeSnippet.split('\n')[0]} ...",\n  "report": "[VERIFICATION STATUS] All test scenarios passed."\n}`,
-                    outputs: `{\n  "AgentResponse": {\n    "success": true,\n    "iterations": 1,\n    "thread_id": "thread_d68077c38bcb"\n  }\n}`
+                    inputs: `{\n  "final_code": "${codeSnippet.split('\n')[0]} ...",\n  "report": "[VERIFICATION STATUS] All test scenarios passed for ${lang.toUpperCase()}."\n}`,
+                    outputs: `{\n  "AgentResponse": {\n    "success": true,\n    "iterations": 1,\n    "language": "${lang}",\n    "thread_id": "thread_d68077c38bcb"\n  }\n}`
                 }
             };
 
@@ -264,7 +324,7 @@
         let autoPlayTimer = null;
 
         function selectNode(nodeKey) {
-            const data = getDynamicNodeData(nodeKey, currentTaskSpec);
+            const data = getDynamicNodeData(nodeKey, currentTaskSpec, currentLang);
             if (!data) return;
 
             STEPS.forEach(key => {
@@ -287,7 +347,7 @@
             const nodeKey = STEPS[currentStepIndex];
             selectNode(nodeKey);
 
-            document.getElementById('simStepStatus').textContent = `Step ${currentStepIndex + 1} of ${STEPS.length}: ${nodeKey} Node Active`;
+            document.getElementById('simStepStatus').textContent = `Step ${currentStepIndex + 1} of ${STEPS.length}: ${nodeKey} Node Active (${currentLang.toUpperCase()})`;
             showToast(`Step ${currentStepIndex + 1}: ${nodeKey} Node Active`, 'info');
         }
 
