@@ -455,4 +455,59 @@
 <a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary underline transition-opacity duration-200" href="#">Docs</a>
 </div>
 </footer>
+
+<script>
+// Make navigation links functional
+document.querySelectorAll('nav a[href="#"]').forEach(link => {
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const text = link.textContent.trim();
+        
+        if (text === 'Agent Runs') window.location.href = '/execution';
+        else if (text === 'Workflows') window.location.href = '/workflow';
+        else if (text === 'Monitors') window.location.href = '/history';
+        else if (text === 'Settings') window.location.href = '/';
+    });
+});
+
+// Make "New Run" button functional
+document.querySelector('button.neo-shadow').addEventListener('click', () => {
+    window.location.href = '/generate';
+});
+
+// Load workflow from last generation
+function loadWorkflowData() {
+    const lastGen = JSON.parse(localStorage.getItem('lastGeneration') || 'null');
+    
+    if (!lastGen) {
+        console.log('No workflow data available yet');
+        return;
+    }
+    
+    // Update the LLM node with actual model info
+    const modelNameEl = document.querySelector('.font-code-md.text-\\[12px\\].text-on-primary-fixed');
+    if (modelNameEl && modelNameEl.textContent === 'gpt-4-turbo') {
+        modelNameEl.textContent = 'Llama 3.3 70B';
+    }
+    
+    const modelTypeEl = document.querySelector('.font-code-md.text-\\[12px\\].text-on-primary-fixed');
+    if (modelTypeEl) {
+        const typeEl = modelTypeEl.parentElement.previousElementSibling;
+        if (typeEl) {
+            const nextSibling = typeEl.nextElementSibling?.querySelector('.font-code-md');
+            if (nextSibling && nextSibling.textContent === 'ChatOpenAI') {
+                nextSibling.textContent = 'ChatGroq';
+            }
+        }
+    }
+    
+    console.log('Workflow loaded with Groq Llama model');
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    loadWorkflowData();
+    console.log('Workflow Builder initialized');
+});
+</script>
 </body></html>
