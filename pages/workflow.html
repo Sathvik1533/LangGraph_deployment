@@ -13,23 +13,32 @@
     <style>
         /* Pulse Animation on Active Nodes */
         @keyframes pulseHalo {
-            0% { filter: drop-shadow(0 0 4px rgba(37, 99, 235, 0.4)); }
-            50% { filter: drop-shadow(0 0 16px rgba(37, 99, 235, 0.85)); }
-            100% { filter: drop-shadow(0 0 4px rgba(37, 99, 235, 0.4)); }
+            0% { filter: drop-shadow(0 0 4px rgba(37, 99, 235, 0.4)); transform: scale(1); }
+            50% { filter: drop-shadow(0 0 20px rgba(37, 99, 235, 0.9)); transform: scale(1.02); }
+            100% { filter: drop-shadow(0 0 4px rgba(37, 99, 235, 0.4)); transform: scale(1); }
         }
         @keyframes pulseFailHalo {
-            0% { filter: drop-shadow(0 0 4px rgba(220, 38, 38, 0.4)); }
-            50% { filter: drop-shadow(0 0 18px rgba(220, 38, 38, 0.9)); }
-            100% { filter: drop-shadow(0 0 4px rgba(220, 38, 38, 0.4)); }
+            0% { filter: drop-shadow(0 0 4px rgba(220, 38, 38, 0.4)); transform: scale(1); }
+            50% { filter: drop-shadow(0 0 22px rgba(220, 38, 38, 0.95)); transform: scale(1.03); }
+            100% { filter: drop-shadow(0 0 4px rgba(220, 38, 38, 0.4)); transform: scale(1); }
         }
         @keyframes pulseSuccessHalo {
-            0% { filter: drop-shadow(0 0 4px rgba(5, 150, 105, 0.4)); }
-            50% { filter: drop-shadow(0 0 16px rgba(5, 150, 105, 0.85)); }
-            100% { filter: drop-shadow(0 0 4px rgba(5, 150, 105, 0.4)); }
+            0% { filter: drop-shadow(0 0 4px rgba(5, 150, 105, 0.4)); transform: scale(1); }
+            50% { filter: drop-shadow(0 0 20px rgba(5, 150, 105, 0.9)); transform: scale(1.02); }
+            100% { filter: drop-shadow(0 0 4px rgba(5, 150, 105, 0.4)); transform: scale(1); }
         }
         @keyframes dashFlow {
-            from { stroke-dashoffset: 24; }
+            from { stroke-dashoffset: 32; }
             to { stroke-dashoffset: 0; }
+        }
+        @keyframes rotateRing {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes laserGlow {
+            0% { r: 5; opacity: 0.8; filter: drop-shadow(0 0 6px #38bdf8); }
+            50% { r: 7.5; opacity: 1; filter: drop-shadow(0 0 14px #0284c7); }
+            100% { r: 5; opacity: 0.8; filter: drop-shadow(0 0 6px #38bdf8); }
         }
         .node-active circle, .node-active rect, .node-active polygon {
             stroke: #2563eb !important;
@@ -46,15 +55,18 @@
         }
         .edge-active {
             stroke: #2563eb !important;
-            stroke-width: 3px !important;
-            stroke-dasharray: 6,4;
-            animation: dashFlow 0.8s linear infinite;
+            stroke-width: 3.5px !important;
+            stroke-dasharray: 8,4;
+            animation: dashFlow 0.7s linear infinite;
         }
         .edge-loop-active {
             stroke: #dc2626 !important;
-            stroke-width: 3.5px !important;
-            stroke-dasharray: 6,4;
-            animation: dashFlow 0.6s linear infinite;
+            stroke-width: 4px !important;
+            stroke-dasharray: 8,4;
+            animation: dashFlow 0.5s linear infinite;
+        }
+        .laser-orb {
+            animation: laserGlow 1.2s infinite ease-in-out;
         }
         .scenario-pill {
             padding: 10px 16px;
@@ -110,10 +122,10 @@
                     <span class="material-symbols-outlined" style="color: var(--accent-terracotta);">account_tree</span>
                     Interactive State Machine Visualizer
                 </h1>
-                <p class="page-subtitle">Simulate and visualize how LangGraph routes, executes, catches code errors, and triggers self-healing feedback loops.</p>
+                <p class="page-subtitle">Real-time dynamic visualization of LangGraph state routing, sandbox assertions, defect trapping, and self-healing feedback loops.</p>
             </div>
 
-            <!-- Playback Controls -->
+            <!-- Playback & Speed Controls -->
             <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                 <button id="liveApiRunBtn" class="cyber-btn cyber-btn-primary" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); border-color: #059669;" onclick="runLiveBackendWorkflow()" data-tooltip="Execute on Live Backend: Sends this task to the live FastAPI /generate endpoint and visualizes the actual execution!">
                     <span class="material-symbols-outlined" style="font-size: 18px;">bolt</span>
@@ -123,6 +135,21 @@
                     <span class="material-symbols-outlined" id="simPlayIcon">play_circle</span>
                     <span id="simPlayText">Play Simulation</span>
                 </button>
+                
+                <!-- Speed Selector -->
+                <div style="display: flex; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 2px 4px; align-items: center; gap: 4px;">
+                    <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); padding-left: 6px;">SPEED:</span>
+                    <button class="speed-btn active" id="speed1x" onclick="setSimSpeed(1, this)" style="border: none; background: transparent; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 12px; cursor: pointer; color: var(--accent-indigo);">1x</button>
+                    <button class="speed-btn" id="speed2x" onclick="setSimSpeed(0.5, this)" style="border: none; background: transparent; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 12px; cursor: pointer; color: var(--text-muted);">2x</button>
+                    <button class="speed-btn" id="speedSlow" onclick="setSimSpeed(2, this)" style="border: none; background: transparent; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 12px; cursor: pointer; color: var(--text-muted);">0.5x</button>
+                </div>
+
+                <!-- Sound FX Toggle -->
+                <button id="soundToggleBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="toggleSoundFX()" data-tooltip="Toggle Audio Feedback: Play subtle synth feedback chimes on state transitions.">
+                    <span class="material-symbols-outlined" id="soundIcon" style="font-size: 16px;">volume_up</span>
+                    <span id="soundText">Sound ON</span>
+                </button>
+
                 <button class="cyber-btn cyber-btn-secondary" onclick="prevSimStep()" data-tooltip="Previous Step: Step back one node.">
                     <span class="material-symbols-outlined">skip_previous</span>
                     Back
@@ -182,16 +209,18 @@
 
         <!-- Dynamic Task Specification Bar -->
         <div class="studio-card" style="margin-bottom: 24px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                <label style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.04em;">Customize Task Specification & Language</label>
-                <span class="cyber-badge cyber-badge-emerald" id="canvasLangBadge">TARGET: PYTHON 3.11</span>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined" style="color: var(--accent-indigo); font-size: 20px;">tune</span>
+                    <span style="font-weight: 700; font-size: 14px;">Task Specification Synchronizer</span>
+                </div>
+                <span class="cyber-badge cyber-badge-indigo" id="canvasLangBadge">TARGET: PYTHON</span>
             </div>
 
-            <div style="display: flex; gap: 12px; margin-bottom: 14px; align-items: center; flex-wrap: wrap;">
-                <input id="canvasTaskInput" type="text" value="Write a function to check if a number is prime" style="flex: 1; min-width: 260px; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px 18px; font-size: 14px; font-family: var(--font-sans); color: var(--text-primary); outline: none;" placeholder="Enter any custom coding task specification..." oninput="updateCustomTask(this.value)"/>
+            <div style="display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap;">
+                <input id="canvasTaskInput" type="text" style="flex: 1; min-width: 260px; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 10px 16px; font-size: 13.5px; font-family: var(--font-sans); color: var(--text-primary); outline: none;" value="Write a function to check if a number is prime" placeholder="Enter any coding task to update state machine pipeline..." oninput="updateCustomTask(this.value)"/>
                 
-                <!-- CUSTOM WEB DROPDOWN (NO NATIVE OS SELECT) -->
-                <div class="custom-select-wrapper" style="width: 170px;" id="canvasLangWrapper">
+                <div class="custom-select-wrapper" style="width: 170px;">
                     <input type="hidden" id="canvasLangSelect" value="python"/>
                     <div class="custom-select-trigger" onclick="toggleCustomSelect(this, event)">
                         <span class="custom-select-value" id="canvasLangValue">Python 3.11</span>
@@ -219,21 +248,24 @@
             </div>
         </div>
 
-        <!-- SVG Visual State Canvas -->
-        <div class="studio-card" style="margin-bottom: 24px; position: relative; background: #ffffff;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+        <!-- Supercharged Visual State Canvas with Live Traveling Packets -->
+        <div class="studio-card" style="margin-bottom: 24px; position: relative; background: #ffffff; border: 1px solid #cbd5e1; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);">
+            
+            <!-- Real-Time Telemetry Ribbon -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 10px 16px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span class="cyber-badge cyber-badge-indigo" id="graphSchemaBadge">SCHEMA: StateGraph(CrewState)</span>
                     <span class="cyber-badge cyber-badge-terracotta" id="graphLoopBadge">STEP 1 / 8</span>
+                    <span class="cyber-badge cyber-badge-emerald" id="liveAgentLock">AGENT: START</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span style="font-size: 13.5px; font-weight: 700; color: #0f172a;" id="simStepStatus">Step 1 of 8: START Node (Workflow Initialized)</span>
                 </div>
             </div>
 
-            <!-- SVG Graph Architecture -->
-            <div style="padding: 20px 10px; display: flex; align-items: center; justify-content: center; overflow-x: auto;">
-                <svg id="stateGraphSvg" width="920" height="230" viewBox="0 0 920 230" style="width: 100%; max-width: 920px;">
+            <!-- SVG Graph Architecture with Animated Flow Data Orbs -->
+            <div style="padding: 10px; display: flex; align-items: center; justify-content: center; overflow-x: auto;">
+                <svg id="stateGraphSvg" width="940" height="240" viewBox="0 0 940 240" style="width: 100%; max-width: 940px;">
                     <defs>
                         <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
                             <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
@@ -247,47 +279,56 @@
                         <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
                             <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/>
                         </marker>
+                        <filter id="glow-filter" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="4" result="blur"/>
+                            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+                        </filter>
                     </defs>
 
                     <!-- Edges (Connecting Lines) -->
-                    <line id="edgeStartDev" x1="90" y1="120" x2="200" y2="120" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)"/>
-                    <line id="edgeDevTest" x1="340" y1="120" x2="450" y2="120" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)"/>
-                    <line id="edgeTestRoute" x1="590" y1="120" x2="700" y2="120" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)"/>
-                    <line id="edgeRouteEnd" x1="770" y1="120" x2="840" y2="120" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow-emerald)"/>
+                    <line id="edgeStartDev" x1="90" y1="130" x2="200" y2="130" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)"/>
+                    <line id="edgeDevTest" x1="350" y1="130" x2="460" y2="130" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)"/>
+                    <line id="edgeTestRoute" x1="610" y1="130" x2="720" y2="130" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)"/>
+                    <line id="edgeRouteEnd" x1="790" y1="130" x2="860" y2="130" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow-emerald)"/>
 
                     <!-- Conditional Feedback Loop (Back from Router to Developer) -->
-                    <path id="edgeFeedbackLoop" d="M 735 90 Q 500 0 270 90" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#arrow-red)"/>
-                    <text id="loopLabel" x="500" y="32" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="700" opacity="0.9">Feedback Loop (Traceback)</text>
+                    <path id="edgeFeedbackLoop" d="M 755 100 Q 520 10 275 100" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#arrow-red)"/>
+                    <text id="loopLabel" x="520" y="42" text-anchor="middle" fill="#dc2626" font-size="11.5" font-weight="700" opacity="0.9">Feedback Loop (Traceback)</text>
+
+                    <!-- Traveling Laser Orb Packets -->
+                    <circle id="laserOrbForward" r="6" fill="#38bdf8" class="laser-orb" cx="90" cy="130" opacity="0" filter="url(#glow-filter)"/>
+                    <circle id="laserOrbFeedback" r="6" fill="#f43f5e" class="laser-orb" cx="755" cy="100" opacity="0" filter="url(#glow-filter)"/>
 
                     <!-- START Node -->
-                    <g id="nodeSTART" transform="translate(50, 120)" class="node-item node-active" onclick="jumpToStepByName('START')" style="cursor: pointer;" data-tooltip="START Node: Workflow initial payload receiver.">
-                        <circle r="30" fill="#ffffff" stroke="#2563eb" stroke-width="2.5"/>
+                    <g id="nodeSTART" transform="translate(50, 130)" class="node-item node-active" onclick="jumpToStepByName('START')" style="cursor: pointer;" data-tooltip="START Node: Workflow initial payload receiver.">
+                        <circle r="32" fill="#ffffff" stroke="#2563eb" stroke-width="2.5"/>
+                        <circle r="38" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4,4" opacity="0.6"/>
                         <text text-anchor="middle" dy="4" fill="#0f172a" font-size="12" font-weight="800">START</text>
                     </g>
 
                     <!-- Developer Engine Node -->
-                    <g id="nodeDeveloper" transform="translate(270, 120)" class="node-item" onclick="jumpToStepByName('Developer')" style="cursor: pointer;" data-tooltip="Developer Node: Synthesizes code and incorporates error tracebacks.">
-                        <rect x="-70" y="-34" width="140" height="68" rx="10" fill="#ffffff" stroke="#ea580c" stroke-width="2.5"/>
-                        <text text-anchor="middle" dy="-8" fill="#ea580c" font-size="10.5" font-weight="800" letter-spacing="0.05em">LLM ENGINE</text>
+                    <g id="nodeDeveloper" transform="translate(275, 130)" class="node-item" onclick="jumpToStepByName('Developer')" style="cursor: pointer;" data-tooltip="Developer Node: Synthesizes code and incorporates error tracebacks.">
+                        <rect x="-75" y="-36" width="150" height="72" rx="12" fill="#ffffff" stroke="#ea580c" stroke-width="2.5"/>
+                        <text text-anchor="middle" dy="-10" fill="#ea580c" font-size="10" font-weight="800" letter-spacing="0.06em">LLM ENGINE</text>
                         <text text-anchor="middle" dy="12" fill="#0f172a" font-size="14" font-weight="700">Developer</text>
                     </g>
 
                     <!-- Tester / Sandbox Node -->
-                    <g id="nodeTester" transform="translate(520, 120)" class="node-item" onclick="jumpToStepByName('Tester')" style="cursor: pointer;" data-tooltip="Tester Node: Runs isolated sandbox execution and checks assertions.">
-                        <rect x="-70" y="-34" width="140" height="68" rx="10" fill="#ffffff" stroke="#059669" stroke-width="2.5"/>
-                        <text text-anchor="middle" dy="-8" fill="#059669" font-size="10.5" font-weight="800" letter-spacing="0.05em">SANDBOX</text>
+                    <g id="nodeTester" transform="translate(535, 130)" class="node-item" onclick="jumpToStepByName('Tester')" style="cursor: pointer;" data-tooltip="Tester Node: Runs isolated sandbox execution and checks assertions.">
+                        <rect x="-75" y="-36" width="150" height="72" rx="12" fill="#ffffff" stroke="#059669" stroke-width="2.5"/>
+                        <text text-anchor="middle" dy="-10" fill="#059669" font-size="10" font-weight="800" letter-spacing="0.06em">SANDBOX</text>
                         <text text-anchor="middle" dy="12" fill="#0f172a" font-size="14" font-weight="700">Tester</text>
                     </g>
 
                     <!-- Router Node -->
-                    <g id="nodeRouter" transform="translate(735, 120)" class="node-item" onclick="jumpToStepByName('Router')" style="cursor: pointer;" data-tooltip="Router Node: Evaluates execution_success and decides route.">
-                        <polygon points="0,-40 45,0 0,40 -45,0" fill="#ffffff" stroke="#d97706" stroke-width="2.5"/>
+                    <g id="nodeRouter" transform="translate(755, 130)" class="node-item" onclick="jumpToStepByName('Router')" style="cursor: pointer;" data-tooltip="Router Node: Evaluates execution_success and decides route.">
+                        <polygon points="0,-42 46,0 0,42 -46,0" fill="#ffffff" stroke="#d97706" stroke-width="2.5"/>
                         <text text-anchor="middle" dy="4" fill="#d97706" font-size="11" font-weight="800">ROUTER</text>
                     </g>
 
                     <!-- END Node -->
-                    <g id="nodeEND" transform="translate(865, 120)" class="node-item" onclick="jumpToStepByName('END')" style="cursor: pointer;" data-tooltip="END Node: Terminal exit returning validated code.">
-                        <circle r="22" fill="#ffffff" stroke="#059669" stroke-width="2.5"/>
+                    <g id="nodeEND" transform="translate(885, 130)" class="node-item" onclick="jumpToStepByName('END')" style="cursor: pointer;" data-tooltip="END Node: Terminal exit returning validated code.">
+                        <circle r="24" fill="#ffffff" stroke="#059669" stroke-width="2.5"/>
                         <text text-anchor="middle" dy="4" fill="#059669" font-size="11" font-weight="800">END</text>
                     </g>
                 </svg>
@@ -790,6 +831,122 @@
             showToast(`Loaded ${scenarioKey.replace('_', ' ').toUpperCase()} scenario`, 'info');
         }
 
+        let simSpeedMultiplier = 1;
+        let soundFXEnabled = true;
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) audioCtx = new AudioContext();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playSynthTone(freq = 440, type = 'sine', duration = 0.15) {
+            if (!soundFXEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) { /* Audio context unavailable */ }
+        }
+
+        function toggleSoundFX() {
+            soundFXEnabled = !soundFXEnabled;
+            const icon = document.getElementById('soundIcon');
+            const text = document.getElementById('soundText');
+            if (soundFXEnabled) {
+                icon.textContent = 'volume_up';
+                text.textContent = 'Sound ON';
+                playSynthTone(587.33, 'sine', 0.1);
+                showToast('Audio feedback enabled', 'info');
+            } else {
+                icon.textContent = 'volume_off';
+                text.textContent = 'Sound MUTED';
+                showToast('Audio feedback muted', 'info');
+            }
+        }
+
+        function setSimSpeed(multiplier, btnEl) {
+            simSpeedMultiplier = multiplier;
+            document.querySelectorAll('.speed-btn').forEach(b => {
+                b.classList.remove('active');
+                b.style.color = 'var(--text-muted)';
+            });
+            if (btnEl) {
+                btnEl.classList.add('active');
+                btnEl.style.color = 'var(--accent-indigo)';
+            }
+            if (playInterval) {
+                togglePlaySimulation();
+                togglePlaySimulation();
+            }
+            showToast(`Simulation speed set to ${multiplier === 0.5 ? '2x' : multiplier === 2 ? '0.5x' : '1x'}`, 'info');
+        }
+
+        function animateLaserPacket(step) {
+            const forwardOrb = document.getElementById('laserOrbForward');
+            const feedbackOrb = document.getElementById('laserOrbFeedback');
+            if (!forwardOrb || !feedbackOrb) return;
+
+            const nodePositions = {
+                'START': { x: 50, y: 130 },
+                'Developer': { x: 275, y: 130 },
+                'Tester': { x: 535, y: 130 },
+                'Router': { x: 755, y: 130 },
+                'END': { x: 885, y: 130 }
+            };
+
+            const target = nodePositions[step.node] || { x: 50, y: 130 };
+
+            if (step.loopEdge) {
+                forwardOrb.setAttribute('opacity', '0');
+                feedbackOrb.setAttribute('opacity', '1');
+                feedbackOrb.setAttribute('cx', '755');
+                feedbackOrb.setAttribute('cy', '100');
+                
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 0.05;
+                    if (progress >= 1) {
+                        clearInterval(interval);
+                        feedbackOrb.setAttribute('cx', '275');
+                        feedbackOrb.setAttribute('cy', '100');
+                    } else {
+                        // Quadratic bezier approximation
+                        const qx = (1 - progress) * (1 - progress) * 755 + 2 * (1 - progress) * progress * 520 + progress * progress * 275;
+                        const qy = (1 - progress) * (1 - progress) * 100 + 2 * (1 - progress) * progress * 10 + progress * progress * 100;
+                        feedbackOrb.setAttribute('cx', qx);
+                        feedbackOrb.setAttribute('cy', qy);
+                    }
+                }, 20);
+                playSynthTone(329.63, 'sawtooth', 0.2);
+            } else {
+                feedbackOrb.setAttribute('opacity', '0');
+                forwardOrb.setAttribute('opacity', '1');
+                forwardOrb.setAttribute('cx', target.x);
+                forwardOrb.setAttribute('cy', target.y);
+                if (step.node === 'END') {
+                    playSynthTone(659.25, 'triangle', 0.3);
+                } else {
+                    playSynthTone(440, 'sine', 0.12);
+                }
+            }
+        }
+
         function renderCurrentStep() {
             const steps = getScenarioSteps(currentScenario, activeTask, activeLanguage);
             if (!steps || steps.length === 0) return;
@@ -799,11 +956,16 @@
 
             const step = steps[currentStepIndex];
 
-            // 1. Update status bar & badges
-            document.getElementById('simStepStatus').textContent = `Step ${currentStepIndex + 1} of ${steps.length}: ${step.title}`;
+            // 1. Update Ribbons & Badges
             document.getElementById('graphLoopBadge').textContent = `STEP ${currentStepIndex + 1} / ${steps.length}`;
+            document.getElementById('simStepStatus').textContent = `Step ${currentStepIndex + 1} of ${steps.length}: ${step.title}`;
+            const lockEl = document.getElementById('liveAgentLock');
+            if (lockEl) lockEl.textContent = `AGENT: ${step.node.toUpperCase()}`;
 
-            // 2. Update Graph Nodes
+            // 2. Animate Laser Orb Packets
+            animateLaserPacket(step);
+
+            // 3. Highlight Graph Nodes
             ['START', 'Developer', 'Tester', 'Router', 'END'].forEach(k => {
                 const el = document.getElementById('node' + k);
                 if (el) {
@@ -817,7 +979,7 @@
                 if (step.nodeClass) activeNodeEl.classList.add(step.nodeClass);
             }
 
-            // 3. Update Graph Edges
+            // 4. Update Graph Edges
             ['edgeStartDev', 'edgeDevTest', 'edgeTestRoute', 'edgeRouteEnd'].forEach(k => {
                 const edgeEl = document.getElementById(k);
                 if (edgeEl) edgeEl.classList.remove('edge-active');
@@ -840,7 +1002,7 @@
                 });
             }
 
-            // 4. Update Inspector Panels
+            // 5. Update Inspector Panels
             document.getElementById('nodeInspectorTitle').textContent = step.title;
             document.getElementById('nodeInspectorSubtitle').textContent = step.subtitle;
             document.getElementById('logStatusBadge').textContent = step.statusBadge;
@@ -904,7 +1066,7 @@
                         playText.textContent = 'Play Simulation';
                         showToast('🎉 Scenario completed!', 'success');
                     }
-                }, 2200);
+                }, Math.round(2000 * simSpeedMultiplier));
                 showToast('Playing simulation in real time...', 'success');
             }
         }
