@@ -17,6 +17,13 @@ import os
 import sys
 import io
 import traceback
+import warnings
+# Silence LangChain and LangGraph pending deprecation warnings for production deployment
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
+warnings.filterwarnings("ignore", message=".*allowed_objects.*")
+warnings.filterwarnings("ignore", message=".*LangChain.*")
+
 from typing import Optional, List, Dict, Any, Literal
 from operator import add
 import random

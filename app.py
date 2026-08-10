@@ -17,6 +17,15 @@ Production Patterns:
 - Jitter for retries (via agent.py)
 """
 
+import warnings
+# Silence LangChain and LangGraph pending deprecation warnings for production deployment
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
+warnings.filterwarnings("ignore", message=".*allowed_objects.*")
+warnings.filterwarnings("ignore", message=".*LangChain.*")
+warnings.filterwarnings("ignore", message=".*on_event.*")
+
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
@@ -37,6 +46,24 @@ from guardrails import InputGuard, OutputGuard, guardrail_stats
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# LIFESPAN CONTEXT (Modern FastAPI Lifespan Handler)
+# ============================================================================
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("🚀 LangGraph Agent API starting...")
+    logger.info("📊 API Docs available at /docs")
+    logger.info("🛡️ LLM Guardrails Engine: ACTIVE")
+    logger.info("   Input Guards: PromptInjection, TopicBoundary, ContentSafety")
+    logger.info("   Output Guards: DangerousCode, PIILeak, CodeRelevance, LanguageCorrectness")
+    logger.info("🔒 Security Headers: X-Content-Type-Options, X-Frame-Options, X-XSS-Protection")
+    logger.info("🔗 Request ID Tracing: X-Request-ID (UUID)")
+    logger.info("✅ Ready to accept requests")
+    yield
+    logger.info("👋 LangGraph Agent API shutting down...")
 
 
 # ============================================================================
@@ -85,13 +112,14 @@ class RateLimiter:
 # Global rate limiter (10 requests per minute per IP)
 rate_limiter = RateLimiter(max_requests=10, window_seconds=60)
 
-# Initialize FastAPI app
+# Initialize FastAPI app with modern lifespan
 app = FastAPI(
     title="LangGraph Self-Correcting Agent API",
     description="Multi-agent system that generates, tests, and self-corrects Python code",
     version="2.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 # Enable CORS for frontend access (configurable via ALLOWED_ORIGINS env var)
@@ -809,24 +837,3 @@ async def internal_error_handler(request, exc):
             "message": str(exc)
         }
     )
-
-
-# ============================================================================
-# STARTUP/SHUTDOWN EVENTS
-# ============================================================================
-
-@app.on_event("startup")
-async def startup_event():
-    logger.info("🚀 LangGraph Agent API starting...")
-    logger.info("📊 API Docs available at /docs")
-    logger.info("🛡️ LLM Guardrails Engine: ACTIVE")
-    logger.info("   Input Guards: PromptInjection, TopicBoundary, ContentSafety")
-    logger.info("   Output Guards: DangerousCode, PIILeak, CodeRelevance, LanguageCorrectness")
-    logger.info("🔒 Security Headers: X-Content-Type-Options, X-Frame-Options, X-XSS-Protection")
-    logger.info("🔗 Request ID Tracing: X-Request-ID (UUID)")
-    logger.info("✅ Ready to accept requests")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    logger.info("👋 LangGraph Agent API shutting down...")
