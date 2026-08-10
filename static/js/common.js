@@ -191,48 +191,43 @@ document.addEventListener('keydown', (e) => {
 const FULL_PLATFORM_TOUR = [
     {
         path: '/',
-        pageName: 'Command Center',
+        pageName: 'Overview',
         nextUrl: '/generate',
         steps: [
             {
                 selector: '.top-navbar',
-                title: '1/5 Navigation Bar',
-                desc: 'Use these top links to easily move between the Overview, Code Workbench, State Graph, Telemetry, and Audit Log pages.'
+                title: '👋 Welcome to LangGraph Studio!',
+                desc: 'This top navigation bar lets you easily jump between Overview, Workbench, Pipeline, Health, and History.'
             },
             {
-                selector: '[data-tooltip*="Total Executions"]',
-                title: '1/5 Total Tasks Completed',
-                desc: 'Shows how many coding tasks our AI team has generated and tested so far.'
+                selector: '[data-tooltip*="Total Runs"]',
+                title: '📊 Total Runs',
+                desc: 'Tracks how many coding tasks our AI has generated and verified so far.'
             },
             {
-                selector: '[data-tooltip*="Pass Rate"]',
-                title: '1/5 Test Pass Rate',
-                desc: 'The percentage of AI-generated code that passed all automated test checks cleanly.'
+                selector: '[data-tooltip*="Success Rate"]',
+                title: '✅ 100% Success Rate',
+                desc: 'Shows the percentage of generated solutions that successfully passed automated sandbox testing.'
             },
             {
-                selector: '[data-tooltip*="Self-Fix Ceiling"]',
-                title: '1/5 Max Fix Attempts',
-                desc: 'The maximum number of times (up to 3 times) the AI can automatically fix its own code if an error happens.'
+                selector: '[data-tooltip*="Auto-Fix Limit"]',
+                title: '🔄 Auto-Retry System',
+                desc: 'If the AI makes a coding error, our automated tester catches it and retries up to 3 times automatically.'
             },
             {
-                selector: '[data-tooltip*="Coding Languages"]',
-                title: '1/5 Supported Languages',
-                desc: 'You can generate and test code in Python, Java, or C++.'
+                selector: '[data-tooltip*="Languages"]',
+                title: '💻 3 Supported Languages',
+                desc: 'You can generate clean, verified code in Python 3.11, Java 17, or C++ 20.'
             },
             {
-                selector: '[data-tooltip*="Task Specification Presets"]',
-                title: '1/5 Ready-Made Examples',
-                desc: 'Click any example (like Prime Checker or Fibonacci) to generate code instantly.'
-            },
-            {
-                selector: '.studio-card:has(.cyber-badge-terracotta)',
-                title: '1/5 AI Team Pipeline',
-                desc: 'Shows how our AI team works together: Developer writes code -> Tester tests code -> Router fixes errors.'
+                selector: '[data-tooltip*="Safety Shield"]',
+                title: '🛡️ Safety Guardrails Shield',
+                desc: 'Our 7-layer safety shield filters prompt injection, dangerous code, and data leaks to ensure 100% safe execution.'
             },
             {
                 selector: '#dashboardHistoryBody',
-                title: '1/5 Recent Activity Log',
-                desc: 'A real-time list of your 5 most recent code generation tasks and whether they passed or failed.'
+                title: '📋 Recent Activity',
+                desc: 'Your 5 most recent coding tasks appear here in real time with their test status and quick-view actions.'
             }
         ]
     },
@@ -243,104 +238,104 @@ const FULL_PLATFORM_TOUR = [
         steps: [
             {
                 selector: '#taskInput',
-                title: '2/5 Task Specification Input',
-                desc: 'Please type what program you want to build in this box, OR click one of the quick preset buttons below (Fibonacci, Palindrome, Safe Division) to continue!'
+                title: '✍️ What code do you want to build?',
+                desc: 'Type your program description here (e.g. "Write a function to check if a number is prime"), or click a quick-fill button below!'
             },
             {
                 selector: '#langSelectWrapper',
-                title: '2/5 Target Language Selector',
-                desc: 'Choose whether you want your code written in Python 3.11, Java 17, or C++ 20.'
+                title: '🌐 Choose Your Language',
+                desc: 'Pick Python 3.11, Java 17, or C++ 20 from our custom dropdown.'
             },
             {
                 selector: '#ceilingSelectWrapper',
-                title: '2/5 Self-Fix Limit',
-                desc: 'Choose how many times (1, 3, or 5 loops) the AI can try fixing its own code errors.'
+                title: '🔁 Auto-Fix Attempts',
+                desc: 'Choose how many times (1, 3, or 5 retries) the AI can automatically fix its own mistakes.'
             },
             {
                 selector: '#generateBtn',
-                title: '2/5 Run Task Button',
-                desc: 'Click this button to start the AI code generation and run automatic test checks.'
+                title: '🚀 Generate Code Button',
+                desc: 'Click here or press ⌘ + Enter to start AI code generation and automated test verification.'
             },
             {
                 selector: '.code-editor-pane:first-child',
-                title: '2/5 Generated Code Window',
-                desc: 'Displays the complete source code written by our Developer AI.'
+                title: '📄 Clean Source Code Window',
+                desc: 'Displays the complete, production-ready code. You can copy it with 1-click or download it directly to your computer.'
             },
             {
                 selector: '.code-editor-pane:last-child',
-                title: '2/5 Test Results Terminal',
-                desc: 'Displays the test results and log outputs from running your code.'
+                title: '🧪 Test Output Window',
+                desc: 'Shows real-time test execution results and assertion checks from our isolated sandbox.'
             }
         ]
     },
     {
         path: '/workflow',
-        pageName: 'State Graph Canvas',
+        pageName: 'AI Pipeline',
         nextUrl: '/execution',
         steps: [
             {
                 selector: '#canvasTaskInput',
-                title: '3/5 Task Simulator Bar',
-                desc: 'Type any task or pick a preset to update the live visual graph diagram.'
+                title: '⚡ Interactive Task Simulator',
+                desc: 'Type any task to simulate how our multi-agent AI pipeline processes and verifies your request.'
             },
             {
                 selector: 'svg',
-                title: '3/5 Visual State Graph Diagram',
-                desc: 'A visual diagram showing how data flows between our AI agents (START -> Developer -> Tester -> Router -> END).'
+                title: '🗺️ Visual Pipeline Diagram',
+                desc: 'Shows the step-by-step data flow: START ➔ Safety Guard ➔ Developer AI ➔ Tester AI ➔ Router ➔ END.'
             },
             {
                 selector: '#simStepBtn',
-                title: '3/5 Simulator Controls',
-                desc: 'Click "Step Forward" to move step-by-step through the process, OR click "Auto-Play Tour" to watch active nodes glow in real time!'
+                title: '▶️ Step-by-Step Simulator',
+                desc: 'Click "Step Forward" to advance node-by-node, or click "Auto-Play Tour" to watch active nodes glow in real time!'
             },
             {
                 selector: '#inspectorCard',
-                title: '3/5 State Inspector Card',
-                desc: 'Displays the exact input payload and code output at each step of the process.'
+                title: '🔍 State Inspector',
+                desc: 'Inspect the live data payload and code state at each stage of the pipeline.'
             }
         ]
     },
     {
         path: '/execution',
-        pageName: 'Telemetry & Logs',
+        pageName: 'System Health',
         nextUrl: '/history',
         steps: [
             {
                 selector: '[data-tooltip*="System Status"]',
-                title: '4/5 Server Status',
-                desc: 'Shows if our server and AI helpers are online and ready to build your code.'
+                title: '🟢 System Health & Uptime',
+                desc: 'Shows that our FastAPI backend and AI helpers are online, healthy, and operational.'
             },
             {
                 selector: '[data-tooltip*="Safety Guard"]',
-                title: '4/5 Safety Guard',
-                desc: 'Automatically pauses requests if server issues occur, protecting your app from crashing.'
+                title: '🛡️ Circuit Breaker & Safety',
+                desc: 'Protects the platform from cascading server failures with automatic fallback routing.'
             },
             {
                 selector: '[data-tooltip*="Speed Limiter"]',
-                title: '4/5 Speed Limiter',
-                desc: 'Prevents too many requests at once so everyone gets fast and reliable answers.'
+                title: '⚡ Rate Limiter',
+                desc: 'Ensures fast, consistent response times for all users with smart traffic pacing.'
             },
             {
                 selector: '#logTerminal',
-                title: '4/5 Live System Log Stream',
-                desc: 'A live scrolling terminal showing internal system health logs and execution events.'
+                title: '📜 Live System Logs',
+                desc: 'Real-time diagnostic stream showing system events, test executions, and guardrail scans.'
             }
         ]
     },
     {
         path: '/history',
-        pageName: 'Audit Logs',
+        pageName: 'History & Saved Work',
         nextUrl: '/',
         steps: [
             {
                 selector: '#searchInput',
-                title: '5/5 Search & Filter Bar',
-                desc: 'Search past code runs by keyword or filter by Passed/Failed status.'
+                title: '🔎 Search & Filter',
+                desc: 'Easily search through your past tasks by keyword or filter by Passed/Failed status.'
             },
             {
                 selector: 'table',
-                title: '5/5 Audit History Table',
-                desc: 'Click any row in this table to open a pop-up window showing the full source code and test details.'
+                title: '📁 Saved Code History',
+                desc: 'All your past solutions are saved here! Click any row to view, copy, or download the full source code and test results.'
             }
         ]
     }
