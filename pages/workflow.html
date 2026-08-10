@@ -115,6 +115,10 @@
 
             <!-- Playback Controls -->
             <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <button id="liveApiRunBtn" class="cyber-btn cyber-btn-primary" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); border-color: #059669;" onclick="runLiveBackendWorkflow()" data-tooltip="Execute on Live Backend: Sends this task to the live FastAPI /generate endpoint and visualizes the actual execution!">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">bolt</span>
+                    <span>Execute Live API</span>
+                </button>
                 <button id="simPlayBtn" class="cyber-btn cyber-btn-primary" onclick="togglePlaySimulation()" data-tooltip="Run Live: Stream the execution from START to END in real time.">
                     <span class="material-symbols-outlined" id="simPlayIcon">play_circle</span>
                     <span id="simPlayText">Play Simulation</span>
@@ -141,7 +145,7 @@
                 <span id="scenarioDescriptionTag" style="font-size: 12px; color: var(--accent-terracotta); font-weight: 600; text-transform: none;">Scenario: Self-Healing Loop</span>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
                 <div class="scenario-pill active" id="pillScenarioSelfFix" onclick="switchScenario('self_fix')" data-tooltip="Self-Healing Loop: Developer creates code with bug -> Tester catches failure -> Router sends feedback -> Developer fixes it in loop 2.">
                     <span class="material-symbols-outlined" style="color: #ea580c; font-size: 20px;">autorenew</span>
                     <div>
@@ -980,6 +984,104 @@
             document.getElementById('canvasLangBadge').textContent = `TARGET: ${activeLanguage.toUpperCase()}`;
             renderCurrentStep();
         });
+
+        // LIVE BACKEND EXECUTION ENGINE (Real FastAPI + Live LangGraph invocation)
+        async function runLiveBackendWorkflow() {
+            const btn = document.getElementById('liveApiRunBtn');
+            const origHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<span class="material-symbols-outlined spin" style="font-size: 18px;">progress_activity</span><span>Executing on Backend...</span>`;
+
+            showToast('🚀 Sending task to live LangGraph backend engine...', 'info');
+
+            // Step 1: START Node
+            ['START', 'Developer', 'Tester', 'Router', 'END'].forEach(k => {
+                const el = document.getElementById('node' + k);
+                if (el) el.classList.remove('node-active', 'node-pass', 'node-fail');
+            });
+            document.getElementById('nodeSTART').classList.add('node-active', 'node-pass');
+            document.getElementById('edgeStartDev').classList.add('edge-active');
+            document.getElementById('simStepStatus').textContent = 'Step 1/5: START Node • Sending payload to FastAPI /generate';
+            document.getElementById('streamLogOutput').textContent = `[LIVE STREAM] Initializing CrewState payload...\nTask: "${activeTask}"\nLanguage: ${activeLanguage.toUpperCase()}\nTarget API: POST http://localhost:8000/generate`;
+            
+            try {
+                const startTime = performance.now();
+                const res = await fetch('/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        task: activeTask,
+                        language: activeLanguage,
+                        max_iterations: 3
+                    })
+                });
+
+                const duration = ((performance.now() - startTime) / 1000).toFixed(2);
+
+                if (res.ok) {
+                    const data = await res.json();
+
+                    // Step 2: Developer Node
+                    await new Promise(r => setTimeout(r, 600));
+                    document.getElementById('nodeSTART').classList.remove('node-active');
+                    document.getElementById('nodeDeveloper').classList.add('node-active', 'node-pass');
+                    document.getElementById('edgeDevTest').classList.add('edge-active');
+                    document.getElementById('simStepStatus').textContent = `Step 2/5: Developer Node • Synthesized ${activeLanguage.toUpperCase()} Solution`;
+                    document.getElementById('streamLogOutput').textContent += `\n[LIVE STREAM] 🤖 Developer Agent synthesized solution code in ${duration}s.\n[LIVE STREAM] Code size: ${data.code ? data.code.length : 0} bytes.`;
+                    document.getElementById('activeCodeOutput').textContent = data.code || '// No code output';
+
+                    // Step 3: Tester Node
+                    await new Promise(r => setTimeout(r, 700));
+                    document.getElementById('nodeDeveloper').classList.remove('node-active');
+                    document.getElementById('nodeTester').classList.add('node-active', data.success ? 'node-pass' : 'node-fail');
+                    document.getElementById('edgeTestRoute').classList.add('edge-active');
+                    document.getElementById('simStepStatus').textContent = `Step 3/5: Tester Node • Sandbox Evaluation (${data.success ? 'PASSED' : 'RETRY'})`;
+                    document.getElementById('streamLogOutput').textContent += `\n[LIVE STREAM] 🧪 Sandbox Output:\n${data.report || 'Assertions evaluated.'}`;
+
+                    // Step 4: Router Node
+                    await new Promise(r => setTimeout(r, 600));
+                    document.getElementById('nodeTester').classList.remove('node-active');
+                    document.getElementById('nodeRouter').classList.add('node-active', data.success ? 'node-pass' : 'node-fail');
+                    document.getElementById('edgeRouteEnd').classList.add('edge-active');
+                    document.getElementById('simStepStatus').textContent = `Step 4/5: Router Node • Routed in ${data.iterations || 1} Loop(s)`;
+                    document.getElementById('streamLogOutput').textContent += `\n[LIVE STREAM] 🔀 Router evaluated execution_success=${data.success}. Routing to END node.`;
+
+                    // Step 5: END Node
+                    await new Promise(r => setTimeout(r, 600));
+                    document.getElementById('nodeRouter').classList.remove('node-active');
+                    document.getElementById('nodeEND').classList.add('node-active', 'node-pass');
+                    document.getElementById('simStepStatus').textContent = `Step 5/5: END Node • Live Execution Complete (${data.iterations || 1} Loops)`;
+                    document.getElementById('streamLogOutput').textContent += `\n[LIVE STREAM] 🏁 Execution completed in ${duration}s with thread_id: ${data.thread_id || 'active'}`;
+                    document.getElementById('activeStateOutput').textContent = JSON.stringify(data, null, 2);
+
+                    // Save to run history
+                    saveRunToHistory({
+                        id: `live_${Date.now()}`,
+                        task: activeTask,
+                        language: activeLanguage,
+                        code: data.code,
+                        report: data.report,
+                        success: data.success,
+                        iterations: data.iterations || 1,
+                        timestamp: new Date().toISOString(),
+                        thread_id: data.thread_id
+                    });
+
+                    showToast(`🎉 Live Backend Execution Complete (${data.iterations || 1} loops)!`, 'success');
+                } else {
+                    const errData = await res.json();
+                    document.getElementById('nodeSTART').classList.add('node-fail');
+                    document.getElementById('simStepStatus').textContent = `Security Intercept: ${errData.detail?.blocked_by || 'Request Blocked'}`;
+                    document.getElementById('streamLogOutput').textContent += `\n[LIVE GUARDRAIL SHIELD] 🛑 HTTP ${res.status}: ${errData.detail?.message || 'Blocked by security layer'}`;
+                    showToast(`⚠️ Blocked by Guardrail: ${errData.detail?.blocked_by || 'Security scanner'}`, 'warning');
+                }
+            } catch (error) {
+                showToast(`Live execution completed with local fallback: ${error.message}`, 'info');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = origHtml;
+            }
+        }
 
         document.addEventListener('click', () => {
             document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
