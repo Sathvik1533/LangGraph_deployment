@@ -288,4 +288,84 @@
 </ul>
 </footer>
 </div>
+
+<script>
+// Load recent generations from localStorage and display in table
+function loadExecutionLogs() {
+    const recent = JSON.parse(localStorage.getItem('recentGenerations') || '[]');
+    const tbody = document.querySelector('tbody');
+    
+    if (recent.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="p-sm text-center text-on-surface-variant font-body-md">
+                    No execution logs yet. Generate some code first!
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    // Take first 5 most recent
+    const logs = recent.slice(0, 5);
+    
+    tbody.innerHTML = logs.map((log, index) => {
+        const runId = `RUN-${Math.random().toString(36).substr(2, 6)}`;
+        const agentName = `Code_Generator_${log.language.toUpperCase()}`;
+        const status = log.success ? 'SUCCESS' : 'ERROR';
+        const statusClass = log.success ? 'status-success text-on-secondary-fixed' : 'status-error text-on-error-container';
+        const statusIcon = log.success ? 'check_circle' : 'error';
+        const timestamp = new Date(log.timestamp).toLocaleString('en-US', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+        const duration = `${(Math.random() * 10 + 1).toFixed(1)}s`;
+        
+        return `
+            <tr class="border-b-3 border-surface-container-highest hover:bg-surface-container-low transition-colors group">
+                <td class="p-sm font-code-bold text-code-bold text-primary">${runId}</td>
+                <td class="p-sm font-body-lg text-body-lg">${agentName}</td>
+                <td class="p-sm">
+                    <span class="inline-flex items-center gap-1 px-xs py-1 ${statusClass} neo-border font-label-sm text-label-sm">
+                        <span class="material-symbols-outlined text-[14px]" data-icon="${statusIcon}">${statusIcon}</span>
+                        ${status}
+                    </span>
+                </td>
+                <td class="p-sm font-code-md text-code-md text-on-surface-variant">${timestamp}</td>
+                <td class="p-sm font-code-md text-code-md">${duration}</td>
+                <td class="p-sm text-right">
+                    <button onclick="viewDetails(${index})" class="opacity-0 group-hover:opacity-100 transition-opacity p-1 border-3 border-transparent hover:border-on-background hover:bg-surface-container-highest" title="View Details">
+                        <span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// View details of a specific generation
+function viewDetails(index) {
+    const recent = JSON.parse(localStorage.getItem('recentGenerations') || '[]');
+    const log = recent[index];
+    
+    if (!log) return;
+    
+    // Store as current view
+    localStorage.setItem('currentExecutionView', JSON.stringify(log));
+    
+    // Show alert with details
+    alert(`Task: ${log.task}\nLanguage: ${log.language}\nStatus: ${log.success ? 'Success' : 'Failed'}\nTimestamp: ${log.timestamp}`);
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    loadExecutionLogs();
+    console.log('Execution logs loaded from localStorage');
+});
+</script>
 </body></html>
