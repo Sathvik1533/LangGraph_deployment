@@ -1,4 +1,4 @@
-// Executive Engineering Platform Controller & Interactive Platform Guide
+// Executive Engineering Platform Controller & Proactive Page Guide
 
 const API_URL = window.location.origin + '/invoke';
 const HEALTH_API_URL = window.location.origin + '/health';
@@ -140,10 +140,6 @@ function initCommandPalette() {
                             <span style="display:flex; align-items:center; gap:10px;"><span class="material-symbols-outlined">history</span> View Audit Log</span>
                             <span class="cyber-badge cyber-badge-terracotta">5</span>
                         </div>
-                        <div class="cmd-spotlight-item" onclick="openPlatformGuide(); closeCommandPalette();">
-                            <span style="display:flex; align-items:center; gap:10px;"><span class="material-symbols-outlined">menu_book</span> Launch Interactive Platform Guide</span>
-                            <span class="cyber-badge cyber-badge-emerald">HELP</span>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -182,137 +178,124 @@ document.addEventListener('keydown', (e) => {
         openCommandPalette();
     } else if (e.key === 'Escape') {
         closeCommandPalette();
-        closePlatformGuide();
+        closeProactiveGuide();
     }
 });
 
-// Interactive Proactive Platform Onboarding Guide
-const GUIDE_STEPS = [
-    {
-        title: "Welcome to LangGraph Studio",
-        badge: "PLATFORM ARCHITECTURE",
-        desc: "LangGraph Studio is an automated multi-agent code generation and verification platform. It features a self-correcting state machine that drafts code, runs tests in a sandbox, and routes back to the developer agent if assertions fail.",
-        actionText: "Explore Key Features →",
-        page: "/"
+// Page-Aware Proactive Guide Explanations
+const PAGE_GUIDE_DATA = {
+    '/': {
+        title: "Overview Command Center",
+        badge: "PAGE GUIDE: 1 / 5",
+        desc: "Welcome to LangGraph Studio! This Command Center summarizes live platform health, total code verification runs, self-correction limits, and one-click task specification presets.",
+        nextPage: "/generate",
+        nextText: "Go to Code Workbench →"
     },
-    {
-        title: "1. Code Workbench & Verification Studio",
-        badge: "CODE ENGINE",
-        desc: "Submit natural language task specifications in Python, Java, or C++. The Developer node drafts the solution, while the Sandbox Verifier executes self-contained assertion tests.",
-        actionText: "Try Code Workbench",
-        page: "/generate"
+    '/generate': {
+        title: "Code Workbench & Verification Studio",
+        badge: "PAGE GUIDE: 2 / 5",
+        desc: "This workbench lets you submit natural language code specifications in Python, Java, or C++. The Developer agent drafts code, while the Sandbox Verifier executes automated assertion tests.",
+        nextPage: "/workflow",
+        nextText: "Go to State Graph →"
     },
-    {
-        title: "2. Interactive State Graph Canvas",
-        badge: "STATE MACHINE VISUALIZER",
-        desc: "Visual representation of the LangGraph state machine. Click any node to inspect CrewState variables (messages, code, report, execution_success, iterations) or run the live step simulator.",
-        actionText: "Inspect State Canvas",
-        page: "/workflow"
+    '/workflow': {
+        title: "Interactive State Graph Canvas",
+        badge: "PAGE GUIDE: 3 / 5",
+        desc: "This interactive canvas visualizes the LangGraph state machine. Click 'Simulate Backend Execution Step' to step through nodes (START → Developer → Tester → Router → END) and inspect CrewState variables.",
+        nextPage: "/execution",
+        nextText: "Go to Telemetry →"
     },
-    {
-        title: "3. Real-Time Telemetry & Diagnostics",
-        badge: "SYSTEM HEALTH",
-        desc: "Monitors API circuit breaker status, sliding-window rate limiters, memory checkpointers, and live streaming diagnostics logs.",
-        actionText: "View System Telemetry",
-        page: "/execution"
+    '/execution': {
+        title: "System Telemetry & Diagnostics",
+        badge: "PAGE GUIDE: 4 / 5",
+        desc: "Monitors production API health, circuit breaker status, sliding-window rate limiters, and live streaming diagnostics logs.",
+        nextPage: "/history",
+        nextText: "Go to Audit Log →"
     },
-    {
-        title: "4. Audit Log & Run Replay",
-        badge: "AUDIT LOGS",
-        desc: "Searchable and filterable history of all previous executions. Click any past run to open the full code & verification report modal.",
-        actionText: "Open Audit Logs",
-        page: "/history"
+    '/history': {
+        title: "Verification Audit Log",
+        badge: "PAGE GUIDE: 5 / 5",
+        desc: "Searchable and filterable history of all past verification runs. Click any table row to open the complete source code and execution report modal.",
+        nextPage: "/",
+        nextText: "Return to Command Center →"
     }
-];
+};
 
-let currentGuideIndex = 0;
+function autoAwakenPageGuide() {
+    const currentPath = window.location.pathname;
+    const pageKey = Object.keys(PAGE_GUIDE_DATA).find(p => p === currentPath) || '/';
+    const guide = PAGE_GUIDE_DATA[pageKey];
 
-function initPlatformGuide() {
-    if (!document.getElementById('platformGuideBackdrop')) {
-        const guideHtml = `
-            <div id="platformGuideBackdrop" class="cmd-spotlight-backdrop">
-                <div class="studio-card" style="width: 100%; max-width: 600px; background: #ffffff; border-color: var(--border-medium);" onclick="event.stopPropagation()">
-                    
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <span class="material-symbols-outlined" style="color: var(--accent-terracotta); font-size: 24px;">menu_book</span>
-                            <h2 style="font-size: 20px; font-weight: 700;">Platform Interactive Guide</h2>
-                        </div>
-                        <button onclick="closePlatformGuide()" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer;">
-                            <span class="material-symbols-outlined" style="font-size: 24px;">close</span>
-                        </button>
+    if (!document.getElementById('proactiveGuideCard')) {
+        const cardHtml = `
+            <div id="proactiveGuideCard" class="proactive-guide-card">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="material-symbols-outlined" style="color: var(--accent-terracotta); font-size: 20px;">explore</span>
+                        <h3 style="font-size: 15px; font-weight: 700;" id="proactiveTitle">${guide.title}</h3>
                     </div>
+                    <button onclick="closeProactiveGuide()" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
+                    </button>
+                </div>
 
-                    <div style="background: var(--bg-inset); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border-subtle);">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                            <h3 style="font-size: 17px; font-weight: 700;" id="guideStepTitle">Welcome to LangGraph Studio</h3>
-                            <span class="cyber-badge cyber-badge-terracotta" id="guideStepBadge">PLATFORM ARCHITECTURE</span>
-                        </div>
-                        <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.65;" id="guideStepDesc"></p>
-                    </div>
+                <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.55; margin-bottom: 16px;" id="proactiveDesc">${guide.desc}</p>
 
-                    <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <span style="font-size: 12.5px; color: var(--text-muted); font-family: var(--font-mono);" id="guideStepCounter">Step 1 of 5</span>
-
-                        <div style="display: flex; gap: 10px;">
-                            <button id="guidePrevBtn" class="cyber-btn cyber-btn-secondary" onclick="prevGuideStep()">Previous</button>
-                            <button id="guideNextBtn" class="cyber-btn cyber-btn-primary" onclick="nextGuideStep()">Next Step →</button>
-                        </div>
-                    </div>
-
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <span class="cyber-badge cyber-badge-terracotta" style="font-size: 10px;" id="proactiveBadge">${guide.badge}</span>
+                    <button class="cyber-btn cyber-btn-primary" style="font-size: 12px; padding: 6px 14px;" onclick="window.location.href='${guide.nextPage}'" id="proactiveNextBtn">${guide.nextText}</button>
                 </div>
             </div>
         `;
-        document.body.insertAdjacentHTML('beforeend', guideHtml);
-        document.getElementById('platformGuideBackdrop').addEventListener('click', closePlatformGuide);
+        document.body.insertAdjacentHTML('beforeend', cardHtml);
     }
 }
 
-function renderGuideStep() {
-    const step = GUIDE_STEPS[currentGuideIndex];
-    document.getElementById('guideStepTitle').textContent = step.title;
-    document.getElementById('guideStepBadge').textContent = step.badge;
-    document.getElementById('guideStepDesc').textContent = step.desc;
-    document.getElementById('guideStepCounter').textContent = `Step ${currentGuideIndex + 1} of ${GUIDE_STEPS.length}`;
-    document.getElementById('guideNextBtn').textContent = step.actionText;
-
-    document.getElementById('guidePrevBtn').disabled = currentGuideIndex === 0;
-}
-
-function openPlatformGuide() {
-    initPlatformGuide();
-    currentGuideIndex = 0;
-    renderGuideStep();
-    document.getElementById('platformGuideBackdrop').style.display = 'flex';
-}
-
-function closePlatformGuide() {
-    const backdrop = document.getElementById('platformGuideBackdrop');
-    if (backdrop) {
-        backdrop.style.display = 'none';
+function closeProactiveGuide() {
+    const card = document.getElementById('proactiveGuideCard');
+    if (card) {
+        card.style.display = 'none';
     }
 }
 
-function nextGuideStep() {
-    const currentStep = GUIDE_STEPS[currentGuideIndex];
-    if (currentGuideIndex < GUIDE_STEPS.length - 1) {
-        currentGuideIndex++;
-        renderGuideStep();
-    } else {
-        closePlatformGuide();
-        showToast('Guided tour completed!', 'success');
+// Global Hover Tooltip System
+function initHoverTooltips() {
+    let tooltipPopup = document.getElementById('customTooltipPopup');
+    if (!tooltipPopup) {
+        tooltipPopup = document.createElement('div');
+        tooltipPopup.id = 'customTooltipPopup';
+        tooltipPopup.className = 'custom-tooltip-popup';
+        document.body.appendChild(tooltipPopup);
     }
 
-    if (currentStep.page && window.location.pathname !== currentStep.page) {
-        window.location.href = currentStep.page;
-    }
-}
+    document.addEventListener('mouseover', (e) => {
+        const target = e.target.closest('[data-tooltip]');
+        if (target) {
+            const text = target.getAttribute('data-tooltip');
+            if (text) {
+                tooltipPopup.textContent = text;
+                tooltipPopup.style.opacity = '1';
 
-function prevGuideStep() {
-    if (currentGuideIndex > 0) {
-        currentGuideIndex--;
-        renderGuideStep();
-    }
+                const rect = target.getBoundingClientRect();
+                let top = rect.bottom + 8;
+                let left = rect.left + (rect.width / 2) - 140;
+
+                if (left < 10) left = 10;
+                if (left + 280 > window.innerWidth) left = window.innerWidth - 290;
+                if (top + 60 > window.innerHeight) top = rect.top - 60;
+
+                tooltipPopup.style.top = top + 'px';
+                tooltipPopup.style.left = left + 'px';
+            }
+        }
+    });
+
+    document.addEventListener('mouseout', (e) => {
+        const target = e.target.closest('[data-tooltip]');
+        if (target) {
+            tooltipPopup.style.opacity = '0';
+        }
+    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -326,5 +309,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     setActiveNav(pageId);
     initCommandPalette();
-    initPlatformGuide();
+    initHoverTooltips();
+
+    // Auto-Awaken Proactive Guide after 600ms
+    setTimeout(autoAwakenPageGuide, 600);
 });
