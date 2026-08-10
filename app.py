@@ -32,7 +32,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Dict, Any, List
 import logging
 import time
 import uuid
@@ -40,7 +40,7 @@ from collections import defaultdict, deque
 import os
 
 from agent import agent, CrewState, _circuit_breaker_open, _circuit_breaker_failures
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
 from guardrails import InputGuard, OutputGuard, guardrail_stats
 
 # Configure logging
@@ -197,6 +197,10 @@ class TaskRequest(BaseModel):
         description="Programming language for code generation (python, java, cpp)",
         example="python"
     )
+    hitl_mode: Optional[bool] = Field(
+        default=False,
+        description="Enable Human-in-the-Loop review gate before running tests"
+    )
     thread_id: Optional[str] = Field(
         default=None,
         description="Optional thread ID for conversation persistence. If provided, state will be loaded/saved for this thread.",
@@ -209,6 +213,15 @@ class TaskRequest(BaseModel):
     )
 
 
+class HITLActionRequest(BaseModel):
+    """Request model for Human-in-the-Loop review gate actions"""
+    thread_id: str = Field(..., description="Unique thread ID for the paused HITL session")
+    action: str = Field("approve", description="Action to take: 'approve', 'edit', 'reject', 'abort'")
+    edited_code: Optional[str] = Field(None, description="Modified code by human if action is 'edit'")
+    feedback: Optional[str] = Field(None, description="Review feedback if action is 'reject'")
+    language: Optional[str] = Field("python", description="Target programming language")
+
+
 class AgentResponse(BaseModel):
     """Response model with full execution details"""
     success: bool = Field(description="Whether the agent workflow completed successfully")
@@ -219,6 +232,18 @@ class AgentResponse(BaseModel):
     error: Optional[str] = Field(None, description="Error message if workflow failed")
     thread_id: Optional[str] = Field(None, description="Thread ID used for this conversation")
     checkpointed: bool = Field(False, description="Whether state was saved to checkpoint (Redis)")
+    hitl_status: Optional[str] = Field(None, description="Human-in-the-Loop gate status")
+
+
+# In-memory storage for active Human-in-the-Loop review sessions
+hitl_sessions: Dict[str, Dict[str, Any]] = {}
+hitl_stats: Dict[str, int] = {
+    "total_interventions": 0,
+    "approved": 0,
+    "edited": 0,
+    "rejected": 0,
+    "aborted": 0
+}
 
 
 # ============================================================================
@@ -366,6 +391,7 @@ def get_info():
     }
 
 
+@app.post("/generate", response_model=AgentResponse, tags=["Agent"])
 @app.post("/invoke", response_model=AgentResponse, tags=["Agent"])
 async def invoke_agent(request: TaskRequest, req: Request):
     """
@@ -476,7 +502,8 @@ async def invoke_agent(request: TaskRequest, req: Request):
             "execution_success": False,
             "iterations": 0,
             "max_iterations": request.max_iterations,
-            "language": request.language or "python"  # Pass language to agent
+            "language": request.language or "python",
+            "hitl_enabled": request.hitl_mode
         }
         
         # Configure with thread ID for checkpointing
@@ -489,14 +516,55 @@ async def invoke_agent(request: TaskRequest, req: Request):
         
         # Check if Redis checkpointing is available
         redis_url = os.getenv("REDIS_URL", "").strip()
-        checkpointed = bool(redis_url)
+        checkpointed = bool(redis_url) or request.hitl_mode
         
+        # ====================================================================
+        # HUMAN-IN-THE-LOOP (HITL) GATE INTERCEPTION
+        # ====================================================================
+        if request.hitl_mode:
+            logger.info(f"👤 Human-in-the-Loop Mode enabled for thread: {thread_id}")
+            from agent import developer_node
+            
+            # Step 1: Run Developer Agent to draft initial code
+            dev_result = developer_node(initial_state)
+            draft_code = dev_result.get("code", "")
+            
+            # Save session state awaiting human decision
+            hitl_sessions[thread_id] = {
+                "thread_id": thread_id,
+                "task": request.task,
+                "language": request.language or "python",
+                "code": draft_code,
+                "max_iterations": request.max_iterations,
+                "iterations": 1,
+                "status": "awaiting_human_review",
+                "created_at": time.time()
+            }
+            hitl_stats["total_interventions"] += 1
+            
+            logger.info(f"⏸️ Execution paused at Human Review Gate for thread: {thread_id}")
+            return AgentResponse(
+                success=True,
+                code=draft_code,
+                report=(
+                    "⏸️ [HUMAN-IN-THE-LOOP GATE ACTIVE]\n"
+                    "Execution paused after Developer Agent drafted code.\n"
+                    "Please review the code: Approve to run Sandbox Tests, Edit code directly, or Reject with guidance."
+                ),
+                execution_success=False,
+                iterations=1,
+                error=None,
+                thread_id=thread_id,
+                checkpointed=True,
+                hitl_status="awaiting_human_review"
+            )
+
         if checkpointed:
             logger.info(f"💾 State will be saved to Redis with thread ID: {thread_id}")
         else:
             logger.info(f"🧠 Using in-memory state (no persistence)")
         
-        # Invoke the agent workflow with thread configuration
+        # Invoke standard multi-agent self-correcting workflow
         result = agent.invoke(initial_state, config)
         
         logger.info(f"✅ Agent completed in {result.get('iterations', 0)} iterations")
@@ -519,7 +587,8 @@ async def invoke_agent(request: TaskRequest, req: Request):
                     iterations=result.get("iterations", 0),
                     error=output_report.reason,
                     thread_id=thread_id,
-                    checkpointed=checkpointed
+                    checkpointed=checkpointed,
+                    hitl_status="bypassed"
                 )
         
         # Check if we got valid results
@@ -535,7 +604,8 @@ async def invoke_agent(request: TaskRequest, req: Request):
             iterations=result.get("iterations", 0),
             error=None if result.get("execution_success") else "Code generated but tests failed",
             thread_id=thread_id,
-            checkpointed=checkpointed
+            checkpointed=checkpointed,
+            hitl_status="bypassed"
         )
         
     except HTTPException:
@@ -549,7 +619,6 @@ async def invoke_agent(request: TaskRequest, req: Request):
         user_friendly_error = _make_user_friendly_error(e)
         
         # Graceful Degradation (Production Pattern)
-        # Return partial results if available instead of complete failure
         if "result" in locals() and result and result.get("code"):
             logger.info("⚠️ Returning partial results due to error")
             return AgentResponse(
@@ -558,7 +627,8 @@ async def invoke_agent(request: TaskRequest, req: Request):
                 report=result.get("report", f"### ERROR\n{user_friendly_error}"),
                 execution_success=False,
                 iterations=result.get("iterations", 0),
-                error=user_friendly_error
+                error=user_friendly_error,
+                hitl_status="error"
             )
         
         # Complete failure - return user-friendly error
@@ -570,6 +640,171 @@ async def invoke_agent(request: TaskRequest, req: Request):
                 "tip": "Try again with a simpler task or check your API configuration."
             }
         )
+
+
+# ============================================================================
+# HUMAN-IN-THE-LOOP (HITL) INTERACTIVE API ENDPOINTS
+# ============================================================================
+
+@app.post("/hitl/action", tags=["Human-in-the-Loop"])
+async def handle_hitl_action(req_body: HITLActionRequest):
+    """
+    Process Human-in-the-Loop action (approve, edit, reject, abort)
+    and resume graph execution from checkpoint.
+    """
+    from agent import tester_node, developer_node
+    
+    session = hitl_sessions.get(req_body.thread_id)
+    target_lang = req_body.language or (session.get("language") if session else "python")
+    
+    if not session and req_body.action != "abort":
+        # Fallback if session expired: create mock context
+        session = {
+            "thread_id": req_body.thread_id,
+            "task": "Task execution",
+            "language": target_lang,
+            "code": req_body.edited_code or "",
+            "iterations": 1,
+            "max_iterations": 3
+        }
+
+    action = req_body.action.lower()
+    
+    if action == "abort":
+        hitl_stats["aborted"] += 1
+        if session:
+            session["status"] = "aborted"
+        return AgentResponse(
+            success=False,
+            code=session.get("code") if session else None,
+            report="🛑 [WORKFLOW ABORTED]\nHuman reviewer cancelled execution at the review gate.",
+            execution_success=False,
+            iterations=session.get("iterations", 1) if session else 1,
+            error="Aborted by human reviewer",
+            thread_id=req_body.thread_id,
+            hitl_status="aborted"
+        )
+        
+    elif action == "reject":
+        hitl_stats["rejected"] += 1
+        feedback_text = req_body.feedback or "Please revise implementation based on requirements."
+        
+        # Re-invoke developer node with feedback
+        state_for_dev: CrewState = {
+            "messages": [
+                HumanMessage(content=session.get("task", "Code Generation")),
+                AIMessage(content=f"Previous Code:\n{session.get('code', '')}"),
+                HumanMessage(content=f"Human Reviewer Feedback: {feedback_text}")
+            ],
+            "code": session.get("code", ""),
+            "report": f"HUMAN REVIEW FEEDBACK:\n{feedback_text}",
+            "execution_success": False,
+            "iterations": session.get("iterations", 1),
+            "max_iterations": session.get("max_iterations", 3),
+            "language": target_lang
+        }
+        
+        new_dev_result = developer_node(state_for_dev)
+        revised_code = new_dev_result.get("code", "")
+        session["code"] = revised_code
+        session["iterations"] = session.get("iterations", 1) + 1
+        session["status"] = "awaiting_human_review"
+        
+        return AgentResponse(
+            success=True,
+            code=revised_code,
+            report=f"🔄 [REVISED BY AI BASED ON HUMAN FEEDBACK]\nReviewer Feedback Applied: \"{feedback_text}\"\nPlease review the updated draft.",
+            execution_success=False,
+            iterations=session["iterations"],
+            thread_id=req_body.thread_id,
+            hitl_status="awaiting_human_review"
+        )
+        
+    elif action in ["approve", "edit"]:
+        if action == "edit":
+            hitl_stats["edited"] += 1
+            active_code = req_body.edited_code if req_body.edited_code is not None else session.get("code", "")
+        else:
+            hitl_stats["approved"] += 1
+            active_code = session.get("code", "")
+            
+        session["code"] = active_code
+        
+        # Step 2: Feed into Sandbox Tester
+        state_for_test: CrewState = {
+            "messages": [HumanMessage(content=session.get("task", "Code Generation"))],
+            "code": active_code,
+            "report": None,
+            "execution_success": False,
+            "iterations": session.get("iterations", 1),
+            "max_iterations": session.get("max_iterations", 3),
+            "language": target_lang
+        }
+        
+        test_result = tester_node(state_for_test)
+        is_success = test_result.get("execution_success", False)
+        
+        # If tests failed and iterations remain, do 1 self-correction pass
+        final_code = active_code
+        if not is_success and state_for_test["iterations"] < state_for_test["max_iterations"]:
+            state_for_dev_heal: CrewState = {
+                "messages": [HumanMessage(content=session.get("task", "Code Generation"))],
+                "code": active_code,
+                "report": test_result.get("report", ""),
+                "execution_success": False,
+                "iterations": state_for_test["iterations"],
+                "max_iterations": state_for_test["max_iterations"],
+                "language": target_lang
+            }
+            heal_dev = developer_node(state_for_dev_heal)
+            final_code = heal_dev.get("code", active_code)
+            
+            # Re-test healed code
+            state_for_test["code"] = final_code
+            state_for_test["iterations"] += 1
+            test_result = tester_node(state_for_test)
+            is_success = test_result.get("execution_success", False)
+            
+        session["status"] = "completed"
+        return AgentResponse(
+            success=is_success,
+            code=final_code,
+            report=test_result.get("report", "Verification complete."),
+            execution_success=is_success,
+            iterations=session.get("iterations", 1),
+            error=None if is_success else "Tests failed after review approval",
+            thread_id=req_body.thread_id,
+            checkpointed=True,
+            hitl_status="approved" if action == "approve" else "edited"
+        )
+
+
+@app.get("/hitl/pending", tags=["Human-in-the-Loop"])
+def get_pending_hitl_sessions():
+    """List all active threads awaiting human review sign-off."""
+    pending = [
+        {
+            "thread_id": s["thread_id"],
+            "task": s["task"],
+            "language": s["language"],
+            "created_at": s["created_at"],
+            "iterations": s["iterations"]
+        }
+        for s in hitl_sessions.values()
+        if s.get("status") == "awaiting_human_review"
+    ]
+    return {"count": len(pending), "sessions": pending}
+
+
+@app.get("/hitl/stats", tags=["Human-in-the-Loop"])
+def get_hitl_stats():
+    """Get Human-in-the-Loop governance statistics."""
+    return {
+        "status": "active",
+        "governance_mode": "Human-in-the-Loop (HITL) Gate",
+        "stats": hitl_stats,
+        "active_pending_count": sum(1 for s in hitl_sessions.values() if s.get("status") == "awaiting_human_review")
+    }
 
 
 @app.post("/stream", tags=["Agent"])

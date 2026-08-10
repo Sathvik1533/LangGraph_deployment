@@ -713,30 +713,67 @@ def developer_node(state: CrewState) -> Dict[str, Any]:
     
     messages_to_send = [system_msg] + state["messages"]
     
+    task = state["messages"][0].content
+    target_language = state.get("language", "python").lower()
+    
+    # Prompt injection / malicious check
+    dangerous_keywords = ["import os; os.system", "rm -rf", "eval(", "exec("]
+    if any(keyword in task for keyword in dangerous_keywords):
+        logger.warning(f"⚠️ Dangerous input detected: {task[:50]}")
+        return {
+            "code": "// SECURITY ALERT: Input contains potentially dangerous code",
+            "messages": [AIMessage(content="⚠️ Security check failed: dangerous code pattern detected.")],
+            "iterations": state.get("iterations", 0) + 1,
+            "execution_success": False,
+            "report": "### SECURITY ALERT\nInput contains unsafe operations."
+        }
+    
+    # If this is a retry iteration, include tester's previous report
+    retry_context = ""
+    if state.get("iterations", 0) > 0 and state.get("report"):
+        retry_context = f"\n\nPREVIOUS TEST RESULTS & ERRORS TO FIX:\n{state['report']}\n"
+    
+    prompt = (
+        f"You are an expert software engineer.\n"
+        f"Task: {task}\n"
+        f"Target Programming Language: {target_language.upper()}\n"
+        f"{retry_context}\n"
+        f"INSTRUCTIONS:\n"
+        f"1. Generate ONLY valid, clean, compilable, production-ready {target_language.upper()} code.\n"
+        f"2. DO NOT use markdown headers or titles (# Title, ## Solution).\n"
+        f"3. Return clean code that accomplishes the task directly.\n"
+    )
+    
     try:
-        response = call_llm_with_retry(messages_to_send)
-        code = _extract_text(response.content)
-        clean_code = sanitize_professional_code(code, target_language)
+        response = call_llm_with_retry(prompt)
+        raw_code = response.content if hasattr(response, "content") else str(response)
         
-        is_valid, error_msg = validate_code_output(clean_code, target_language)
-        if not is_valid:
-            return {
-                "code": f"// ERROR: {error_msg}",
-                "messages": [AIMessage(content=f"⚠️ Validation failed: {error_msg}")],
-                "iterations": state.get("iterations", 0) + 1,
-                "execution_success": False
-            }
+        # Sanitize code into clean, professional code (no markdown titles/hashtags)
+        clean_code = sanitize_professional_code(raw_code, target_language)
         
-        # OUTPUT GUARDRAILS: Scan generated code for dangerous patterns, PII, relevance
+        # Guardrails Output Validation
         if GUARDRAILS_AVAILABLE:
             output_report = OutputGuard.scan_all(clean_code, target_language)
             guardrail_stats.record_output_scan(output_report)
+            
             if not output_report.passed:
-                logger.warning(f"🔒 Output guardrail blocked: {output_report.blocked_by}")
+                logger.warning(f"🛡️ Output guardrail blocked: {output_report.blocked_by}")
                 return {
                     "code": f"// GUARDRAIL BLOCKED: {output_report.reason}",
-                    "messages": [AIMessage(content=f"🛡️ Output blocked by {output_report.blocked_by}: {output_report.reason}")],
+                    "messages": [AIMessage(content=f"🛡️ Output Guardrail: {output_report.reason}")],
                     "iterations": state.get("iterations", 0) + 1,
+                    "execution_success": False,
+                    "report": f"### 🛡️ Output Guardrail Alert\n{output_report.reason}\n\nBlocked by: {output_report.blocked_by}\nSeverity: {output_report.severity.value}"
+                }
+        else:
+            is_valid, error_msg = validate_code_output(clean_code, target_language)
+            if not is_valid:
+                logger.warning(f"⚠️ Code validation failed: {error_msg}")
+                return {
+                    "code": clean_code,
+                    "messages": [AIMessage(content=f"⚠️ Validation warning: {error_msg}")],
+                    "iterations": state.get("iterations", 0) + 1,
+                    "report": f"### VALIDATION WARNING\n{error_msg}",
                     "execution_success": False
                 }
         
@@ -755,6 +792,62 @@ def developer_node(state: CrewState) -> Dict[str, Any]:
             "execution_success": False,
             "report": f"### ERROR\n{user_friendly_error}"
         }
+
+
+def human_review_node(state: CrewState) -> Dict[str, Any]:
+    """
+    Human-in-the-Loop (HITL) Gate Node.
+    Allows human reviewers to inspect, edit, approve, or reject code before Sandbox testing.
+    """
+    hitl_enabled = state.get("hitl_enabled", False)
+    human_action = state.get("human_action")
+    
+    if not hitl_enabled:
+        return {
+            "human_review_status": "bypassed",
+            "messages": []
+        }
+    
+    if human_action == "edit" and state.get("human_edited_code"):
+        return {
+            "code": state["human_edited_code"],
+            "human_review_status": "edited",
+            "messages": [AIMessage(content="✏️ Human reviewer modified the code before testing.")]
+        }
+    elif human_action == "reject":
+        feedback = state.get("human_feedback", "Please revise code based on human review.")
+        return {
+            "human_review_status": "rejected",
+            "messages": [HumanMessage(content=f"Human Reviewer Feedback: {feedback}")]
+        }
+    elif human_action == "abort":
+        return {
+            "human_review_status": "aborted",
+            "execution_success": False,
+            "report": "### EXECUTION ABORTED\nWorkflow was cancelled by human reviewer.",
+            "messages": [AIMessage(content="🛑 Workflow aborted by human reviewer.")]
+        }
+    elif human_action == "approve":
+        return {
+            "human_review_status": "approved",
+            "messages": [AIMessage(content="✅ Human reviewer approved the code for sandbox testing.")]
+        }
+    else:
+        # Awaiting human decision
+        return {
+            "human_review_status": "pending",
+            "messages": []
+        }
+
+
+def should_route_from_human_review(state: CrewState) -> Literal["tester", "developer", "end"]:
+    """Conditional routing from Human-in-the-Loop Gate."""
+    status = state.get("human_review_status", "bypassed")
+    if status == "rejected":
+        return "developer"
+    elif status == "aborted":
+        return "end"
+    return "tester"
 
 
 def tester_node(state: CrewState) -> Dict[str, Any]:
@@ -847,11 +940,22 @@ def create_workflow() -> StateGraph:
     workflow = StateGraph(CrewState)
     workflow.add_node("guardrail", guardrail_node)
     workflow.add_node("developer", developer_node)
+    workflow.add_node("human_review", human_review_node)
     workflow.add_node("tester", tester_node)
     
     workflow.add_edge(START, "guardrail")
     workflow.add_edge("guardrail", "developer")
-    workflow.add_edge("developer", "tester")
+    workflow.add_edge("developer", "human_review")
+    
+    workflow.add_conditional_edges(
+        "human_review",
+        should_route_from_human_review,
+        {
+            "tester": "tester",
+            "developer": "developer",
+            "end": END
+        }
+    )
     
     workflow.add_conditional_edges(
         "tester",
