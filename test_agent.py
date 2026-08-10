@@ -37,9 +37,10 @@ def test_agent(task: str, expect_failure: bool = False):
     }
     
     try:
-        # Run the agent
+        # Run the agent with checkpointer configuration
         print("🤖 Running agent workflow with self-correction enabled...\n")
-        result = agent.invoke(initial_state)
+        config = {"configurable": {"thread_id": f"test_thread_{abs(hash(task)) % 10000}"}}
+        result = agent.invoke(initial_state, config)
         
         # Display results
         print("✅ FINAL CODE:")

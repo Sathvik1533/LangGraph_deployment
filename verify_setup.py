@@ -108,7 +108,6 @@ def check_dependencies():
         ("uvicorn", "Uvicorn"),
         ("langchain_groq", "LangChain Groq"),
         ("langgraph", "LangGraph"),
-        ("langserve", "LangServe"),
         ("pydantic", "Pydantic"),
     ]
     

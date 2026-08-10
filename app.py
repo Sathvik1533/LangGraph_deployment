@@ -365,7 +365,7 @@ async def invoke_agent(request: TaskRequest, req: Request):
             status_code=503,
             detail={
                 "error": "Service temporarily unavailable",
-                "message": "⚡ The AI service is experiencing issues. Automatic recovery in progress.",
+                "message": "⚡ The execution engine is experiencing issues. Automatic recovery in progress.",
                 "circuit_breaker_failures": _circuit_breaker_failures,
                 "tip": "Please try again in 60 seconds. The system is protecting itself from cascading failures."
             }
