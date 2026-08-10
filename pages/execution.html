@@ -70,6 +70,19 @@
                 <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 8px;">Auto-fallback enabled</div>
             </div>
 
+            <div class="studio-card studio-card-hover" id="telemetryGuardrailCard" data-tooltip="LLM Guardrails Engine: 7 active scanners protecting input and output across prompt injection, content safety, dangerous code, PII leaks, code relevance, and language correctness." style="border-left: 3px solid var(--accent-emerald);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">LLM Guardrails</span>
+                    <span class="material-symbols-outlined" style="font-size: 22px; color: var(--accent-emerald);">shield</span>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;" id="guardrailScannerBadges">
+                    <span class="cyber-badge cyber-badge-emerald" style="font-size: 10px;">Input Guard: ACTIVE</span>
+                    <span class="cyber-badge cyber-badge-emerald" style="font-size: 10px;">Output Guard: ACTIVE</span>
+                    <span class="cyber-badge cyber-badge-emerald" style="font-size: 10px;">PII Scanner: ACTIVE</span>
+                </div>
+                <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 8px;" id="guardrailScannerCount">7 scanners · 0 blocks</div>
+            </div>
+
         </div>
 
         <!-- Terminal Diagnostic Stream -->
@@ -102,6 +115,20 @@
                 setActiveNav('execution');
             }
             checkHealthNow();
+
+            // Fetch guardrail stats
+            try {
+                const grRes = await fetch('/guardrails');
+                if (grRes.ok) {
+                    const grData = await grRes.json();
+                    const stats = grData.stats;
+                    const totalBlocks = stats.input_guard.total_blocks + stats.output_guard.total_blocks;
+                    document.getElementById('guardrailScannerCount').textContent = `7 scanners · ${totalBlocks} blocks`;
+                    const logTerm = document.getElementById('logTerminal');
+                    const now = new Date().toLocaleTimeString();
+                    logTerm.innerHTML += `<span style="color: #34d399;">[${now}] 🛡️ GUARDRAILS ENGINE: ${stats.shield_status} — Input(${stats.input_guard.total_scans}) Output(${stats.output_guard.total_scans}) Blocks(${totalBlocks})</span><br/>`;
+                }
+            } catch(e) { /* Guardrails endpoint not available */ }
         });
 
         async function checkHealthNow() {

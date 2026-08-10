@@ -74,6 +74,17 @@
                 <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 8px;">Python / Java / C++</div>
             </div>
 
+            <div class="studio-card studio-card-hover" id="guardrailShieldCard" data-tooltip="LLM Guardrails Shield: Production-grade input/output guardrails protecting against prompt injection, unsafe content, PII leaks, and dangerous code patterns." style="border-left: 3px solid var(--accent-emerald);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Guardrails Shield</span>
+                    <span class="material-symbols-outlined" style="font-size: 22px; color: var(--accent-emerald);">shield</span>
+                </div>
+                <div style="font-size: 22px; font-weight: 700; color: var(--accent-emerald);" id="guardrailStatus">NOMINAL</div>
+                <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 8px;">
+                    <span id="guardrailInputScans">0</span> input · <span id="guardrailOutputScans">0</span> output · <span id="guardrailBlocks">0</span> blocks
+                </div>
+            </div>
+
         </div>
 
         <!-- Presets & State Canvas Split -->
@@ -227,6 +238,24 @@
                     </tr>
                 `).join('');
             }
+
+            // Fetch guardrail stats from /guardrails API
+            try {
+                const grRes = await fetch('/guardrails');
+                if (grRes.ok) {
+                    const grData = await grRes.json();
+                    const stats = grData.stats;
+                    document.getElementById('guardrailStatus').textContent = stats.shield_status || 'NOMINAL';
+                    document.getElementById('guardrailInputScans').textContent = stats.input_guard.total_scans;
+                    document.getElementById('guardrailOutputScans').textContent = stats.output_guard.total_scans;
+                    document.getElementById('guardrailBlocks').textContent = stats.input_guard.total_blocks + stats.output_guard.total_blocks;
+                    const statusEl = document.getElementById('guardrailStatus');
+                    if (stats.shield_status === 'ELEVATED') {
+                        statusEl.style.color = 'var(--accent-amber)';
+                        document.getElementById('guardrailShieldCard').style.borderLeftColor = 'var(--accent-amber)';
+                    }
+                }
+            } catch(e) { /* Guardrails endpoint not available */ }
         });
     </script>
 </body>
