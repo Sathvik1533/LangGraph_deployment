@@ -2,6 +2,13 @@
 
 let currentResponseData = null;
 
+const LANG_FILENAME_MAP = {
+    'python': 'solution_code.py',
+    'java': 'Solution.java',
+    'cpp': 'main.cpp',
+    'c++': 'main.cpp'
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
     // Load Navbar
     const navbarRes = await fetch('/templates/navigation.html');
@@ -31,6 +38,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     taskInput?.addEventListener('input', () => {
         const alert = document.getElementById('taskInlineAlert');
         if (alert) alert.style.display = 'none';
+    });
+
+    // Language Change Listener to Update Tab Header Filename
+    const languageSelect = document.getElementById('languageSelect');
+    languageSelect?.addEventListener('change', () => {
+        const lang = languageSelect.value || 'python';
+        const codeTabHeader = document.querySelector('.code-editor-header span');
+        if (codeTabHeader) {
+            codeTabHeader.textContent = LANG_FILENAME_MAP[lang.toLowerCase()] || 'solution_code.txt';
+        }
     });
 
     // Bind Form Submission
@@ -73,6 +90,7 @@ async function handleGenerate() {
     const reportDisplay = document.getElementById('reportDisplay');
     const pipelineStepper = document.getElementById('pipelineStepper');
     const taskInlineAlert = document.getElementById('taskInlineAlert');
+    const codeTabHeader = document.querySelector('.code-editor-header span');
 
     const task = taskInput.value.trim();
     if (!task) {
@@ -88,6 +106,11 @@ async function handleGenerate() {
 
     const language = languageSelect ? languageSelect.value : 'python';
     const maxIterations = maxIterationsSelect ? (parseInt(maxIterationsSelect.value) || 3) : 3;
+
+    // Update code tab filename
+    if (codeTabHeader) {
+        codeTabHeader.textContent = LANG_FILENAME_MAP[language.toLowerCase()] || 'solution_code.txt';
+    }
 
     // UI Loading State
     generateBtn.disabled = true;
@@ -105,7 +128,7 @@ async function handleGenerate() {
             <div style="display: flex; align-items: center; gap: 12px;">
                 <span class="material-symbols-outlined spin" style="color: var(--accent-blue); font-size: 22px;">sync</span>
                 <div>
-                    <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">Backend State Machine Executing</div>
+                    <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">Backend State Machine Executing (${language.toUpperCase()})</div>
                     <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Developer Node → Sandbox Verifier → Conditional Edge Router</div>
                 </div>
             </div>
@@ -149,7 +172,7 @@ async function handleGenerate() {
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <span class="material-symbols-outlined" style="color: var(--accent-emerald); font-size: 24px;">check_circle</span>
                         <div>
-                            <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">Verification Passed & State Saved</div>
+                            <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">${language.toUpperCase()} Verification Passed & State Saved</div>
                             <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Completed in ${data.iterations} loop(s) • Thread: ${data.thread_id} • Checkpointer: MemorySaver</div>
                         </div>
                     </div>
@@ -180,7 +203,7 @@ async function handleGenerate() {
                 thread_id: data.thread_id
             });
 
-            showToast('Code verified successfully!', 'success');
+            showToast(`${language.toUpperCase()} Code verified successfully!`, 'success');
 
         } else {
             statusBanner.className = 'studio-card';
