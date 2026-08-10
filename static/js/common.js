@@ -1,12 +1,45 @@
-// Common JavaScript for Multi-Page Dashboard
+// Cyber-Slate Studio Common Controller
 
-// Configuration
 const API_URL = window.location.origin + '/invoke';
-const THREADS_API_URL = window.location.origin + '/threads';
+const HEALTH_API_URL = window.location.origin + '/health';
+const HISTORY_STORAGE_KEY = 'langgraph_studio_history_v3';
 
-// Global State
-let currentThreadId = null;
-let selectedLanguage = 'python';
+// Save run to local history
+function saveRunToHistory(runData) {
+    try {
+        const history = getRunHistory();
+        history.unshift({
+            id: 'run_' + Date.now(),
+            timestamp: new Date().toISOString(),
+            task: runData.task,
+            language: runData.language || 'python',
+            success: runData.success || false,
+            iterations: runData.iterations || 1,
+            code: runData.code || '',
+            report: runData.report || '',
+            thread_id: runData.thread_id || ''
+        });
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history.slice(0, 50)));
+    } catch (e) {
+        console.warn('Failed to save run to history:', e);
+    }
+}
+
+// Get run history
+function getRunHistory() {
+    try {
+        const data = localStorage.getItem(HISTORY_STORAGE_KEY);
+        return data ? JSON.parse(data) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+// Clear run history
+function clearRunHistory() {
+    localStorage.removeItem(HISTORY_STORAGE_KEY);
+    showToast('History cleared!', 'info');
+}
 
 // Toast Notification
 function showToast(message, type = 'info') {
@@ -20,48 +53,22 @@ function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = 'toast';
     toast.innerHTML = `
-        <span class="material-symbols-outlined">${icons[type]}</span>
-        <span>${message}</span>
+        <span class="material-symbols-outlined" style="color: ${type === 'success' ? '#00e676' : type === 'error' ? '#ff5252' : '#00f2fe'}; font-size: 20px;">${icons[type]}</span>
+        <span style="font-size: 13.5px; font-weight: 500;">${message}</span>
     `;
     
     document.body.appendChild(toast);
     
     setTimeout(() => {
-        toast.style.animation = 'slideIn 0.3s ease-out reverse';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
-
-// Check System Health
-async function checkSystemHealth() {
-    try {
-        const response = await fetch(window.location.origin + '/health');
-        if (response.ok) {
-            const data = await response.json();
-            return data;
-        }
-    } catch (error) {
-        console.warn('Health check failed:', error);
-    }
-    return null;
-}
-
-// Check Redis Status
-async function checkRedisStatus() {
-    try {
-        const response = await fetch(THREADS_API_URL);
-        if (response.ok) {
-            const data = await response.json();
-            return data.checkpointing_enabled || false;
-        }
-    } catch (error) {
-        return false;
-    }
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.2s ease';
+        setTimeout(() => toast.remove(), 200);
+    }, 2800);
 }
 
 // Set Active Navigation
 function setActiveNav(pageId) {
-    document.querySelectorAll('.nav-item').forEach(item => {
+    document.querySelectorAll('.nav-link-item').forEach(item => {
         item.classList.remove('active');
         if (item.dataset.page === pageId) {
             item.classList.add('active');
@@ -69,124 +76,112 @@ function setActiveNav(pageId) {
     });
 }
 
-// Mobile Menu Toggle
-function toggleMobileMenu() {
-    const sidebar = document.querySelector('.sidebar');
-    if (sidebar) {
-        sidebar.classList.toggle('mobile-open');
-    }
-}
-
-// Format Date
-function formatDate(date) {
-    const now = new Date();
-    const diff = now - new Date(date);
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-    
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes} min ago`;
-    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-    return `${days} day${days > 1 ? 's' : ''} ago`;
-}
-
-// Format Duration
-function formatDuration(seconds) {
-    if (seconds < 60) return `${seconds.toFixed(1)}s`;
-    const minutes = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${minutes}m ${secs}s`;
-}
-
-// Language Names
-const LANGUAGE_NAMES = {
-    'python': 'Python',
-    'java': 'Java',
-    'cpp': 'C++',
-    'javascript': 'JavaScript'
-};
-
-// Language Extensions
-const LANGUAGE_EXTENSIONS = {
-    'python': '.py',
-    'java': '.java',
-    'cpp': '.cpp',
-    'javascript': '.js'
-};
-
-// Get Language Display Name
-function getLanguageName(lang) {
-    return LANGUAGE_NAMES[lang] || lang.toUpperCase();
-}
-
-// Get File Extension
-function getFileExtension(lang) {
-    return LANGUAGE_EXTENSIONS[lang] || '.txt';
-}
-
-// Copy to Clipboard
+// Copy Code to Clipboard
 async function copyToClipboard(text) {
     try {
         await navigator.clipboard.writeText(text);
-        showToast('Copied to clipboard!', 'success');
+        showToast('Code copied to clipboard!', 'success');
         return true;
     } catch (err) {
-        showToast('Failed to copy', 'error');
+        showToast('Failed to copy code', 'error');
         return false;
     }
 }
 
 // Download File
 function downloadFile(content, filename) {
-    const blob = new Blob([content], { type: 'text/plain' });
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = filename;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showToast('File downloaded!', 'success');
+    showToast(`Downloaded ${filename}`, 'success');
 }
 
-// Clean Code (Remove markdown artifacts)
-function cleanCode(code) {
-    if (!code) return '';
-    
-    let cleaned = code
-        // Remove markdown code fences
-        .replace(/```(?:python|java|cpp|c\+\+|javascript)?\s*/gi, '')
-        .replace(/```\s*/g, '')
-        // Remove markdown headers
-        .replace(/###\s*/g, '')
-        .replace(/##\s*/g, '')
-        .replace(/#\s+/gm, '')
-        // Remove markdown formatting
-        .replace(/\*\*(.+?)\*\*/g, '$1')
-        .replace(/\*(.+?)\*/g, '$1')
-        .replace(/_(.+?)_/g, '$1')
-        // Remove HTML tags
-        .replace(/<br\s*\/?>/gi, '\n')
-        .replace(/<\/?[^>]+(>|$)/g, '')
-        // Remove keyword artifacts
-        .replace(/"keyword"[>\s]*/gi, '')
-        .replace(/'keyword'[>\s]*/gi, '')
-        .replace(/keyword\s*>/gi, '')
-        .replace(/>\s*keyword/gi, '')
-        .trim();
-    
-    // Extract from markdown blocks
-    const codeBlockMatch = cleaned.match(/```(?:python|java|cpp|c\+\+)?\s*([\s\S]*?)```/i);
-    if (codeBlockMatch && codeBlockMatch[1]) {
-        cleaned = codeBlockMatch[1].trim();
+const LANGUAGE_EXT = {
+    'python': '.py',
+    'java': '.java',
+    'cpp': '.cpp'
+};
+
+function getFileExtension(lang) {
+    return LANGUAGE_EXT[lang.toLowerCase()] || '.txt';
+}
+
+// Command Palette (Cmd + K) Controller
+function initCommandPalette() {
+    if (!document.getElementById('cmdSpotlightBackdrop')) {
+        const modalHtml = `
+            <div id="cmdSpotlightBackdrop" class="cmd-spotlight-backdrop">
+                <div class="cmd-spotlight-modal" onclick="event.stopPropagation()">
+                    <input id="cmdSpotlightInput" class="cmd-spotlight-input" placeholder="Type a command or search studio..." autofocus/>
+                    <div>
+                        <div class="cmd-spotlight-item" onclick="navigateTo('/')">
+                            <span style="display:flex; align-items:center; gap:10px;"><span class="material-symbols-outlined">dashboard</span> Open Overview</span>
+                            <span class="cyber-badge cyber-badge-cyan">1</span>
+                        </div>
+                        <div class="cmd-spotlight-item" onclick="navigateTo('/generate')">
+                            <span style="display:flex; align-items:center; gap:10px;"><span class="material-symbols-outlined">code_blocks</span> Open Code Workbench</span>
+                            <span class="cyber-badge cyber-badge-cyan">2</span>
+                        </div>
+                        <div class="cmd-spotlight-item" onclick="navigateTo('/workflow')">
+                            <span style="display:flex; align-items:center; gap:10px;"><span class="material-symbols-outlined">account_tree</span> Inspect State Graph</span>
+                            <span class="cyber-badge cyber-badge-cyan">3</span>
+                        </div>
+                        <div class="cmd-spotlight-item" onclick="navigateTo('/execution')">
+                            <span style="display:flex; align-items:center; gap:10px;"><span class="material-symbols-outlined">analytics</span> View Telemetry</span>
+                            <span class="cyber-badge cyber-badge-cyan">4</span>
+                        </div>
+                        <div class="cmd-spotlight-item" onclick="navigateTo('/history')">
+                            <span style="display:flex; align-items:center; gap:10px;"><span class="material-symbols-outlined">history</span> View Audit Log</span>
+                            <span class="cyber-badge cyber-badge-cyan">5</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        document.getElementById('cmdSpotlightBackdrop').addEventListener('click', closeCommandPalette);
     }
-    
-    return cleaned;
 }
 
-// Initialize Page
+function openCommandPalette() {
+    initCommandPalette();
+    const backdrop = document.getElementById('cmdSpotlightBackdrop');
+    if (backdrop) {
+        backdrop.style.display = 'flex';
+        document.getElementById('cmdSpotlightInput')?.focus();
+    }
+}
+
+function closeCommandPalette() {
+    const backdrop = document.getElementById('cmdSpotlightBackdrop');
+    if (backdrop) {
+        backdrop.style.display = 'none';
+    }
+}
+
+function navigateTo(path) {
+    closeCommandPalette();
+    window.location.href = path;
+}
+
+// Global Shortcuts
+document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        openCommandPalette();
+    } else if (e.key === 'Escape') {
+        closeCommandPalette();
+    }
+});
+
 document.addEventListener('DOMContentLoaded', () => {
-    // Set active navigation based on current page
     const path = window.location.pathname;
     let pageId = 'dashboard';
     
@@ -196,6 +191,5 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (path.includes('history')) pageId = 'history';
     
     setActiveNav(pageId);
-    
-    console.log('🚀 LangGraph Multi-Page Dashboard initialized');
+    initCommandPalette();
 });

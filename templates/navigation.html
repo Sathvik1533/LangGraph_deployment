@@ -1,180 +1,55 @@
-<!-- Shared Navigation Sidebar -->
-<aside class="sidebar">
-    <!-- Header -->
-    <div class="sidebar-header">
-        <div class="flex items-center gap-2 mb-2">
-            <span class="material-symbols-outlined" style="font-size: 32px; color: #2563eb; font-variation-settings: 'FILL' 1;">schema</span>
-            <h1 class="text-xl font-bold" style="color: #2563eb;">LangGraph</h1>
+<!-- Bespoke Top Floating Dock Navbar (Cyber-Slate Studio Architecture) -->
+<nav class="top-navbar">
+    <!-- Brand Title & Icon -->
+    <a href="/" class="nav-brand">
+        <div class="brand-icon">
+            <span class="material-symbols-outlined" style="font-size: 20px;">schema</span>
         </div>
-        <p class="text-xs" style="color: #434655;">Self-Correcting Agent v2.1</p>
-    </div>
-    
-    <!-- Navigation -->
-    <nav class="sidebar-nav custom-scrollbar">
-        <a href="/" class="nav-item" data-page="dashboard">
+        <div>
+            <div style="font-family: var(--font-heading); font-size: 15px; font-weight: 700; color: var(--text-pure); line-height: 1.2;">LangGraph Studio</div>
+            <div style="font-size: 11px; color: var(--text-muted); font-family: var(--font-code);">Code Verification Engine</div>
+        </div>
+    </a>
+
+    <!-- Active Route Links -->
+    <div class="nav-links">
+        <a href="/" class="nav-link-item" data-page="dashboard">
             <span class="material-symbols-outlined">dashboard</span>
-            <span>Dashboard</span>
+            <span>Overview</span>
         </a>
-        
-        <a href="/generate" class="nav-item" data-page="generator">
-            <span class="material-symbols-outlined">auto_awesome</span>
-            <span>Code Generator</span>
+
+        <a href="/generate" class="nav-link-item" data-page="generator">
+            <span class="material-symbols-outlined">code_blocks</span>
+            <span>Workbench</span>
         </a>
-        
-        <a href="/workflow" class="nav-item" data-page="workflow">
+
+        <a href="/workflow" class="nav-link-item" data-page="workflow">
             <span class="material-symbols-outlined">account_tree</span>
-            <span>Workflow</span>
+            <span>State Graph</span>
         </a>
-        
-        <a href="/execution" class="nav-item" data-page="execution">
+
+        <a href="/execution" class="nav-link-item" data-page="execution">
             <span class="material-symbols-outlined">analytics</span>
-            <span>Execution</span>
+            <span>Telemetry</span>
         </a>
-        
-        <a href="/history" class="nav-item" data-page="history">
+
+        <a href="/history" class="nav-link-item" data-page="history">
             <span class="material-symbols-outlined">history</span>
-            <span>History</span>
+            <span>Audit Log</span>
         </a>
-        
-        <!-- Divider -->
-        <div style="height: 1px; background: #e5eeff; margin: 16px 0;"></div>
-        
-        <!-- Production Status -->
-        <div style="padding: 16px; background: linear-gradient(135deg, #dbe1ff 0%, #e9ddff 100%); border-radius: 8px; margin-bottom: 16px;">
-            <div class="flex items-center gap-2 mb-3">
-                <span class="material-symbols-outlined" style="font-size: 16px; color: #2563eb;">verified</span>
-                <div style="font-size: 11px; font-weight: 700; color: #2563eb;">PRODUCTION GRADE</div>
-            </div>
-            
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-                <!-- Thread Status -->
-                <div class="flex items-center justify-between" style="font-size: 11px;">
-                    <div class="flex items-center gap-2">
-                        <span id="statusDot-thread" style="width: 6px; height: 6px; border-radius: 50%; background: #cbd5e1;"></span>
-                        <span style="font-weight: 500; color: #434655;">Thread</span>
-                    </div>
-                    <span id="statusText-thread" style="font-size: 10px; color: #64748b;">Idle</span>
-                </div>
-                
-                <!-- Redis Status -->
-                <div class="flex items-center justify-between" style="font-size: 11px;">
-                    <div class="flex items-center gap-2">
-                        <span id="statusDot-redis" style="width: 6px; height: 6px; border-radius: 50%; background: #cbd5e1;"></span>
-                        <span style="font-weight: 500; color: #434655;">Redis</span>
-                    </div>
-                    <span id="statusText-redis" style="font-size: 10px; color: #64748b;">Checking...</span>
-                </div>
-                
-                <!-- Self-Fix -->
-                <div class="flex items-center justify-between" style="font-size: 11px;">
-                    <div class="flex items-center gap-2">
-                        <span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span>
-                        <span style="font-weight: 500; color: #434655;">Self-Fix</span>
-                    </div>
-                    <span style="font-size: 10px; color: #64748b;">3 Iter</span>
-                </div>
-                
-                <!-- Rate Limit -->
-                <div class="flex items-center justify-between" style="font-size: 11px;">
-                    <div class="flex items-center gap-2">
-                        <span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span>
-                        <span style="font-weight: 500; color: #434655;">Rate Limit</span>
-                    </div>
-                    <span style="font-size: 10px; color: #64748b;">10/min</span>
-                </div>
-                
-                <!-- Circuit Breaker -->
-                <div class="flex items-center justify-between" style="font-size: 11px;">
-                    <div class="flex items-center gap-2">
-                        <span id="statusDot-circuit" style="width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span>
-                        <span style="font-weight: 500; color: #434655;">Circuit</span>
-                    </div>
-                    <span id="statusText-circuit" style="font-size: 10px; color: #64748b;">Closed</span>
-                </div>
-                
-                <!-- Languages -->
-                <div class="flex items-center justify-between" style="font-size: 11px;">
-                    <div class="flex items-center gap-2">
-                        <span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span>
-                        <span style="font-weight: 500; color: #434655;">Languages</span>
-                    </div>
-                    <span style="font-size: 10px; color: #64748b;">3 Types</span>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Links -->
-        <a href="https://github.com/Sathvik1533/LangGraph_deployment" target="_blank" class="nav-item" style="font-size: 13px;">
-            <span class="material-symbols-outlined">code</span>
+    </div>
+
+    <!-- Quick Action Controls -->
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <button class="cyber-btn cyber-btn-secondary" onclick="openCommandPalette()" style="font-size: 12px; padding: 6px 12px;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">search</span>
+            <span>Search...</span>
+            <span class="cyber-badge cyber-badge-cyan" style="font-size: 10px; padding: 1px 5px;">⌘K</span>
+        </button>
+
+        <a href="https://github.com/Sathvik1533/LangGraph_deployment" target="_blank" class="cyber-btn cyber-btn-secondary" style="font-size: 12px; padding: 6px 12px;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">code</span>
             <span>GitHub</span>
         </a>
-        
-        <a href="/docs" target="_blank" class="nav-item" style="font-size: 13px;">
-            <span class="material-symbols-outlined">description</span>
-            <span>API Docs</span>
-        </a>
-    </nav>
-</aside>
-
-<!-- Mobile Menu Button -->
-<button onclick="toggleMobileMenu()" class="mobile-menu-btn" style="display: none; position: fixed; top: 16px; left: 16px; z-index: 100; background: white; border: 1px solid #e5eeff; border-radius: 8px; padding: 8px; cursor: pointer;">
-    <span class="material-symbols-outlined">menu</span>
-</button>
-
-<style>
-@media (max-width: 768px) {
-    .mobile-menu-btn {
-        display: block !important;
-    }
-}
-</style>
-
-<script>
-// Update production status indicators
-(async function updateProductionStatus() {
-    // Check Redis
-    try {
-        const response = await fetch(window.location.origin + '/threads');
-        if (response.ok) {
-            const data = await response.json();
-            const redisEnabled = data.checkpointing_enabled || false;
-            const dot = document.getElementById('statusDot-redis');
-            const text = document.getElementById('statusText-redis');
-            if (dot && text) {
-                if (redisEnabled) {
-                    dot.style.background = '#10b981';
-                    text.textContent = 'Connected';
-                } else {
-                    dot.style.background = '#f59e0b';
-                    text.textContent = 'In-Memory';
-                }
-            }
-        }
-    } catch (e) {
-        console.warn('Redis check failed:', e);
-    }
-    
-    // Check Circuit Breaker
-    try {
-        const response = await fetch(window.location.origin + '/health');
-        if (response.ok) {
-            const data = await response.json();
-            if (data.circuit_breaker) {
-                const dot = document.getElementById('statusDot-circuit');
-                const text = document.getElementById('statusText-circuit');
-                if (dot && text) {
-                    if (data.circuit_breaker.open) {
-                        dot.style.background = '#ef4444';
-                        text.textContent = 'Open';
-                    } else {
-                        dot.style.background = '#10b981';
-                        text.textContent = 'Closed';
-                    }
-                }
-            }
-        }
-    } catch (e) {
-        console.warn('Health check failed:', e);
-    }
-})();
-</script>
+    </div>
+</nav>
