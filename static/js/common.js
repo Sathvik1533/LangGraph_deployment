@@ -291,7 +291,7 @@ const FULL_PLATFORM_TOUR = [
             {
                 selector: '#simStepBtn',
                 title: '3/5 Step Simulator Controls',
-                desc: 'Step forward node-by-node or click Auto-Play to stream state transitions.'
+                desc: 'Click "Step Forward" to step node-by-node through the graph, OR click "Auto-Play Tour" to watch active nodes illuminate in real time!'
             },
             {
                 selector: '#inspectorCard',
@@ -354,8 +354,6 @@ function autoAwakenSpotlightTour() {
     const isCompleted = localStorage.getItem(TOUR_COMPLETED_KEY) === 'true';
     const isManualSession = sessionStorage.getItem('langgraph_manual_tour_session') === 'true';
 
-    // FIRST VISIT AUTOMATIC AWAKENING:
-    // If the user has ALREADY completed/dismissed the tour AND it's NOT a manual button click: STOP!
     if (isCompleted && !isManualSession) {
         console.log(`💡 Tour already completed by user. Auto-trigger stopped on ${currentPath}.`);
         return;
@@ -559,7 +557,6 @@ function closeSpotlightTour() {
 
 function startFullTourManually() {
     localStorage.removeItem(TOUR_COMPLETED_KEY);
-    // Clear old key names
     localStorage.removeItem('langgraph_global_tour_disabled_v2');
     sessionStorage.setItem('langgraph_manual_tour_session', 'true');
     window.location.href = '/';
