@@ -3,11 +3,11 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>LangGraph | Verification Suite Command Center</title>
+    <title>LangGraph Studio | Code Orchestration Engine</title>
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="/static/css/shared.css"/>
 </head>
@@ -20,7 +20,7 @@
         <header class="page-header">
             <div>
                 <h1 class="page-title">
-                    <span class="material-symbols-outlined" style="color: var(--primary-blue);">dashboard</span>
+                    <span class="material-symbols-outlined" style="color: var(--accent-terracotta);">dashboard</span>
                     Command Center
                 </h1>
                 <p class="page-subtitle">Real-time telemetry, state graph execution metrics, and verification audit logs.</p>
@@ -37,40 +37,40 @@
             
             <div class="studio-card studio-card-hover">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                    <span style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Total Executions</span>
-                    <span class="material-symbols-outlined" style="font-size: 20px; color: var(--primary-blue);">play_arrow</span>
+                    <span style="font-size: 11.5px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Total Executions</span>
+                    <span class="material-symbols-outlined" style="font-size: 20px; color: var(--accent-terracotta);">play_arrow</span>
                 </div>
-                <div style="font-size: 32px; font-weight: 800; color: var(--text-primary);" id="statTotalRuns">0</div>
-                <div style="font-size: 12px; color: var(--accent-emerald); font-weight: 500; margin-top: 6px; display: flex; align-items: center; gap: 4px;">
+                <div style="font-size: 34px; font-weight: 800; color: var(--text-primary);" id="statTotalRuns">0</div>
+                <div style="font-size: 12px; color: var(--accent-emerald); font-weight: 600; margin-top: 6px; display: flex; align-items: center; gap: 4px;">
                     <span class="material-symbols-outlined" style="font-size: 16px;">verified</span>
-                    <span>100% System Uptime</span>
+                    <span>100% Operational Uptime</span>
                 </div>
             </div>
 
             <div class="studio-card studio-card-hover">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                    <span style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Verification Pass Rate</span>
+                    <span style="font-size: 11.5px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Verification Pass Rate</span>
                     <span class="material-symbols-outlined" style="font-size: 20px; color: var(--accent-emerald);">check_circle</span>
                 </div>
-                <div style="font-size: 32px; font-weight: 800; color: var(--accent-emerald);" id="statSuccessRate">100%</div>
+                <div style="font-size: 34px; font-weight: 800; color: var(--accent-emerald);" id="statSuccessRate">100%</div>
                 <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Verified by assertion tests</div>
             </div>
 
             <div class="studio-card studio-card-hover">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                    <span style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Self-Fix Ceiling</span>
+                    <span style="font-size: 11.5px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Self-Fix Ceiling</span>
                     <span class="material-symbols-outlined" style="font-size: 20px; color: var(--accent-amber);">autorenew</span>
                 </div>
-                <div style="font-size: 32px; font-weight: 800; color: var(--accent-amber);">3 Loops Max</div>
+                <div style="font-size: 34px; font-weight: 800; color: var(--accent-amber);">3 Loops Max</div>
                 <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Conditional edge routing</div>
             </div>
 
             <div class="studio-card studio-card-hover">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                    <span style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Runtime Sandbox</span>
-                    <span class="material-symbols-outlined" style="font-size: 20px; color: var(--primary-blue);">terminal</span>
+                    <span style="font-size: 11.5px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Runtime Sandbox</span>
+                    <span class="material-symbols-outlined" style="font-size: 20px; color: var(--accent-indigo);">terminal</span>
                 </div>
-                <div style="font-size: 20px; font-weight: 700; color: var(--text-primary); margin-top: 6px;">Isolated Scope</div>
+                <div style="font-size: 20px; font-weight: 800; color: var(--text-primary); margin-top: 6px;">Isolated Scope</div>
                 <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Python / Java / C++</div>
             </div>
 
@@ -82,7 +82,7 @@
             <div class="studio-card">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
                     <div>
-                        <h2 style="font-size: 17px; font-weight: 700;">Task Specification Presets</h2>
+                        <h2 style="font-size: 18px; font-weight: 800;">Task Specification Presets</h2>
                         <p style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">Trigger automated multi-agent code generation and verification.</p>
                     </div>
                 </div>
@@ -90,8 +90,8 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
                     <a href="/generate?preset=fibonacci" class="studio-card studio-card-hover" style="text-decoration: none; padding: 16px; background: #ffffff;">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
-                            <span class="material-symbols-outlined" style="color: var(--primary-blue); font-size: 20px;">functions</span>
-                            <span style="font-weight: 600; color: var(--text-primary); font-size: 14px;">Fibonacci Generator</span>
+                            <span class="material-symbols-outlined" style="color: var(--accent-terracotta); font-size: 20px;">functions</span>
+                            <span style="font-weight: 700; color: var(--text-primary); font-size: 14px;">Fibonacci Generator</span>
                         </div>
                         <p style="font-size: 12px; color: var(--text-muted);">Generates sequence & verifies with assertions.</p>
                     </a>
@@ -99,7 +99,7 @@
                     <a href="/generate?preset=palindrome" class="studio-card studio-card-hover" style="text-decoration: none; padding: 16px; background: #ffffff;">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
                             <span class="material-symbols-outlined" style="color: var(--accent-emerald); font-size: 20px;">swap_horiz</span>
-                            <span style="font-weight: 600; color: var(--text-primary); font-size: 14px;">Palindrome Validator</span>
+                            <span style="font-weight: 700; color: var(--text-primary); font-size: 14px;">Palindrome Validator</span>
                         </div>
                         <p style="font-size: 12px; color: var(--text-muted);">String cleaner ignoring non-alphanumeric chars.</p>
                     </a>
@@ -107,15 +107,15 @@
                     <a href="/generate?preset=divide" class="studio-card studio-card-hover" style="text-decoration: none; padding: 16px; background: #ffffff;">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
                             <span class="material-symbols-outlined" style="color: var(--accent-amber); font-size: 20px;">shield</span>
-                            <span style="font-weight: 600; color: var(--text-primary); font-size: 14px;">Safe Division</span>
+                            <span style="font-weight: 700; color: var(--text-primary); font-size: 14px;">Safe Division</span>
                         </div>
                         <p style="font-size: 12px; color: var(--text-muted);">Zero-division exception handling & test cases.</p>
                     </a>
 
                     <a href="/generate?preset=stats" class="studio-card studio-card-hover" style="text-decoration: none; padding: 16px; background: #ffffff;">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
-                            <span class="material-symbols-outlined" style="color: var(--text-secondary); font-size: 20px;">analytics</span>
-                            <span style="font-weight: 600; color: var(--text-primary); font-size: 14px;">Data Aggregator</span>
+                            <span class="material-symbols-outlined" style="color: var(--accent-indigo); font-size: 20px;">analytics</span>
+                            <span style="font-weight: 700; color: var(--text-primary); font-size: 14px;">Data Aggregator</span>
                         </div>
                         <p style="font-size: 12px; color: var(--text-muted);">Calculates sum, avg, min, and max values.</p>
                     </a>
@@ -125,21 +125,21 @@
             <div class="studio-card" style="display: flex; flex-direction: column; justify-content: space-between;">
                 <div>
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
-                        <h2 style="font-size: 17px; font-weight: 700;">State Graph Pipeline</h2>
-                        <span class="cyber-badge cyber-badge-blue">LangGraph v0.2</span>
+                        <h2 style="font-size: 18px; font-weight: 800;">State Graph Pipeline</h2>
+                        <span class="cyber-badge cyber-badge-terracotta">LangGraph v0.2</span>
                     </div>
 
                     <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5;">
                         Multi-agent state graph orchestrating code generation, sandbox testing, and conditional edge self-correction.
                     </p>
 
-                    <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 18px; text-align: center;">
+                    <div style="background: #ede9e0; border: 1.5px solid var(--border-subtle); border-radius: 8px; padding: 18px; text-align: center;">
                         <div style="display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; font-family: var(--font-mono);">
-                            <span style="padding: 6px 10px; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 4px; color: var(--primary-blue); font-weight: 600;">Developer</span>
+                            <span style="padding: 6px 10px; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 4px; color: var(--accent-terracotta); font-weight: 700;">Developer</span>
                             <span class="material-symbols-outlined" style="font-size: 16px; color: var(--text-muted);">arrow_forward</span>
-                            <span style="padding: 6px 10px; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 4px; color: var(--accent-emerald); font-weight: 600;">Sandbox</span>
+                            <span style="padding: 6px 10px; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 4px; color: var(--accent-emerald); font-weight: 700;">Sandbox</span>
                             <span class="material-symbols-outlined" style="font-size: 16px; color: var(--text-muted);">arrow_forward</span>
-                            <span style="padding: 6px 10px; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 4px; color: var(--accent-amber); font-weight: 600;">Router</span>
+                            <span style="padding: 6px 10px; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 4px; color: var(--accent-amber); font-weight: 700;">Router</span>
                         </div>
                     </div>
                 </div>
@@ -147,7 +147,7 @@
                 <div style="margin-top: 20px;">
                     <a href="/workflow" class="cyber-btn cyber-btn-secondary" style="width: 100%;">
                         <span class="material-symbols-outlined">account_tree</span>
-                        Inspect State Canvas
+                        Inspect Interactive State Canvas
                     </a>
                 </div>
             </div>
@@ -158,16 +158,16 @@
         <div class="studio-card">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
                 <div>
-                    <h2 style="font-size: 17px; font-weight: 700;">Recent Executions</h2>
+                    <h2 style="font-size: 18px; font-weight: 800;">Recent Executions</h2>
                     <p style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">Audit history of code specifications and automated verification results.</p>
                 </div>
-                <a href="/history" class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px;">View All Audit History</a>
+                <a href="/history" class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px;">View All Audit Logs</a>
             </div>
 
             <div style="overflow-x: auto;">
                 <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13.5px;">
                     <thead>
-                        <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
+                        <tr style="border-bottom: 1.5px solid var(--border-subtle); color: var(--text-muted); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">
                             <th style="padding: 12px 16px;">Task Specification</th>
                             <th style="padding: 12px 16px;">Language</th>
                             <th style="padding: 12px 16px;">Status</th>
@@ -206,16 +206,16 @@
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="5" style="padding: 32px; text-align: center; color: var(--text-muted);">
-                            No executions recorded yet. <a href="/generate" style="color: var(--primary-blue); font-weight: 500;">Open Workbench to generate code</a>
+                            No executions recorded yet. <a href="/generate" style="color: var(--accent-terracotta); font-weight: 700;">Open Workbench to generate code</a>
                         </td>
                     </tr>
                 `;
             } else {
                 tbody.innerHTML = history.slice(0, 5).map(run => `
                     <tr style="border-bottom: 1px solid var(--border-subtle);">
-                        <td style="padding: 14px 16px; font-weight: 500; color: var(--text-primary);">${run.task}</td>
+                        <td style="padding: 14px 16px; font-weight: 600; color: var(--text-primary);">${run.task}</td>
                         <td style="padding: 14px 16px;">
-                            <span class="cyber-badge cyber-badge-blue">${run.language.toUpperCase()}</span>
+                            <span class="cyber-badge cyber-badge-indigo">${run.language.toUpperCase()}</span>
                         </td>
                         <td style="padding: 14px 16px;">
                             <span class="cyber-badge ${run.success ? 'cyber-badge-emerald' : 'cyber-badge-amber'}">
