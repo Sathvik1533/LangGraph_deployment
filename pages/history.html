@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>LangGraph | Verification Audit Logs</title>
+    <title>LangGraph | Audit Logs & Execution History</title>
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,41 +20,45 @@
             <div>
                 <h1 class="page-title">
                     <span class="material-symbols-outlined" style="color: var(--accent-terracotta);">history</span>
-                    Verification Audit Logs
+                    Audit Logs & Execution History
                 </h1>
-                <p class="page-subtitle">Review previous agent executions, inspect code outputs, and audit assertion reports.</p>
+                <p class="page-subtitle">Review past code generation runs, inspect full source code, and view test verification reports.</p>
             </div>
 
-            <button id="clearHistoryBtn" class="cyber-btn cyber-btn-secondary" style="color: var(--accent-terracotta);" data-tooltip="Clear Audit Log History: Empties local history store.">
-                <span class="material-symbols-outlined">delete</span>
-                Clear Logs
+            <button class="cyber-btn cyber-btn-secondary" style="color: var(--accent-rose);" onclick="clearHistoryLog()" data-tooltip="Clear History: Deletes saved past code run logs from your local browser storage.">
+                <span class="material-symbols-outlined">delete_sweep</span>
+                Clear Audit History
             </button>
         </header>
 
-        <!-- Search Controls -->
-        <div class="studio-card" style="margin-bottom: 24px; padding: 20px;" data-tooltip="Audit Search & Filter Controls: Filter runs by keyword or execution status.">
-            <div style="display: grid; grid-template-columns: 1fr 220px; gap: 20px;">
-                <input id="searchInput" type="text" placeholder="Search prompts or code content..." style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px 16px; color: var(--text-primary); outline: none; font-size: 14px;" data-tooltip="Search input: Filter runs by task specification keyword."/>
+        <!-- Filters Panel -->
+        <div class="studio-card" style="margin-bottom: 28px;">
+            <div style="display: flex; gap: 16px; align-items: center;">
+                <div style="flex: 1; position: relative;">
+                    <span class="material-symbols-outlined" style="position: absolute; left: 14px; top: 12px; color: var(--text-muted); font-size: 20px;">search</span>
+                    <input id="searchInput" type="text" style="width: 100%; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px 14px 12px 44px; font-size: 14px; color: var(--text-primary); outline: none;" placeholder="Search task specifications or code keywords..." oninput="filterHistoryTable()" data-tooltip="Search Runs: Type any keyword (like 'prime' or 'fibonacci') to find past code runs."/>
+                </div>
 
-                <select id="filterStatusSelect" style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px 16px; color: var(--text-primary); outline: none; font-size: 14px;" data-tooltip="Filter status: Select Passed or Failed verification runs.">
-                    <option value="all">All Statuses</option>
-                    <option value="passed">Passed Runs</option>
-                    <option value="failed">Failed Runs</option>
+                <select id="filterStatusSelect" style="background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px 18px; font-size: 13.5px; font-weight: 600; color: var(--text-primary); outline: none;" onchange="filterHistoryTable()" data-tooltip="Filter Status: Filter past runs by Passed or Failed results.">
+                    <option value="all">All Execution Statuses</option>
+                    <option value="success">Passed Only</option>
+                    <option value="failed">Failed Only</option>
                 </select>
             </div>
         </div>
 
-        <!-- History Table -->
-        <div class="studio-card" data-tooltip="Audit Run Table: Click any row to open the complete source code & execution report inspector modal.">
+        <!-- Audit Table -->
+        <div class="studio-card">
             <div style="overflow-x: auto;">
                 <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
                     <thead>
                         <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
                             <th style="padding: 14px 18px;">Task Specification</th>
                             <th style="padding: 14px 18px;">Language</th>
-                            <th style="padding: 14px 18px;">Result</th>
+                            <th style="padding: 14px 18px;">Status</th>
                             <th style="padding: 14px 18px;">Loops</th>
                             <th style="padding: 14px 18px;">Timestamp</th>
+                            <th style="padding: 14px 18px; text-align: right;">Action</th>
                         </tr>
                     </thead>
                     <tbody id="historyTableBody">
@@ -65,51 +69,114 @@
         </div>
     </main>
 
-    <!-- Run Modal Inspector -->
-    <div id="runModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(12px); z-index: 1000; align-items: center; justify-content: center; padding: 24px;">
-        <div class="studio-card" style="width: 100%; max-width: 920px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; background: #ffffff; border-color: var(--border-medium);">
-            
-            <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 18px; border-bottom: 1px solid var(--border-subtle);">
+    <!-- Run Details Modal -->
+    <div id="detailModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(6px); z-index: 2000; align-items: center; justify-content: center; padding: 20px;" onclick="closeDetailModal()">
+        <div class="studio-card" style="width: 100%; max-width: 800px; max-height: 85vh; overflow-y: auto; background: #ffffff;" onclick="event.stopPropagation()">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 16px;">
                 <div>
-                    <h2 style="font-size: 19px; font-weight: 700;" id="modalTaskTitle">Task Detail</h2>
-                    <p style="font-size: 13px; color: var(--text-muted);">Historical execution audit detail</p>
+                    <h3 style="font-size: 18px; font-weight: 700;" id="modalTaskTitle">Task Details</h3>
+                    <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 4px;" id="modalMeta"></p>
                 </div>
-                <button id="modalCloseBtn" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer;">
-                    <span class="material-symbols-outlined" style="font-size: 26px;">close</span>
+                <button onclick="closeDetailModal()" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer;" title="Close Modal">
+                    <span class="material-symbols-outlined" style="font-size: 24px;">close</span>
                 </button>
             </div>
 
-            <div style="flex: 1; overflow-y: auto; padding: 20px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div class="code-editor-pane">
-                    <div class="code-editor-header">
-                        <span style="font-size: 12.5px; font-family: var(--font-mono); color: #fb923c;">solution_code</span>
-                        <button id="modalCopyBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 3px 10px; background: #334155; color: #ffffff; border: none;">Copy</button>
-                    </div>
-                    <div class="code-editor-body" id="modalCodeDisplay" style="height: 320px; overflow-y: auto;"></div>
-                </div>
-
-                <div class="code-editor-pane">
-                    <div class="code-editor-header">
-                        <span style="font-size: 12.5px; font-family: var(--font-mono); color: #94a3b8;">verification_report</span>
-                        <button id="modalDownloadBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 3px 10px; background: #334155; color: #ffffff; border: none;">Download</button>
-                    </div>
-                    <div class="code-editor-body" id="modalReportDisplay" style="height: 320px; overflow-y: auto; color: #94a3b8;"></div>
-                </div>
+            <div style="margin-bottom: 20px;">
+                <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Generated Code Output</div>
+                <pre id="modalCodeBody" style="background: #0f172a; color: #f8fafc; padding: 18px; border-radius: 10px; font-family: var(--font-mono); font-size: 13.5px; line-height: 1.6; white-space: pre-wrap; margin: 0; max-height: 250px; overflow-y: auto;"></pre>
             </div>
 
+            <div>
+                <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Verification Report Log</div>
+                <pre id="modalReportBody" style="background: #0f172a; color: #94a3b8; padding: 18px; border-radius: 10px; font-family: var(--font-mono); font-size: 13px; line-height: 1.6; white-space: pre-wrap; margin: 0; max-height: 200px; overflow-y: auto;"></pre>
+            </div>
         </div>
     </div>
 
     <script src="/static/js/common.js"></script>
-    <script src="/static/js/history.js"></script>
     <script>
+        let fullHistory = [];
+
         document.addEventListener('DOMContentLoaded', async () => {
             const navbarRes = await fetch('/templates/navigation.html');
             if (navbarRes.ok) {
                 document.getElementById('navbarContainer').innerHTML = await navbarRes.text();
                 setActiveNav('history');
             }
+            loadAuditHistoryTable();
         });
+
+        function loadAuditHistoryTable() {
+            fullHistory = getRunHistory();
+            renderTable(fullHistory);
+        }
+
+        function renderTable(runs) {
+            const tbody = document.getElementById('historyTableBody');
+            if (runs.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="padding: 36px; text-align: center; color: var(--text-muted);">
+                            No audit log records found. <a href="/generate" style="color: var(--accent-terracotta); font-weight: 600;">Execute a specification on Workbench</a>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = runs.map(run => `
+                <tr style="border-bottom: 1px solid var(--border-subtle); cursor: pointer;" onclick="openDetailModal('${run.id}')" data-tooltip="Click row to view full source code and test results.">
+                    <td style="padding: 16px 18px; font-weight: 600; color: var(--text-primary);">${run.task}</td>
+                    <td style="padding: 16px 18px;">
+                        <span class="cyber-badge cyber-badge-indigo">${run.language.toUpperCase()}</span>
+                    </td>
+                    <td style="padding: 16px 18px;">
+                        <span class="cyber-badge ${run.success ? 'cyber-badge-emerald' : 'cyber-badge-amber'}">
+                            ${run.success ? 'PASSED' : 'FAILED'}
+                        </span>
+                    </td>
+                    <td style="padding: 16px 18px; font-family: var(--font-mono); color: var(--text-secondary);">${run.iterations} loop(s)</td>
+                    <td style="padding: 16px 18px; color: var(--text-muted); font-size: 13px;">${new Date(run.timestamp).toLocaleString()}</td>
+                    <td style="padding: 16px 18px; text-align: right;">
+                        <button class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 10px;" onclick="event.stopPropagation(); openDetailModal('${run.id}')">Inspect</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterHistoryTable() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const status = document.getElementById('filterStatusSelect').value;
+
+            const filtered = fullHistory.filter(run => {
+                const matchesQuery = run.task.toLowerCase().includes(query) || run.language.toLowerCase().includes(query);
+                const matchesStatus = status === 'all' || (status === 'success' && run.success) || (status === 'failed' && !run.success);
+                return matchesQuery && matchesStatus;
+            });
+
+            renderTable(filtered);
+        }
+
+        function openDetailModal(id) {
+            const run = fullHistory.find(r => r.id === id);
+            if (!run) return;
+
+            document.getElementById('modalTaskTitle').textContent = run.task;
+            document.getElementById('modalMeta').textContent = `${run.language.toUpperCase()} • ${run.iterations} loop(s) • ${new Date(run.timestamp).toLocaleString()} • Thread: ${run.thread_id || 'N/A'}`;
+            document.getElementById('modalCodeBody').textContent = run.code || '// No code output saved.';
+            document.getElementById('modalReportBody').textContent = run.report || '// No test report saved.';
+            document.getElementById('detailModal').style.display = 'flex';
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detailModal').style.display = 'none';
+        }
+
+        function clearHistoryLog() {
+            clearRunHistory();
+            loadAuditHistoryTable();
+        }
     </script>
 </body>
 </html>
