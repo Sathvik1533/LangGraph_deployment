@@ -82,10 +82,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 });
 
+let activeHitlThreadId = null;
+
 async function handleGenerate() {
     const taskInput = document.getElementById('taskInput');
     const languageSelect = document.getElementById('languageSelect');
     const maxIterationsSelect = document.getElementById('maxIterationsSelect');
+    const hitlToggle = document.getElementById('hitlModeToggle');
     const generateBtn = document.getElementById('generateBtn');
     const statusBanner = document.getElementById('statusBanner');
     const codeDisplay = document.getElementById('codeDisplay');
@@ -93,6 +96,7 @@ async function handleGenerate() {
     const pipelineStepper = document.getElementById('pipelineStepper');
     const taskInlineAlert = document.getElementById('taskInlineAlert');
     const codeTabHeader = document.querySelector('.code-editor-header span');
+    const hitlReviewModal = document.getElementById('hitlReviewModal');
 
     const task = taskInput.value.trim();
     if (!task) {
@@ -105,9 +109,11 @@ async function handleGenerate() {
     }
 
     if (taskInlineAlert) taskInlineAlert.style.display = 'none';
+    if (hitlReviewModal) hitlReviewModal.style.display = 'none';
 
     const language = languageSelect ? languageSelect.value : 'python';
     const maxIterations = maxIterationsSelect ? (parseInt(maxIterationsSelect.value) || 3) : 3;
+    const hitlMode = hitlToggle ? hitlToggle.checked : false;
 
     // Save to localStorage so Canvas Simulator syncs automatically
     localStorage.setItem('langgraph_last_task', task);
@@ -122,7 +128,7 @@ async function handleGenerate() {
     generateBtn.disabled = true;
     generateBtn.innerHTML = `
         <span class="material-symbols-outlined spin" style="font-size: 16px;">sync</span>
-        <span>Generating your code...</span>
+        <span>${hitlMode ? 'Drafting code for review...' : 'Generating your code...'}</span>
     `;
 
     statusBanner.style.display = 'flex';
@@ -134,11 +140,11 @@ async function handleGenerate() {
             <div style="display: flex; align-items: center; gap: 12px;">
                 <span class="material-symbols-outlined spin" style="color: var(--accent-blue); font-size: 22px;">sync</span>
                 <div>
-                    <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">Creating your ${language.toUpperCase()} code...</div>
-                    <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Writing → Testing → Verifying</div>
+                    <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">${hitlMode ? 'AI Drafting Code (Human Gate Active)...' : 'Creating your ' + language.toUpperCase() + ' code...'}</div>
+                    <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">${hitlMode ? 'Developer Agent drafting initial source code' : 'Writing → Testing → Verifying'}</div>
                 </div>
             </div>
-            <span class="cyber-badge cyber-badge-blue">IN PROGRESS</span>
+            <span class="cyber-badge cyber-badge-blue">${hitlMode ? 'HITL ACTIVE' : 'IN PROGRESS'}</span>
         </div>
     `;
 
@@ -147,7 +153,7 @@ async function handleGenerate() {
         document.getElementById('stepDeveloper').className = 'cyber-badge cyber-badge-blue';
         document.getElementById('stepDeveloper').textContent = '1. Writing...';
         document.getElementById('stepSandbox').className = 'cyber-badge';
-        document.getElementById('stepSandbox').textContent = '2. Testing...';
+        document.getElementById('stepSandbox').textContent = hitlMode ? '2. Human Gate' : '2. Testing...';
         document.getElementById('stepRouter').className = 'cyber-badge';
         document.getElementById('stepRouter').textContent = '3. Checking';
     }
@@ -156,10 +162,104 @@ async function handleGenerate() {
         const payload = {
             task: task,
             language: language,
-            max_iterations: maxIterations
+            max_iterations: maxIterations,
+            hitl_mode: hitlMode
         };
 
-        const response = await fetch(API_URL, {
+        const response = await fetch('/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        currentResponseData = data;
+        activeHitlThreadId = data.thread_id;
+
+        if (response.ok && data.hitl_status === 'awaiting_human_review') {
+            // Paused at Human Review Gate
+            statusBanner.style.borderColor = 'rgba(99, 102, 241, 0.5)';
+            statusBanner.style.background = 'rgba(99, 102, 241, 0.08)';
+            statusBanner.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span class="material-symbols-outlined" style="color: var(--accent-indigo); font-size: 24px;">pause_circle</span>
+                        <div>
+                            <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">⏸️ Paused at Human Review Gate</div>
+                            <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Inspect, edit, or approve the drafted code below before sandbox testing.</div>
+                        </div>
+                    </div>
+                    <span class="cyber-badge cyber-badge-indigo">SIGN-OFF REQUIRED</span>
+                </div>
+            `;
+
+            if (pipelineStepper) {
+                document.getElementById('stepDeveloper').className = 'cyber-badge cyber-badge-emerald';
+                document.getElementById('stepDeveloper').textContent = '1. Written ✓';
+                document.getElementById('stepSandbox').className = 'cyber-badge cyber-badge-indigo';
+                document.getElementById('stepSandbox').textContent = '2. Human Gate ⏸';
+                document.getElementById('stepRouter').className = 'cyber-badge';
+                document.getElementById('stepRouter').textContent = '3. Sandbox Pending';
+            }
+
+            codeDisplay.textContent = data.code;
+            reportDisplay.textContent = data.report || 'Awaiting human sign-off before running sandbox tests.';
+
+            // Show Interactive Review Modal
+            if (hitlReviewModal) {
+                hitlReviewModal.style.display = 'block';
+                const codeArea = document.getElementById('hitlEditableCode');
+                if (codeArea) codeArea.value = data.code || '';
+                hitlReviewModal.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            showToast('⏸️ Code drafted! Sign-off required at Human Review Gate.', 'info');
+
+        } else if (response.ok && data.code) {
+            // Standard Instant Success
+            renderSuccessfulExecution(data, language, task);
+        } else {
+            renderFailedExecution(data);
+        }
+    } catch (err) {
+        renderFailedExecution({ error: err.message });
+    } finally {
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = `
+            <span class="material-symbols-outlined">code_blocks</span>
+            <span>Generate Code</span>
+        `;
+    }
+}
+
+async function submitHitlAction(action) {
+    if (!activeHitlThreadId) {
+        showToast('No active review session found', 'error');
+        return;
+    }
+
+    const languageSelect = document.getElementById('languageSelect');
+    const language = languageSelect ? languageSelect.value : 'python';
+    const hitlReviewModal = document.getElementById('hitlReviewModal');
+    const hitlEditableCode = document.getElementById('hitlEditableCode');
+    const hitlFeedbackInput = document.getElementById('hitlFeedbackInput');
+    const statusBanner = document.getElementById('statusBanner');
+    const codeDisplay = document.getElementById('codeDisplay');
+    const reportDisplay = document.getElementById('reportDisplay');
+    const taskInput = document.getElementById('taskInput');
+
+    showToast(`Processing human action: ${action.toUpperCase()}...`, 'info');
+
+    try {
+        const payload = {
+            thread_id: activeHitlThreadId,
+            action: action,
+            edited_code: hitlEditableCode ? hitlEditableCode.value : null,
+            feedback: hitlFeedbackInput ? hitlFeedbackInput.value : null,
+            language: language
+        };
+
+        const response = await fetch('/hitl/action', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -168,88 +268,109 @@ async function handleGenerate() {
         const data = await response.json();
         currentResponseData = data;
 
-        if (response.ok && data.code) {
-            // Success
-            statusBanner.className = 'studio-card';
-            statusBanner.style.borderColor = 'rgba(5, 150, 105, 0.4)';
-            statusBanner.style.background = 'var(--accent-emerald-bg)';
-            statusBanner.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <span class="material-symbols-outlined" style="color: var(--accent-emerald); font-size: 24px;">check_circle</span>
-                        <div>
-                            <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">${language.toUpperCase()} Code — All Tests Passed!</div>
-                            <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Completed in ${data.iterations} attempt(s) • Session: ${data.thread_id}</div>
-                        </div>
-                    </div>
-                    <span class="cyber-badge cyber-badge-emerald">PASSED</span>
-                </div>
-            `;
-
-            if (pipelineStepper) {
-                document.getElementById('stepDeveloper').className = 'cyber-badge cyber-badge-emerald';
-                document.getElementById('stepDeveloper').textContent = '1. Written ✓';
-                document.getElementById('stepSandbox').className = 'cyber-badge cyber-badge-emerald';
-                document.getElementById('stepSandbox').textContent = '2. Tested ✓';
-                document.getElementById('stepRouter').className = 'cyber-badge cyber-badge-emerald';
-                document.getElementById('stepRouter').textContent = '3. Approved ✓';
-            }
-
-            codeDisplay.textContent = data.code;
-            reportDisplay.textContent = data.report || 'No detailed report output generated.';
-            
-            // Save run to local history
-            saveRunToHistory({
-                task: task,
-                language: language,
-                success: data.execution_success,
-                iterations: data.iterations,
-                code: data.code,
-                report: data.report,
-                thread_id: data.thread_id
-            });
-
-            showToast(`${language.toUpperCase()} Code verified successfully!`, 'success');
-            showConversionBar(language);
-
-        } else {
-            statusBanner.className = 'studio-card';
-            statusBanner.style.borderColor = 'rgba(220, 38, 38, 0.4)';
+        if (action === 'abort') {
+            if (hitlReviewModal) hitlReviewModal.style.display = 'none';
+            statusBanner.style.borderColor = 'rgba(239, 68, 68, 0.4)';
             statusBanner.style.background = 'var(--accent-rose-bg)';
             statusBanner.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <span class="material-symbols-outlined" style="color: var(--accent-rose); font-size: 24px;">error</span>
+                    <span class="material-symbols-outlined" style="color: #f87171; font-size: 24px;">cancel</span>
                     <div>
-                        <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">Execution Error</div>
-                        <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">${data.detail?.message || data.error || 'Failed to process request.'}</div>
+                        <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">Task Cancelled by Human Reviewer</div>
+                        <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Execution was halted safely without running untrusted code.</div>
                     </div>
                 </div>
             `;
-            showToast('Generation error', 'error');
+            showToast('🛑 Task aborted by user', 'info');
+
+        } else if (action === 'reject') {
+            // Revised by AI, still awaiting review
+            codeDisplay.textContent = data.code;
+            if (hitlEditableCode) hitlEditableCode.value = data.code || '';
+            reportDisplay.textContent = data.report;
+            showToast('🔄 AI revised code based on your feedback! Please review.', 'success');
+
+        } else {
+            // Approved or Edited -> Tests Ran!
+            if (hitlReviewModal) hitlReviewModal.style.display = 'none';
+            renderSuccessfulExecution(data, language, taskInput ? taskInput.value : 'Task');
         }
 
     } catch (err) {
-        statusBanner.className = 'studio-card';
-        statusBanner.style.borderColor = 'rgba(220, 38, 38, 0.4)';
-        statusBanner.style.background = 'var(--accent-rose-bg)';
-        statusBanner.innerHTML = `
+        showToast(`Failed to process review action: ${err.message}`, 'error');
+    }
+}
+
+function renderSuccessfulExecution(data, language, task) {
+    const statusBanner = document.getElementById('statusBanner');
+    const codeDisplay = document.getElementById('codeDisplay');
+    const reportDisplay = document.getElementById('reportDisplay');
+    const pipelineStepper = document.getElementById('pipelineStepper');
+
+    statusBanner.className = 'studio-card';
+    statusBanner.style.borderColor = 'rgba(5, 150, 105, 0.4)';
+    statusBanner.style.background = 'var(--accent-emerald-bg)';
+    statusBanner.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
             <div style="display: flex; align-items: center; gap: 12px;">
-                <span class="material-symbols-outlined" style="color: var(--accent-rose); font-size: 24px;">wifi_off</span>
+                <span class="material-symbols-outlined" style="color: var(--accent-emerald); font-size: 24px;">check_circle</span>
                 <div>
-                    <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">Network Connection Error</div>
-                    <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">${err.message}</div>
+                    <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">${language.toUpperCase()} Code — All Tests Passed!</div>
+                    <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Completed in ${data.iterations} attempt(s) • Session: ${data.thread_id}</div>
                 </div>
             </div>
-        `;
-        showToast('Connection error', 'error');
-    } finally {
-        generateBtn.disabled = false;
-        generateBtn.innerHTML = `
-            <span class="material-symbols-outlined">code_blocks</span>
-            <span>Generate Code</span>
-            <span class="kbd-badge" style="margin-left: 4px; background: #ffffff; color: #0f172a;">⌘↵</span>
-        `;
+            <span class="cyber-badge cyber-badge-emerald">PASSED</span>
+        </div>
+    `;
+
+    if (pipelineStepper) {
+        document.getElementById('stepDeveloper').className = 'cyber-badge cyber-badge-emerald';
+        document.getElementById('stepDeveloper').textContent = '1. Written ✓';
+        document.getElementById('stepSandbox').className = 'cyber-badge cyber-badge-emerald';
+        document.getElementById('stepSandbox').textContent = '2. Tested ✓';
+        document.getElementById('stepRouter').className = 'cyber-badge cyber-badge-emerald';
+        document.getElementById('stepRouter').textContent = '3. Approved ✓';
     }
+
+    codeDisplay.textContent = data.code;
+    reportDisplay.textContent = data.report || 'No detailed report output generated.';
+    
+    // Save run to local history
+    saveRunToHistory({
+        task: task,
+        language: language,
+        success: data.execution_success,
+        iterations: data.iterations,
+        code: data.code,
+        report: data.report,
+        thread_id: data.thread_id
+    });
+
+    showToast(`${language.toUpperCase()} Code verified successfully!`, 'success');
+    showConversionBar(language);
+}
+
+function renderFailedExecution(data) {
+    const statusBanner = document.getElementById('statusBanner');
+    const codeDisplay = document.getElementById('codeDisplay');
+    const reportDisplay = document.getElementById('reportDisplay');
+    const pipelineStepper = document.getElementById('pipelineStepper');
+
+    statusBanner.className = 'studio-card';
+    statusBanner.style.borderColor = 'rgba(220, 38, 38, 0.4)';
+    statusBanner.style.background = 'var(--accent-rose-bg)';
+    statusBanner.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <span class="material-symbols-outlined" style="color: var(--accent-rose); font-size: 24px;">error</span>
+            <div>
+                <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">Execution Alert</div>
+                <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">${data.error || data.detail?.message || 'The system could not verify the generated code.'}</div>
+            </div>
+        </div>
+    `;
+    if (pipelineStepper) pipelineStepper.style.display = 'none';
+    if (data.code) codeDisplay.textContent = data.code;
+    if (data.report) reportDisplay.textContent = data.report;
 }
 
 // Show conversion bar and hide the button for the current language

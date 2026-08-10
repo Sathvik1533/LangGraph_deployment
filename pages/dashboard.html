@@ -280,6 +280,54 @@
             </div>
         </div>
 
+        <!-- Human-in-the-Loop (HITL) Governance Hub Card -->
+        <div class="studio-card" style="margin-bottom: 32px; border: 1.5px solid rgba(99, 102, 241, 0.3); background: linear-gradient(135deg, rgba(99, 102, 241, 0.04), #ffffff);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span class="material-symbols-outlined" style="font-size: 28px; color: var(--accent-indigo);">supervisor_account</span>
+                    <div>
+                        <h2 style="font-size: 19px; font-weight: 700; color: #0f172a; margin: 0;">Human-in-the-Loop (HITL) Governance & Oversight</h2>
+                        <p style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">Keep humans in control. Pause the agentic workflow after code drafting to review, edit, or reject before sandbox execution.</p>
+                    </div>
+                </div>
+                <span class="cyber-badge cyber-badge-indigo" style="font-size: 11px;">ENTERPRISE GOVERNANCE</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 18px;">
+                <div style="background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px 18px;">
+                    <div style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Oversight Gate</div>
+                    <div style="font-size: 18px; font-weight: 700; color: var(--accent-indigo); margin-top: 4px;">Active & Ready</div>
+                    <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">Pause before Sandbox Node</div>
+                </div>
+                <div style="background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px 18px;">
+                    <div style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Human Override</div>
+                    <div style="font-size: 18px; font-weight: 700; color: #059669; margin-top: 4px;">In-Place Editing</div>
+                    <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">Modify code before tests</div>
+                </div>
+                <div style="background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px 18px;">
+                    <div style="font-size: 12px; color: var(--text-muted); font-weight: 600;">AI Revision Loop</div>
+                    <div style="font-size: 18px; font-weight: 700; color: #d97706; margin-top: 4px;">Feedback Re-prompt</div>
+                    <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">Request changes with guidance</div>
+                </div>
+                <div style="background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px 18px;">
+                    <div style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Safety Kill Switch</div>
+                    <div style="font-size: 18px; font-weight: 700; color: #dc2626; margin-top: 4px;">1-Click Abort</div>
+                    <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">Halt untrusted tasks safely</div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
+                <a href="/workflow?scenario=hitl_gate" class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">account_tree</span>
+                    Simulate HITL in Pipeline
+                </a>
+                <a href="/generate" class="cyber-btn cyber-btn-primary" style="font-size: 12.5px;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">person_pin</span>
+                    Try Human Review in Workbench
+                </a>
+            </div>
+        </div>
+
         <!-- History Table -->
         <div class="studio-card">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">

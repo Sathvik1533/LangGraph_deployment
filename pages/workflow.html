@@ -204,6 +204,14 @@
                         <div style="font-size: 11px; opacity: 0.8;">Circuit Breaker Limit (3 Loops)</div>
                     </div>
                 </div>
+
+                <div class="scenario-pill" id="pillScenarioHitl" onclick="switchScenario('hitl_gate')" data-tooltip="Human-in-the-Loop Gate: Demonstrates human reviewer intervening at the review gate to inspect, edit code, and approve before sandbox testing.">
+                    <span class="material-symbols-outlined" style="color: #6366f1; font-size: 20px;">person_pin</span>
+                    <div>
+                        <div style="font-weight: 700;">👤 Human-in-the-Loop</div>
+                        <div style="font-size: 11px; opacity: 0.8;">Human Sign-Off & Live Edit Gate</div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -803,6 +811,74 @@
                         state: { success: false, iterations: 3, status: "MAX_ITERATIONS_CEILING" }
                     }
                 ];
+            } else if (scenarioKey === 'hitl_gate') {
+                return [
+                    {
+                        node: 'START',
+                        title: 'START Node (Human-in-the-Loop Active)',
+                        subtitle: 'Entry Point • HITL Gate Enabled',
+                        badge: 'START (HITL)',
+                        statusBadge: 'HITL ENGAGED',
+                        activeEdges: ['edgeStartDev'],
+                        loopEdge: false,
+                        nodeClass: 'node-active',
+                        log: `[00:00.10] Workflow started with human_in_the_loop = true.\n[00:00.15] Routing to Developer Agent for initial draft.`,
+                        code: `// Initializing Human Gate workflow...`,
+                        state: { hitl_enabled: true, iterations: 0 }
+                    },
+                    {
+                        node: 'Developer',
+                        title: 'Developer Node (Initial Candidate Code Drafted)',
+                        subtitle: 'LLM Engine • Generates Draft Candidate',
+                        badge: 'DRAFT GENERATED',
+                        statusBadge: 'AWAITING REVIEW',
+                        activeEdges: ['edgeDevTest'],
+                        loopEdge: false,
+                        nodeClass: 'node-active',
+                        log: `[00:01.20] Generated draft solution for: "${task}".\n[00:01.30] ⏸️ Pausing execution at Human Review Gate before running sandbox tests.`,
+                        code: validCode,
+                        state: { code_drafted: true, human_review_status: "pending", iterations: 1 }
+                    },
+                    {
+                        node: 'Tester',
+                        title: 'Human Review Gate (Review, Live-Edit & Sign-off)',
+                        subtitle: 'Governance Gate • Human Approves / Edits Code',
+                        badge: 'HUMAN APPROVED',
+                        statusBadge: 'HUMAN INTERVENTION',
+                        activeEdges: ['edgeTestRoute'],
+                        loopEdge: false,
+                        nodeClass: 'node-pass',
+                        log: `[00:02.40] 👤 Human Reviewer inspected code.\n[00:02.50] ✏️ Human edited edge case assertion and clicked [Approve & Run Tests].\n[00:02.60] Proceeding to automated Sandbox Tester with human modifications applied.`,
+                        code: validCode,
+                        state: { human_action: "approve", human_edited: true, status: "approved_by_human" }
+                    },
+                    {
+                        node: 'Router',
+                        title: 'Router Node (Post-Review Test Verification)',
+                        subtitle: 'Routing Logic • Tests Passed 100%',
+                        badge: 'APPROVED',
+                        statusBadge: 'ROUTING TO END',
+                        activeEdges: ['edgeRouteEnd'],
+                        loopEdge: false,
+                        nodeClass: 'node-pass',
+                        log: `[00:03.10] Sandbox execution verified: 3/3 test scenarios passed on human-approved code.\n[00:03.15] Routing to END node for final delivery.`,
+                        code: validCode,
+                        state: { decision: "ROUTE_TO_END", execution_success: true }
+                    },
+                    {
+                        node: 'END',
+                        title: 'END Node (Human-Validated Artifact Delivered)',
+                        subtitle: 'Delivery • Verified by Human & Sandbox',
+                        badge: 'DELIVERED',
+                        statusBadge: 'COMPLETE',
+                        activeEdges: [],
+                        loopEdge: false,
+                        nodeClass: 'node-pass',
+                        log: `[00:03.30] 🏁 Production delivery complete. Verified with Human-in-the-Loop governance.`,
+                        code: validCode,
+                        state: { success: true, verified: true, hitl_governance: "APPROVED" }
+                    }
+                ];
             }
         }
 
@@ -814,7 +890,8 @@
                 'self_fix': 'pillScenarioSelfFix',
                 'clean_pass': 'pillScenarioClean',
                 'guardrail_block': 'pillScenarioGuardrail',
-                'max_retry': 'pillScenarioMaxRetry'
+                'max_retry': 'pillScenarioMaxRetry',
+                'hitl_gate': 'pillScenarioHitl'
             };
             const activePill = document.getElementById(pillMap[scenarioKey]);
             if (activePill) activePill.classList.add('active');
@@ -823,7 +900,8 @@
                 'self_fix': 'Scenario: Self-Healing Feedback Loop (Bug Caught & Auto-Fixed in 2 Loops)',
                 'clean_pass': 'Scenario: 1-Shot Clean Pass (Zero Errors, 100% Pass in 1 Loop)',
                 'guardrail_block': 'Scenario: Guardrail Intercept (Prompt Injection Caught & Safely Halted)',
-                'max_retry': 'Scenario: Max Attempts Limit (Circuit Breaker Ceiling at 3 Loops)'
+                'max_retry': 'Scenario: Max Attempts Limit (Circuit Breaker Ceiling at 3 Loops)',
+                'hitl_gate': 'Scenario: Human-in-the-Loop Gate (Human Sign-off, Live-Edit & Sandbox Approval)'
             };
             document.getElementById('scenarioDescriptionTag').textContent = tagMap[scenarioKey] || '';
 

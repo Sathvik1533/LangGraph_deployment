@@ -97,16 +97,68 @@
 
             </div>
 
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div style="display: flex; gap: 8px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
                     <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Write a function to calculate fibonacci numbers')" data-tooltip="Quick Fill: Fills in a sample Fibonacci sequence calculation task.">Fibonacci</button>
                     <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Create a function that checks if a string is a palindrome')" data-tooltip="Quick Fill: Fills in a sample Palindrome checker task.">Palindrome</button>
                     <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Write a function to divide two numbers with proper error handling')" data-tooltip="Quick Fill: Fills in a sample Safe Division task.">Safe Division</button>
                 </div>
 
-                <button id="generateBtn" class="cyber-btn cyber-btn-primary" data-tooltip="Click to generate and test your code.">
-                    <span class="material-symbols-outlined">code_blocks</span>
-                    <span>Generate Code</span>
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <!-- Human-in-the-Loop Toggle -->
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; padding: 6px 12px; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: var(--radius-pill);" data-tooltip="Human Review Gate: Pauses the AI after drafting code so you can review, edit, or reject before automated testing.">
+                        <input type="checkbox" id="hitlModeToggle" style="accent-color: var(--accent-indigo); width: 15px; height: 15px; cursor: pointer;"/>
+                        <span style="font-size: 12px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 4px;">
+                            <span class="material-symbols-outlined" style="font-size: 15px; color: var(--accent-indigo);">person_pin</span>
+                            Human Review Gate
+                        </span>
+                    </label>
+
+                    <button id="generateBtn" class="cyber-btn cyber-btn-primary" data-tooltip="Click to generate and test your code.">
+                        <span class="material-symbols-outlined">code_blocks</span>
+                        <span>Generate Code</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Human-in-the-Loop (HITL) Interactive Approval & Code Review Card -->
+        <div id="hitlReviewModal" class="studio-card" style="display: none; margin-bottom: 24px; border: 1.5px solid var(--accent-indigo); background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(15, 23, 42, 0.95));">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="material-symbols-outlined" style="font-size: 26px; color: var(--accent-indigo);">supervisor_account</span>
+                    <div>
+                        <div style="font-weight: 700; font-size: 15px; color: var(--text-primary);">⏸️ Human-in-the-Loop Review Gate — Sign-off Required</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">Developer Agent drafted the code below. You have the ultimate authority to approve, edit, or request changes before sandbox testing.</div>
+                    </div>
+                </div>
+                <span class="cyber-badge cyber-badge-indigo" style="font-size: 11px;">PAUSED FOR REVIEW</span>
+            </div>
+            
+            <div style="margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-size: 12px; font-weight: 600; color: var(--text-muted);">Inspect or Modify Code:</span>
+                    <span style="font-size: 11px; color: var(--accent-indigo);">✏️ Editable in-place</span>
+                </div>
+                <textarea id="hitlEditableCode" style="width: 100%; height: 160px; font-family: var(--font-mono); font-size: 12.5px; background: #0f172a; color: #38bdf8; border: 1px solid #334155; border-radius: 8px; padding: 12px; resize: vertical; box-sizing: border-box; outline: none;"></textarea>
+            </div>
+            
+            <div style="margin-bottom: 14px;">
+                <input type="text" id="hitlFeedbackInput" placeholder="Optional: Enter revision instructions for AI if requesting changes (e.g. 'Use iterative approach instead of recursion')" style="width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: var(--text-primary); font-size: 12px; box-sizing: border-box;" />
+            </div>
+            
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
+                <button class="cyber-btn cyber-btn-secondary" style="font-size: 12px; border-color: rgba(239, 68, 68, 0.4); color: #f87171;" onclick="submitHitlAction('abort')">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">cancel</span> Abort Task
+                </button>
+                <button class="cyber-btn cyber-btn-secondary" style="font-size: 12px; border-color: rgba(245, 158, 11, 0.4); color: #fbbf24;" onclick="submitHitlAction('reject')">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">replay</span> Request AI Changes
+                </button>
+                <button class="cyber-btn cyber-btn-secondary" style="font-size: 12px; border-color: rgba(99, 102, 241, 0.5); color: #818cf8;" onclick="submitHitlAction('edit')">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">edit_document</span> Save Edits & Run Tests
+                </button>
+                <button class="cyber-btn cyber-btn-primary" style="font-size: 12px; background: #059669; border-color: #059669;" onclick="submitHitlAction('approve')">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span> Approve & Run Tests
                 </button>
             </div>
         </div>
