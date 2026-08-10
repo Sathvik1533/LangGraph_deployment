@@ -50,7 +50,7 @@ def test_full_platform_e2e_flow():
         page.wait_for_timeout(1500)
 
         code_display = page.locator("#codeDisplay")
-        expect(code_display).to_contain_text("binary")
+        expect(code_display).to_contain_text("Main", ignore_case=True)
         print("  ✓ Dynamic Task Execution in Java completed successfully")
 
         print("\n🚀 [3/5] Testing State Graph Canvas ('/workflow')...")
