@@ -1,4 +1,4 @@
-<!-- Floating Airy Top Navbar -->
+<!-- Floating Airy Top Navbar with Proactive Platform Guide Trigger -->
 <nav class="top-navbar">
     <a href="/" class="nav-brand">
         <div class="brand-icon">
@@ -38,15 +38,15 @@
     </div>
 
     <div style="display: flex; align-items: center; gap: 10px;">
+        <button class="cyber-btn cyber-btn-primary" onclick="openPlatformGuide()" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);">
+            <span class="material-symbols-outlined" style="font-size: 16px;">menu_book</span>
+            <span>Platform Guide</span>
+        </button>
+
         <button class="cyber-btn cyber-btn-secondary" onclick="openCommandPalette()" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);">
             <span class="material-symbols-outlined" style="font-size: 16px; color: var(--text-muted);">search</span>
             <span>Search...</span>
             <span class="kbd-badge">⌘K</span>
         </button>
-
-        <a href="https://github.com/Sathvik1533/LangGraph_deployment" target="_blank" class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);">
-            <span class="material-symbols-outlined" style="font-size: 16px;">code</span>
-            <span>GitHub</span>
-        </a>
     </div>
 </nav>
