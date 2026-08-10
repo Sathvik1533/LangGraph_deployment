@@ -1,4 +1,4 @@
-/* Airy & Spacious Engineering Studio Design System (Breathable, High-Legibility Typography) */
+/* Airy & Spacious Engineering Studio Design System (Deep Motion & Spotlight Guidance) */
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
@@ -40,7 +40,7 @@
     /* Subtle Floating Depth */
     --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
     --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.06);
-    --shadow-lg: 0 20px 48px rgba(15, 23, 42, 0.09);
+    --shadow-lg: 0 20px 48px rgba(15, 23, 42, 0.12);
 
     --radius-sm: 8px;
     --radius-md: 12px;
@@ -64,8 +64,8 @@ body {
     letter-spacing: -0.01em;
     -webkit-font-smoothing: antialiased;
     background-image: 
-        radial-gradient(circle at 50% 0%, rgba(234, 88, 12, 0.03) 0%, transparent 60%),
-        radial-gradient(circle at 100% 100%, rgba(37, 99, 235, 0.02) 0%, transparent 60%);
+        radial-gradient(circle at 50% 0%, rgba(234, 88, 12, 0.04) 0%, transparent 60%),
+        radial-gradient(circle at 100% 100%, rgba(37, 99, 235, 0.03) 0%, transparent 60%);
     background-attachment: fixed;
 }
 
@@ -157,7 +157,7 @@ h1, h2, h3, h4, h5, h6 {
     text-decoration: none;
     font-size: 13.5px;
     font-weight: 500;
-    transition: all 0.15s ease;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .nav-link-item:hover {
@@ -211,20 +211,20 @@ h1, h2, h3, h4, h5, h6 {
     margin-top: 6px;
 }
 
-/* Studio Cards & Elevation */
+/* Studio Cards & Spring Elevation */
 .studio-card {
     background: var(--bg-surface);
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-subtle);
     padding: 28px;
     box-shadow: var(--shadow-sm);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .studio-card-hover:hover {
     border-color: var(--border-medium);
     box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
+    transform: translateY(-3px);
 }
 
 /* Buttons */
@@ -239,7 +239,7 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
     cursor: pointer;
     border: 1px solid transparent;
-    transition: all 0.15s ease;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     text-decoration: none;
 }
 
@@ -251,8 +251,8 @@ h1, h2, h3, h4, h5, h6 {
 
 .cyber-btn-primary:hover {
     background: #c2410c;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(234, 88, 12, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(234, 88, 12, 0.45);
 }
 
 .cyber-btn-secondary {
@@ -265,6 +265,7 @@ h1, h2, h3, h4, h5, h6 {
 .cyber-btn-secondary:hover {
     background: var(--bg-inset);
     border-color: var(--border-medium);
+    transform: translateY(-1px);
 }
 
 /* Pill Badges */
@@ -376,30 +377,46 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--accent-terracotta);
 }
 
-/* Proactive Floating Tour Card */
-.proactive-guide-card {
+/* Autonomous Spotlight Tour Callout & Overlay */
+.tour-spotlight-mask {
     position: fixed;
-    bottom: 28px;
-    left: 28px;
+    inset: 0;
+    z-index: 2500;
+    pointer-events: none;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tour-callout-card {
+    position: fixed;
     width: 380px;
     background: #ffffff;
     border: 1px solid var(--border-medium);
     border-radius: var(--radius-lg);
-    padding: 20px;
-    box-shadow: var(--shadow-lg);
-    z-index: 1500;
-    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 22px;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+    z-index: 2600;
+    animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes slideUp {
+@keyframes popIn {
     from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: scale(0.95) translateY(10px);
     }
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: scale(1) translateY(0);
     }
+}
+
+.element-highlighted {
+    position: relative !important;
+    z-index: 2550 !important;
+    outline: 3px solid var(--accent-terracotta) !important;
+    outline-offset: 6px !important;
+    border-radius: 14px !important;
+    box-shadow: 0 0 0 10px rgba(234, 88, 12, 0.15) !important;
+    transition: outline 0.2s ease, box-shadow 0.2s ease;
 }
 
 /* Global Hover Tooltip Popup */
@@ -461,9 +478,9 @@ h1, h2, h3, h4, h5, h6 {
         padding-left: 20px;
         padding-right: 20px;
     }
-    .proactive-guide-card {
+    .tour-callout-card {
         width: calc(100% - 40px);
-        left: 20px;
-        bottom: 20px;
+        left: 20px !important;
+        right: 20px !important;
     }
 }
