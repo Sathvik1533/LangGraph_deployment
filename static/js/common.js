@@ -1,9 +1,10 @@
-// Executive Engineering Platform Controller & Comprehensive Guided Tour Engine
+// Executive Engineering Platform Controller & Strict One-Time Guided Tour Engine
 
 const API_URL = window.location.origin + '/invoke';
 const HEALTH_API_URL = window.location.origin + '/health';
 const HISTORY_STORAGE_KEY = 'langgraph_studio_history_v3';
-const TOUR_SEEN_KEY = 'langgraph_tour_seen_v1';
+const TOUR_GLOBAL_DISABLED_KEY = 'langgraph_global_tour_disabled_v2';
+const TOUR_PAGE_SEEN_PREFIX = 'langgraph_tour_page_seen_v2_';
 
 // Save run to local history
 function saveRunToHistory(runData) {
@@ -183,7 +184,7 @@ document.addEventListener('keydown', (e) => {
         openCommandPalette();
     } else if (e.key === 'Escape') {
         closeCommandPalette();
-        closeSpotlightTour();
+        dismissTourPermanently();
     }
 });
 
@@ -192,7 +193,7 @@ const FULL_PLATFORM_TOUR = [
     {
         path: '/',
         pageName: 'Command Center',
-        nextUrl: '/generate?tour=active',
+        nextUrl: '/generate',
         steps: [
             {
                 selector: '.top-navbar',
@@ -239,7 +240,7 @@ const FULL_PLATFORM_TOUR = [
     {
         path: '/generate',
         pageName: 'Code Workbench',
-        nextUrl: '/workflow?tour=active',
+        nextUrl: '/workflow',
         steps: [
             {
                 selector: '#taskInput',
@@ -276,7 +277,7 @@ const FULL_PLATFORM_TOUR = [
     {
         path: '/workflow',
         pageName: 'State Graph Canvas',
-        nextUrl: '/execution?tour=active',
+        nextUrl: '/execution',
         steps: [
             {
                 selector: '#canvasTaskInput',
@@ -303,7 +304,7 @@ const FULL_PLATFORM_TOUR = [
     {
         path: '/execution',
         pageName: 'Telemetry & Logs',
-        nextUrl: '/history?tour=active',
+        nextUrl: '/history',
         steps: [
             {
                 selector: '[data-tooltip*="API Health Status"]',
@@ -330,7 +331,7 @@ const FULL_PLATFORM_TOUR = [
     {
         path: '/history',
         pageName: 'Audit Logs',
-        nextUrl: '/?tour=completed',
+        nextUrl: '/',
         steps: [
             {
                 selector: '#searchInput',
@@ -351,16 +352,22 @@ let currentTourStepIndex = 0;
 
 function autoAwakenSpotlightTour() {
     const currentPath = window.location.pathname;
-    const urlParams = new URLSearchParams(window.location.search);
-    const hasSeen = localStorage.getItem(TOUR_SEEN_KEY) === 'true';
-    const isTourActiveParam = urlParams.get('tour') === 'active';
+    const isGloballyDisabled = localStorage.getItem(TOUR_GLOBAL_DISABLED_KEY) === 'true';
+    const isPageSeen = localStorage.getItem(TOUR_PAGE_SEEN_PREFIX + currentPath) === 'true';
+    const isManualSession = sessionStorage.getItem('langgraph_manual_tour_session') === 'true';
 
-    if (hasSeen && !isTourActiveParam) {
+    // STRICT ONE-TIME VISITOR GUARD:
+    // If globally disabled OR if page has already been seen, DO NOT AUTO-TRIGGER!
+    if ((isGloballyDisabled || isPageSeen) && !isManualSession) {
+        console.log(`💡 Tour skipped for ${currentPath}: Already seen or tour completed.`);
         return;
     }
 
     currentTourPageIndex = FULL_PLATFORM_TOUR.findIndex(p => p.path === currentPath);
     if (currentTourPageIndex === -1) currentTourPageIndex = 0;
+
+    // Immediately mark this page as seen in localStorage so it NEVER triggers on revisit!
+    localStorage.setItem(TOUR_PAGE_SEEN_PREFIX + currentPath, 'true');
 
     if (!document.getElementById('tourCalloutCard')) {
         const calloutHtml = `
@@ -370,7 +377,7 @@ function autoAwakenSpotlightTour() {
                         <span class="material-symbols-outlined" style="color: var(--accent-terracotta); font-size: 22px;">explore</span>
                         <h3 style="font-size: 15px; font-weight: 700;" id="tourTitle">Platform Tour Guide</h3>
                     </div>
-                    <button onclick="dismissTourPermanently()" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer;" title="Dismiss Tour">
+                    <button onclick="dismissTourPermanently()" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer;" title="Close & Disable Tour">
                         <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
                     </button>
                 </div>
@@ -453,7 +460,7 @@ function renderSpotlightStep() {
 function nextSpotlightStep() {
     const pageTour = FULL_PLATFORM_TOUR[currentTourPageIndex];
     
-    // Check if on Task Input step on Code Workbench
+    // Auto-populate Task Input if empty on Code Workbench
     if (window.location.pathname === '/generate' && currentTourStepIndex === 0) {
         const taskInput = document.getElementById('taskInput');
         if (taskInput && !taskInput.value.trim()) {
@@ -472,26 +479,30 @@ function nextSpotlightStep() {
 
 function advanceToNextPageInTour() {
     const pageTour = FULL_PLATFORM_TOUR[currentTourPageIndex];
-    if (pageTour && pageTour.nextUrl) {
-        if (pageTour.nextUrl.includes('completed')) {
-            localStorage.setItem(TOUR_SEEN_KEY, 'true');
-            closeSpotlightTour();
-            showToast('🎉 Full platform tour completed from 0 to 100%!', 'success');
-        } else {
-            showToast(`Proceeding to ${FULL_PLATFORM_TOUR[currentTourPageIndex + 1]?.pageName}...`, 'info');
-            setTimeout(() => {
-                window.location.href = pageTour.nextUrl;
-            }, 600);
-        }
+    const isLastPage = currentTourPageIndex === FULL_PLATFORM_TOUR.length - 1;
+
+    if (isLastPage) {
+        dismissTourPermanently();
+        showToast('🎉 Full platform tour completed from 0 to 100%!', 'success');
+    } else if (pageTour && pageTour.nextUrl) {
+        const nextTarget = FULL_PLATFORM_TOUR[currentTourPageIndex + 1];
+        showToast(`Proceeding to ${nextTarget?.pageName}...`, 'info');
+        setTimeout(() => {
+            window.location.href = pageTour.nextUrl;
+        }, 600);
     } else {
-        closeSpotlightTour();
+        dismissTourPermanently();
     }
 }
 
 function dismissTourPermanently() {
-    localStorage.setItem(TOUR_SEEN_KEY, 'true');
+    localStorage.setItem(TOUR_GLOBAL_DISABLED_KEY, 'true');
+    FULL_PLATFORM_TOUR.forEach(p => {
+        localStorage.setItem(TOUR_PAGE_SEEN_PREFIX + p.path, 'true');
+    });
+    sessionStorage.removeItem('langgraph_manual_tour_session');
     closeSpotlightTour();
-    showToast('Tour dismissed. Click "Platform Guide" anytime to re-run.', 'info');
+    showToast('Tour completed/dismissed. Click "Platform Guide" anytime to re-run.', 'info');
 }
 
 function closeSpotlightTour() {
@@ -501,8 +512,12 @@ function closeSpotlightTour() {
 }
 
 function startFullTourManually() {
-    localStorage.removeItem(TOUR_SEEN_KEY);
-    window.location.href = '/?tour=active';
+    localStorage.removeItem(TOUR_GLOBAL_DISABLED_KEY);
+    FULL_PLATFORM_TOUR.forEach(p => {
+        localStorage.removeItem(TOUR_PAGE_SEEN_PREFIX + p.path);
+    });
+    sessionStorage.setItem('langgraph_manual_tour_session', 'true');
+    window.location.href = '/';
 }
 
 function openPlatformGuide() {
