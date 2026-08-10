@@ -21,15 +21,18 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional
 import logging
 import time
+import uuid
 from collections import defaultdict, deque
 import os
 
 from agent import agent, CrewState, _circuit_breaker_open, _circuit_breaker_failures
 from langchain_core.messages import HumanMessage
+from guardrails import InputGuard, OutputGuard, guardrail_stats
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -91,14 +94,49 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# Enable CORS for frontend access
+# Enable CORS for frontend access (configurable via ALLOWED_ORIGINS env var)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific domains
+    allow_origins=os.getenv("ALLOWED_ORIGINS", "*").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ============================================================================
+# SECURITY HEADERS MIDDLEWARE (Production Pattern — OWASP Secure Headers)
+# ============================================================================
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Adds production security headers to every response.
+    Inspired by OWASP Secure Headers Project."""
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
+
+
+# ============================================================================
+# REQUEST ID TRACING MIDDLEWARE (Production Pattern — Distributed Tracing)
+# ============================================================================
+
+class RequestIDMiddleware(BaseHTTPMiddleware):
+    """Generates unique X-Request-ID for every request for distributed tracing."""
+    async def dispatch(self, request, call_next):
+        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+        request.state.request_id = request_id
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        return response
+
+app.add_middleware(RequestIDMiddleware)
 
 # Mount static files (CSS, JS)
 if os.path.exists("static"):
@@ -343,6 +381,22 @@ async def invoke_agent(request: TaskRequest, req: Request):
             }
         )
     
+    # LLM INPUT GUARDRAILS (Production Pattern — Inspired by LLM Guard & NeMo Guardrails)
+    input_report = InputGuard.scan_all(request.task)
+    guardrail_stats.record_input_scan(input_report)
+    if not input_report.passed:
+        logger.warning(f"🛡️ Input guardrail blocked: {input_report.blocked_by}")
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "Guardrail blocked",
+                "message": input_report.reason,
+                "blocked_by": input_report.blocked_by,
+                "severity": input_report.severity.value,
+                "tip": "Please describe a coding task. This platform only generates safe, educational code."
+            }
+        )
+    
     # Rate Limiting (Production Pattern)
     client_ip = req.client.host if req.client else "unknown"
     if not rate_limiter.is_allowed(client_ip):
@@ -421,6 +475,24 @@ async def invoke_agent(request: TaskRequest, req: Request):
         
         if checkpointed:
             logger.info(f"✅ State saved to Redis under thread: {thread_id}")
+        
+        # LLM OUTPUT GUARDRAILS (Production Pattern — Inspired by Guardrails AI)
+        output_code = result.get("code", "")
+        if output_code and not output_code.startswith("// ERROR:") and not output_code.startswith("// GUARDRAIL"):
+            output_report = OutputGuard.scan_all(output_code, request.language or "python")
+            guardrail_stats.record_output_scan(output_report)
+            if not output_report.passed:
+                logger.warning(f"🔒 Output guardrail blocked: {output_report.blocked_by}")
+                return AgentResponse(
+                    success=False,
+                    code=f"// GUARDRAIL BLOCKED: {output_report.reason}",
+                    report=f"### 🛡️ Output Guardrail Alert\n{output_report.reason}\n\nBlocked by: {output_report.blocked_by}\nSeverity: {output_report.severity.value}",
+                    execution_success=False,
+                    iterations=result.get("iterations", 0),
+                    error=output_report.reason,
+                    thread_id=thread_id,
+                    checkpointed=checkpointed
+                )
         
         # Check if we got valid results
         if not result.get("code"):
@@ -652,6 +724,29 @@ async def delete_thread(thread_id: str):
 
 
 # ============================================================================
+# GUARDRAILS API ENDPOINT
+# ============================================================================
+
+@app.get("/guardrails", tags=["Guardrails"])
+def get_guardrails_status():
+    """
+    Get current guardrail configuration, scan statistics, and recent blocks.
+    
+    Production Pattern: Observability
+    Returns real-time guardrail shield status and scanner activity.
+    """
+    return {
+        "engine": "LangGraph Guardrails Engine v1.0",
+        "inspired_by": [
+            "Guardrails AI (https://github.com/guardrails-ai/guardrails)",
+            "LLM Guard (https://github.com/protectai/llm-guard)",
+            "NeMo Guardrails (https://github.com/NVIDIA/NeMo-Guardrails)"
+        ],
+        "stats": guardrail_stats.to_dict()
+    }
+
+
+# ============================================================================
 # ERROR HANDLERS
 # ============================================================================
 
@@ -679,6 +774,11 @@ async def internal_error_handler(request, exc):
 async def startup_event():
     logger.info("🚀 LangGraph Agent API starting...")
     logger.info("📊 API Docs available at /docs")
+    logger.info("🛡️ LLM Guardrails Engine: ACTIVE")
+    logger.info("   Input Guards: PromptInjection, TopicBoundary, ContentSafety")
+    logger.info("   Output Guards: DangerousCode, PIILeak, CodeRelevance, LanguageCorrectness")
+    logger.info("🔒 Security Headers: X-Content-Type-Options, X-Frame-Options, X-XSS-Protection")
+    logger.info("🔗 Request ID Tracing: X-Request-ID (UUID)")
     logger.info("✅ Ready to accept requests")
 
 
