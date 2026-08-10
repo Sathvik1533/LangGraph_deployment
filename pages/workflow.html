@@ -7,7 +7,7 @@
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="/static/css/shared.css"/>
 </head>
@@ -37,10 +37,10 @@
             </div>
         </header>
 
-        <div class="studio-card" style="margin-bottom: 24px; position: relative; background: #ffffff;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+        <div class="studio-card" style="margin-bottom: 28px; position: relative; background: #ffffff;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
                 <span class="cyber-badge cyber-badge-terracotta">SCHEMA: StateGraph(CrewState)</span>
-                <span style="font-size: 12.5px; color: var(--text-muted);" id="simStepStatus">Click 'Simulate Backend Execution Step' or click any node to inspect parameters</span>
+                <span style="font-size: 13px; color: var(--text-muted);" id="simStepStatus">Click 'Simulate Backend Execution Step' or click any node to inspect parameters</span>
             </div>
 
             <!-- SVG Visual State Canvas -->
@@ -48,55 +48,55 @@
                 <svg width="860" height="200" viewBox="0 0 860 200" style="width: 100%; max-width: 860px;">
                     <defs>
                         <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#78716c"/>
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
                         </marker>
                         <marker id="arrow-emerald" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#047857"/>
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#059669"/>
                         </marker>
                         <marker id="arrow-amber" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#b45309"/>
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#d97706"/>
                         </marker>
                     </defs>
 
                     <!-- Edges -->
-                    <line id="edge1" x1="80" y1="100" x2="180" y2="100" stroke="#78716c" stroke-width="2" marker-end="url(#arrow)"/>
-                    <line id="edge2" x1="320" y1="100" x2="420" y2="100" stroke="#78716c" stroke-width="2" marker-end="url(#arrow)"/>
-                    <line id="edge3" x1="560" y1="100" x2="660" y2="100" stroke="#78716c" stroke-width="2" marker-end="url(#arrow)"/>
-                    <line id="edgeEnd" x1="740" y1="100" x2="800" y2="100" stroke="#047857" stroke-width="2" marker-end="url(#arrow-emerald)"/>
+                    <line id="edge1" x1="80" y1="100" x2="180" y2="100" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line id="edge2" x1="320" y1="100" x2="420" y2="100" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line id="edge3" x1="560" y1="100" x2="660" y2="100" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line id="edgeEnd" x1="740" y1="100" x2="800" y2="100" stroke="#059669" stroke-width="2" marker-end="url(#arrow-emerald)"/>
 
                     <!-- Conditional Feedback Loop -->
-                    <path id="edgeLoop" d="M 700 70 Q 450 -10 250 70" fill="none" stroke="#b45309" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#arrow-amber)"/>
+                    <path id="edgeLoop" d="M 700 70 Q 450 -10 250 70" fill="none" stroke="#d97706" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#arrow-amber)"/>
 
                     <!-- START Node -->
                     <g id="nodeSTART" transform="translate(40, 100)" class="node-item" onclick="selectNode('START')" style="cursor: pointer;">
-                        <circle r="26" fill="#ffffff" stroke="#c2410c" stroke-width="2"/>
-                        <text text-anchor="middle" dy="4" fill="#1c1917" font-size="11" font-weight="700">START</text>
+                        <circle r="26" fill="#ffffff" stroke="#ea580c" stroke-width="2"/>
+                        <text text-anchor="middle" dy="4" fill="#0f172a" font-size="11" font-weight="700">START</text>
                     </g>
 
                     <!-- Developer Engine Node -->
                     <g id="nodeDeveloper" transform="translate(250, 100)" class="node-item" onclick="selectNode('Developer')" style="cursor: pointer;">
-                        <rect x="-65" y="-30" width="130" height="60" rx="8" fill="#ffffff" stroke="#c2410c" stroke-width="2"/>
-                        <text text-anchor="middle" dy="-6" fill="#c2410c" font-size="10" font-weight="700">ENGINE</text>
-                        <text text-anchor="middle" dy="10" fill="#1c1917" font-size="13" font-weight="700">Developer</text>
+                        <rect x="-65" y="-30" width="130" height="60" rx="8" fill="#ffffff" stroke="#ea580c" stroke-width="2"/>
+                        <text text-anchor="middle" dy="-6" fill="#ea580c" font-size="10" font-weight="700">ENGINE</text>
+                        <text text-anchor="middle" dy="10" fill="#0f172a" font-size="13" font-weight="700">Developer</text>
                     </g>
 
                     <!-- Sandbox Execution Node -->
                     <g id="nodeTester" transform="translate(490, 100)" class="node-item" onclick="selectNode('Tester')" style="cursor: pointer;">
-                        <rect x="-65" y="-30" width="130" height="60" rx="8" fill="#ffffff" stroke="#047857" stroke-width="2"/>
-                        <text text-anchor="middle" dy="-6" fill="#047857" font-size="10" font-weight="700">SANDBOX</text>
-                        <text text-anchor="middle" dy="10" fill="#1c1917" font-size="13" font-weight="700">Tester</text>
+                        <rect x="-65" y="-30" width="130" height="60" rx="8" fill="#ffffff" stroke="#059669" stroke-width="2"/>
+                        <text text-anchor="middle" dy="-6" fill="#059669" font-size="10" font-weight="700">SANDBOX</text>
+                        <text text-anchor="middle" dy="10" fill="#0f172a" font-size="13" font-weight="700">Tester</text>
                     </g>
 
                     <!-- Router Node -->
                     <g id="nodeRouter" transform="translate(700, 100)" class="node-item" onclick="selectNode('Router')" style="cursor: pointer;">
-                        <polygon points="0,-35 40,0 0,35 -40,0" fill="#ffffff" stroke="#b45309" stroke-width="2"/>
-                        <text text-anchor="middle" dy="4" fill="#b45309" font-size="10" font-weight="700">ROUTER</text>
+                        <polygon points="0,-35 40,0 0,35 -40,0" fill="#ffffff" stroke="#d97706" stroke-width="2"/>
+                        <text text-anchor="middle" dy="4" fill="#d97706" font-size="10" font-weight="700">ROUTER</text>
                     </g>
 
                     <!-- END Node -->
                     <g id="nodeEND" transform="translate(820, 100)" class="node-item" onclick="selectNode('END')" style="cursor: pointer;">
-                        <circle r="18" fill="#ffffff" stroke="#047857" stroke-width="2"/>
-                        <text text-anchor="middle" dy="4" fill="#047857" font-size="10" font-weight="700">END</text>
+                        <circle r="18" fill="#ffffff" stroke="#059669" stroke-width="2"/>
+                        <text text-anchor="middle" dy="4" fill="#059669" font-size="10" font-weight="700">END</text>
                     </g>
                 </svg>
             </div>
@@ -104,27 +104,27 @@
 
         <!-- Node Inspector Card -->
         <div class="studio-card" id="inspectorCard">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span class="material-symbols-outlined" style="color: var(--accent-terracotta);">info</span>
-                    <h2 style="font-size: 18px; font-weight: 800;" id="nodeTitle">Developer Engine Node</h2>
+                    <h2 style="font-size: 19px; font-weight: 700;" id="nodeTitle">Developer Engine Node</h2>
                 </div>
                 <span class="cyber-badge cyber-badge-terracotta" id="nodeBadge">ACTIVE NODE</span>
             </div>
 
-            <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.6;" id="nodeDescription">
+            <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.65;" id="nodeDescription">
                 Generates Python/Java/C++ solution code based on task specification. Learns from error feedback when routed back by the Tester node during self-correction iterations.
             </p>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                <div style="background: #ede9e0; padding: 16px; border-radius: 8px; border: 1.5px solid var(--border-subtle);">
-                    <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">State Inputs</div>
-                    <code style="font-size: 13px; color: var(--accent-terracotta);" id="nodeInputs">messages, language, iterations, report</code>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div style="background: var(--bg-inset); padding: 20px; border-radius: 12px; border: 1px solid var(--border-subtle);">
+                    <div style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">State Inputs</div>
+                    <code style="font-size: 13.5px; color: var(--accent-terracotta);" id="nodeInputs">messages, language, iterations, report</code>
                 </div>
 
-                <div style="background: #ede9e0; padding: 16px; border-radius: 8px; border: 1.5px solid var(--border-subtle);">
-                    <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">State Reducer Output</div>
-                    <code style="font-size: 13px; color: var(--accent-emerald);" id="nodeOutputs">code, messages (appended via add_messages)</code>
+                <div style="background: var(--bg-inset); padding: 20px; border-radius: 12px; border: 1px solid var(--border-subtle);">
+                    <div style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">State Reducer Output</div>
+                    <code style="font-size: 13.5px; color: var(--accent-emerald);" id="nodeOutputs">code, messages (appended via add_messages)</code>
                 </div>
             </div>
         </div>
