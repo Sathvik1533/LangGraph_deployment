@@ -351,11 +351,20 @@ let currentTourStepIndex = 0;
 
 function autoAwakenSpotlightTour() {
     const currentPath = window.location.pathname;
-    const isCompleted = localStorage.getItem(TOUR_COMPLETED_KEY) === 'true';
-    const isManualSession = sessionStorage.getItem('langgraph_manual_tour_session') === 'true';
+    const isDismissed = sessionStorage.getItem('langgraph_tour_dismissed') === 'true';
+    const isTourInProgress = sessionStorage.getItem('langgraph_tour_in_progress') === 'true';
+    const isHomePage = currentPath === '/' || currentPath === '';
 
-    if (isCompleted && !isManualSession) {
-        console.log(`💡 Tour already completed by user. Auto-trigger stopped on ${currentPath}.`);
+    // ALWAYS AUTO-AWAKEN ON HOME PAGE VISIT OR WHEN TOUR IS IN PROGRESS (UNLESS EXPLICITLY CLOSED)
+    if (isDismissed && !isTourInProgress) {
+        console.log(`💡 Tour explicitly dismissed by user. Auto-trigger paused.`);
+        return;
+    }
+
+    if (isHomePage) {
+        sessionStorage.setItem('langgraph_tour_in_progress', 'true');
+        sessionStorage.removeItem('langgraph_tour_dismissed');
+    } else if (!isTourInProgress) {
         return;
     }
 
@@ -533,6 +542,7 @@ function advanceToNextPageInTour() {
         showToast('🎉 Full platform tour completed from 0 to 100%!', 'success');
     } else if (pageTour && pageTour.nextUrl) {
         const nextTarget = FULL_PLATFORM_TOUR[currentTourPageIndex + 1];
+        sessionStorage.setItem('langgraph_tour_in_progress', 'true');
         showToast(`Proceeding to ${nextTarget?.pageName}...`, 'info');
         setTimeout(() => {
             window.location.href = pageTour.nextUrl;
@@ -543,8 +553,8 @@ function advanceToNextPageInTour() {
 }
 
 function dismissTourPermanently() {
-    localStorage.setItem(TOUR_COMPLETED_KEY, 'true');
-    sessionStorage.removeItem('langgraph_manual_tour_session');
+    sessionStorage.setItem('langgraph_tour_dismissed', 'true');
+    sessionStorage.removeItem('langgraph_tour_in_progress');
     closeSpotlightTour();
     showToast('Tour completed/dismissed. Click "Platform Guide" anytime to re-run.', 'info');
 }
@@ -556,9 +566,8 @@ function closeSpotlightTour() {
 }
 
 function startFullTourManually() {
-    localStorage.removeItem(TOUR_COMPLETED_KEY);
-    localStorage.removeItem('langgraph_global_tour_disabled_v2');
-    sessionStorage.setItem('langgraph_manual_tour_session', 'true');
+    sessionStorage.removeItem('langgraph_tour_dismissed');
+    sessionStorage.setItem('langgraph_tour_in_progress', 'true');
     window.location.href = '/';
 }
 
@@ -615,7 +624,7 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (path.includes('execution')) pageId = 'execution';
     else if (path.includes('history')) pageId = 'history';
     
-    setActiveNav('pageId');
+    setActiveNav(pageId);
     initCommandPalette();
     initHoverTooltips();
 
