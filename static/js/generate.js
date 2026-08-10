@@ -142,24 +142,36 @@ function displayGeneratedCode(code, success) {
 
     // Check if code contains error messages
     let errorMessage = '';
-    if (code.includes('# ERROR:')) {
+    if (code.includes('# ERROR:') || code.includes('# The LLM returned invalid output')) {
         // Extract the error message
-        const errorLines = code.split('\n').filter(line => line.trim().startsWith('# ERROR:'));
-        errorMessage = errorLines.map(line => line.replace('# ERROR:', '').trim()).join(' ');
+        const errorLines = code.split('\n').filter(line => {
+            const trimmed = line.trim();
+            return trimmed.startsWith('# ERROR:') || trimmed.includes('LLM returned invalid');
+        });
+        errorMessage = errorLines
+            .map(line => line.replace('# ERROR:', '').replace('# The LLM returned invalid output.', '').trim())
+            .filter(line => line.length > 0)
+            .join(' ');
     }
 
-    // Clean code - remove markdown and error prefixes
+    // Clean code - remove markdown and ALL error-related comments
     let cleanCode = code.replace(/```python|```java|```cpp|```c\+\+|```/g, '').trim();
     
-    // Remove error comments that start with # ERROR:
-    cleanCode = cleanCode.split('\n').filter(line => !line.trim().startsWith('# ERROR:')).join('\n').trim();
+    // Remove ALL error-related comments
+    cleanCode = cleanCode.split('\n').filter(line => {
+        const trimmed = line.trim();
+        return !trimmed.startsWith('# ERROR:') && 
+               !trimmed.includes('LLM returned invalid') &&
+               !trimmed.includes('DEVELOPER ERROR') &&
+               trimmed !== '#';  // Remove standalone # lines
+    }).join('\n').trim();
     
-    // If code is empty or too short after cleaning, show appropriate message
+    // If code is empty or too short after cleaning, show appropriate placeholder
     if (!cleanCode || cleanCode.length < 10) {
         if (errorMessage) {
-            cleanCode = `# Code generation failed\n# ${errorMessage}`;
+            cleanCode = `// Code generation failed\n// See error message below for details`;
         } else {
-            cleanCode = '# Code generation in progress...\n# Please check the report for details.';
+            cleanCode = `// Code generation in progress...\n// Please check the report for details.`;
         }
     }
     
