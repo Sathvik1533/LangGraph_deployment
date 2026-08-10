@@ -38,15 +38,81 @@
     </div>
 
     <div style="display: flex; align-items: center; gap: 10px;">
-        <button class="cyber-btn cyber-btn-primary" onclick="openPlatformGuide()" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);">
-            <span class="material-symbols-outlined" style="font-size: 16px;">menu_book</span>
-            <span>Platform Guide</span>
+        <!-- Mobile Hamburger Toggle -->
+        <button class="mobile-menu-toggle" onclick="toggleMobileNav()" aria-label="Toggle navigation menu">
+            <span class="material-symbols-outlined" id="mobileMenuIcon">menu</span>
         </button>
 
-        <button class="cyber-btn cyber-btn-secondary" onclick="openCommandPalette()" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);">
+        <button class="cyber-btn cyber-btn-primary desktop-only" onclick="openPlatformGuide()" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);">
+            <span class="material-symbols-outlined" style="font-size: 16px;">menu_book</span>
+            <span>Guide</span>
+        </button>
+
+        <button class="cyber-btn cyber-btn-secondary desktop-only" onclick="openCommandPalette()" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);">
             <span class="material-symbols-outlined" style="font-size: 16px; color: var(--text-muted);">search</span>
             <span>Search...</span>
             <span class="kbd-badge">⌘K</span>
         </button>
     </div>
 </nav>
+
+<!-- Mobile Nav Drawer Overlay -->
+<div class="mobile-nav-overlay" id="mobileNavOverlay" onclick="toggleMobileNav()"></div>
+<div class="mobile-nav-drawer" id="mobileNavDrawer">
+    <div style="padding: 20px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="brand-icon" style="width: 32px; height: 32px; border-radius: 8px;">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">schema</span>
+                </div>
+                <span style="font-weight: 700; font-size: 15px;">LangGraph Studio</span>
+            </div>
+            <button onclick="toggleMobileNav()" style="background: none; border: none; cursor: pointer; color: var(--text-muted);">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <nav class="mobile-nav-links">
+            <a href="/" class="mobile-nav-link" data-page="dashboard">
+                <span class="material-symbols-outlined">dashboard</span> Overview
+            </a>
+            <a href="/generate" class="mobile-nav-link" data-page="generator">
+                <span class="material-symbols-outlined">code_blocks</span> Workbench
+            </a>
+            <a href="/workflow" class="mobile-nav-link" data-page="workflow">
+                <span class="material-symbols-outlined">account_tree</span> Pipeline
+            </a>
+            <a href="/execution" class="mobile-nav-link" data-page="execution">
+                <span class="material-symbols-outlined">analytics</span> Health
+            </a>
+            <a href="/history" class="mobile-nav-link" data-page="history">
+                <span class="material-symbols-outlined">history</span> History
+            </a>
+        </nav>
+        <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
+            <button class="cyber-btn cyber-btn-primary" onclick="openPlatformGuide()" style="width: 100%; justify-content: center;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">menu_book</span> Guide
+            </button>
+            <button class="cyber-btn cyber-btn-secondary" onclick="openCommandPalette(); toggleMobileNav();" style="width: 100%; justify-content: center;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">search</span> Search...
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleMobileNav() {
+    const overlay = document.getElementById('mobileNavOverlay');
+    const drawer = document.getElementById('mobileNavDrawer');
+    const icon = document.getElementById('mobileMenuIcon');
+    const isOpen = drawer.classList.contains('open');
+    if (isOpen) {
+        drawer.classList.remove('open');
+        overlay.classList.remove('open');
+        icon.textContent = 'menu';
+    } else {
+        drawer.classList.add('open');
+        overlay.classList.add('open');
+        icon.textContent = 'close';
+    }
+}
+</script>
