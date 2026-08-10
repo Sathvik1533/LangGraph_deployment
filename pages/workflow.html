@@ -14,14 +14,10 @@
         .node-active circle, .node-active rect, .node-active polygon {
             stroke: #ea580c !important;
             stroke-width: 3.5px !important;
-            filter: drop-shadow(0 0 10px rgba(234, 88, 12, 0.45));
+            filter: drop-shadow(0 0 12px rgba(234, 88, 12, 0.5));
         }
         .node-active text {
             font-weight: 800 !important;
-        }
-        .edge-active {
-            stroke: #ea580c !important;
-            stroke-width: 3px !important;
         }
     </style>
 </head>
@@ -34,7 +30,7 @@
             <div>
                 <h1 class="page-title">
                     <span class="material-symbols-outlined" style="color: var(--accent-terracotta);">account_tree</span>
-                    State Graph Canvas & Execution Simulator
+                    State Graph Canvas & Dynamic Execution Simulator
                 </h1>
                 <p class="page-subtitle">Visual representation of execution state nodes, conditional edge routing, and self-correction loops.</p>
             </div>
@@ -54,6 +50,27 @@
                 </button>
             </div>
         </header>
+
+        <!-- Dynamic Task Specification Bar -->
+        <div class="studio-card" style="margin-bottom: 28px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <label style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.04em;">Dynamic Task Simulation Input</label>
+                <span class="cyber-badge cyber-badge-terracotta">LIVE SIMULATOR ENGINE</span>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-bottom: 14px;">
+                <input id="canvasTaskInput" type="text" value="Write a function to check if a number is prime" style="flex: 1; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px 18px; font-size: 14px; font-family: var(--font-sans); color: var(--text-primary); outline: none;" placeholder="Enter any coding task to update state graph..." oninput="updateDynamicTaskSpec(this.value)"/>
+                <button class="cyber-btn cyber-btn-primary" onclick="updateDynamicTaskSpec(document.getElementById('canvasTaskInput').value)">Update Canvas</button>
+            </div>
+
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <span style="font-size: 12px; font-weight: 600; color: var(--text-muted);">Quick Presets:</span>
+                <button class="cyber-btn cyber-btn-secondary" style="font-size: 12px; padding: 5px 12px; border-radius: var(--radius-pill);" onclick="applyPresetTask('Write a function to check if a number is prime')">Prime Checker</button>
+                <button class="cyber-btn cyber-btn-secondary" style="font-size: 12px; padding: 5px 12px; border-radius: var(--radius-pill);" onclick="applyPresetTask('Write a function to calculate fibonacci numbers')">Fibonacci</button>
+                <button class="cyber-btn cyber-btn-secondary" style="font-size: 12px; padding: 5px 12px; border-radius: var(--radius-pill);" onclick="applyPresetTask('Create a function that checks if a string is a palindrome')">Palindrome</button>
+                <button class="cyber-btn cyber-btn-secondary" style="font-size: 12px; padding: 5px 12px; border-radius: var(--radius-pill);" onclick="applyPresetTask('Write a function to calculate the factorial of a number')">Factorial</button>
+            </div>
+        </div>
 
         <!-- SVG Visual State Canvas -->
         <div class="studio-card" style="margin-bottom: 28px; position: relative; background: #ffffff;">
@@ -137,7 +154,7 @@
             <!-- High Contrast Syntax Highlighted Code Panels -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
                 
-                <div style="background: #0f172a; padding: 20px; border-radius: 12px; border: 1px solid #334155; box-shadow: var(--shadow-sm);">
+                <div style="background: #0f172a; padding: 22px; border-radius: 12px; border: 1px solid #334155; box-shadow: var(--shadow-sm);">
                     <div style="font-size: 12px; font-weight: 700; color: #fb923c; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
                         <span class="material-symbols-outlined" style="font-size: 18px;">input</span>
                         STATE INPUTS (Received Payload)
@@ -145,7 +162,7 @@
                     <pre style="font-family: var(--font-mono); font-size: 13.5px; color: #f8fafc; line-height: 1.7; white-space: pre-wrap; margin: 0;" id="nodeInputs"></pre>
                 </div>
 
-                <div style="background: #0f172a; padding: 20px; border-radius: 12px; border: 1px solid #334155; box-shadow: var(--shadow-sm);">
+                <div style="background: #0f172a; padding: 22px; border-radius: 12px; border: 1px solid #334155; box-shadow: var(--shadow-sm);">
                     <div style="font-size: 12px; font-weight: 700; color: #34d399; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
                         <span class="material-symbols-outlined" style="font-size: 18px;">output</span>
                         STATE REDUCER OUTPUT (Updated State)
@@ -168,50 +185,86 @@
             selectNode('START');
         });
 
-        const NODE_DATA = {
-            'START': {
-                title: 'START Node (Workflow Entry)',
-                badge: 'ENTRY POINT',
-                desc: 'Workflow entry point. Receives initial CrewState payload with user task specification and target programming language.',
-                inputs: `{\n  "task": "Write a function to calculate fibonacci numbers",\n  "language": "python",\n  "max_iterations": 3\n}`,
-                outputs: `{\n  "messages": [HumanMessage("Write a fibonacci function")],\n  "iterations": 0,\n  "execution_success": false,\n  "thread_id": "thread_850afb3bb507"\n}`
-            },
-            'Developer': {
-                title: 'Developer Engine Node',
-                badge: 'CODE GENERATOR',
-                desc: 'Engine responsible for drafting and refining solution code. Automatically incorporates traceback feedback if self-correction is triggered.',
-                inputs: `{\n  "messages": [HumanMessage("Write a fibonacci function")],\n  "language": "python",\n  "report": null\n}`,
-                outputs: `{\n  "code": "def fibonacci(n: int) -> list[int]:\\n    seq = [0, 1]\\n    while len(seq) < n:\\n        seq.append(seq[-1] + seq[-2])\\n    return seq",\n  "messages": [AIMessage("Generated Python code (iteration 1)")]\n}`
-            },
-            'Tester': {
-                title: 'Sandbox Execution & Verifier Node',
-                badge: 'CODE VERIFIER',
-                desc: 'Executes generated solution code in an isolated scope. Validates syntax, captures stdout/stderr, and executes self-contained assertion tests.',
-                inputs: `{\n  "code": "def fibonacci(n: int) -> list[int]: ...",\n  "language": "python"\n}`,
-                outputs: `{\n  "execution_success": true,\n  "report": "[SANDBOX STDOUT]\\nFibonacci(7): [0, 1, 1, 2, 3, 5, 8]\\n\\n[EVALUATED TEST SCENARIOS]\\n✓ Assertion test passed: fibonacci(5) == [0, 1, 1, 2, 3]",\n  "iterations": 1\n}`
-            },
-            'Router': {
-                title: 'Conditional Edge Router Node',
-                badge: 'GUARDRAIL ROUTER',
-                desc: 'Evaluates execution success. If code passed, routes to END. If code failed and iterations < max_iterations, routes back to Developer for self-correction.',
-                inputs: `{\n  "execution_success": true,\n  "iterations": 1,\n  "max_iterations": 3\n}`,
-                outputs: `{\n  "route_target": "END",\n  "reason": "Code executed cleanly with 0 assertion failures."\n}`
-            },
-            'END': {
-                title: 'END Node (Terminal State)',
-                badge: 'TERMINAL STATE',
-                desc: 'Workflow terminal state. Returns final validated code, test execution report, and total iteration count to API caller.',
-                inputs: `{\n  "final_code": "def fibonacci(n: int) -> list[int]: ...",\n  "report": "[VERIFICATION STATUS] All test scenarios passed."\n}`,
-                outputs: `{\n  "AgentResponse": {\n    "success": true,\n    "iterations": 1,\n    "thread_id": "thread_850afb3bb507"\n  }\n}`
+        let currentTaskSpec = "Write a function to check if a number is prime";
+
+        function applyPresetTask(taskText) {
+            document.getElementById('canvasTaskInput').value = taskText;
+            updateDynamicTaskSpec(taskText);
+        }
+
+        function updateDynamicTaskSpec(taskText) {
+            if (!taskText || !taskText.strip) taskText = "Write a function to check if a number is prime";
+            currentTaskSpec = taskText;
+            selectNode(STEPS[currentStepIndex]);
+            showToast('Canvas updated for task specification', 'info');
+        }
+
+        function getDynamicNodeData(nodeKey, task) {
+            const lower = task.toLowerCase();
+            let codeSnippet = `def solution(n):\n    return n * 2`;
+            let stdoutSnippet = `solution(5): 10`;
+
+            if (lower.includes("prime")) {
+                codeSnippet = `def is_prime(n: int) -> bool:\n    if n <= 1:\n        return False\n    for i in range(2, int(n ** 0.5) + 1):\n        if n % i == 0:\n            return False\n    return True\n\n# Self-test validation\nprint("is_prime(29):", is_prime(29))\nassert is_prime(29) == True`;
+                stdoutSnippet = `is_prime(29): True\n\n✓ Assertion test passed: is_prime(29) == True`;
+            } else if (lower.includes("fibonacci")) {
+                codeSnippet = `def fibonacci(n: int) -> list[int]:\n    if n <= 0: return []\n    if n == 1: return [0]\n    seq = [0, 1]\n    while len(seq) < n:\n        seq.append(seq[-1] + seq[-2])\n    return seq\n\n# Self-test validation\nprint("fibonacci(7):", fibonacci(7))\nassert fibonacci(5) == [0, 1, 1, 2, 3]`;
+                stdoutSnippet = `fibonacci(7): [0, 1, 1, 2, 3, 5, 8]\n\n✓ Assertion test passed: fibonacci(5) == [0, 1, 1, 2, 3]`;
+            } else if (lower.includes("palindrome")) {
+                codeSnippet = `def is_palindrome(s: str) -> bool:\n    cleaned = ''.join(c.lower() for c in s if c.isalnum())\n    return cleaned == cleaned[::-1]\n\n# Self-test validation\nprint("is_palindrome('racecar'):", is_palindrome('racecar'))\nassert is_palindrome('racecar') == True`;
+                stdoutSnippet = `is_palindrome('racecar'): True\n\n✓ Assertion test passed: is_palindrome('racecar') == True`;
+            } else if (lower.includes("factorial")) {
+                codeSnippet = `def factorial(n: int) -> int:\n    if n < 0: raise ValueError("Negative input")\n    return 1 if n <= 1 else n * factorial(n - 1)\n\n# Self-test validation\nprint("factorial(5):", factorial(5))\nassert factorial(5) == 120`;
+                stdoutSnippet = `factorial(5): 120\n\n✓ Assertion test passed: factorial(5) == 120`;
             }
-        };
+
+            const NODE_DATA = {
+                'START': {
+                    title: 'START Node (Workflow Entry)',
+                    badge: 'ENTRY POINT',
+                    desc: 'Workflow entry point. Receives initial CrewState payload with user task specification and target programming language.',
+                    inputs: `{\n  "task": "${task}",\n  "language": "python",\n  "max_iterations": 3\n}`,
+                    outputs: `{\n  "messages": [HumanMessage("${task}")],\n  "iterations": 0,\n  "execution_success": false,\n  "thread_id": "thread_d68077c38bcb"\n}`
+                },
+                'Developer': {
+                    title: 'Developer Engine Node',
+                    badge: 'CODE GENERATOR',
+                    desc: 'Engine responsible for drafting and refining solution code. Automatically incorporates traceback feedback if self-correction is triggered.',
+                    inputs: `{\n  "messages": [HumanMessage("${task}")],\n  "language": "python",\n  "report": null\n}`,
+                    outputs: `{\n  "code":\n${codeSnippet.split('\n').map(l => '  ' + l).join('\n')},\n  "messages": [AIMessage("Generated Python code (iteration 1)")]\n}`
+                },
+                'Tester': {
+                    title: 'Sandbox Execution & Verifier Node',
+                    badge: 'CODE VERIFIER',
+                    desc: 'Executes generated solution code in an isolated scope. Validates syntax, captures stdout/stderr, and executes self-contained assertion tests.',
+                    inputs: `{\n  "code": "${codeSnippet.split('\n')[0]} ...",\n  "language": "python"\n}`,
+                    outputs: `{\n  "execution_success": true,\n  "report": "[SANDBOX STDOUT]\\n${stdoutSnippet}",\n  "iterations": 1\n}`
+                },
+                'Router': {
+                    title: 'Conditional Edge Router Node',
+                    badge: 'GUARDRAIL ROUTER',
+                    desc: 'Evaluates execution success. If code passed, routes to END. If code failed and iterations < max_iterations, routes back to Developer for self-correction.',
+                    inputs: `{\n  "execution_success": true,\n  "iterations": 1,\n  "max_iterations": 3\n}`,
+                    outputs: `{\n  "route_target": "END",\n  "reason": "Code executed cleanly with 0 assertion failures."\n}`
+                },
+                'END': {
+                    title: 'END Node (Terminal State)',
+                    badge: 'TERMINAL STATE',
+                    desc: 'Workflow terminal state. Returns final validated code, test execution report, and total iteration count to API caller.',
+                    inputs: `{\n  "final_code": "${codeSnippet.split('\n')[0]} ...",\n  "report": "[VERIFICATION STATUS] All test scenarios passed."\n}`,
+                    outputs: `{\n  "AgentResponse": {\n    "success": true,\n    "iterations": 1,\n    "thread_id": "thread_d68077c38bcb"\n  }\n}`
+                }
+            };
+
+            return NODE_DATA[nodeKey] || NODE_DATA['START'];
+        }
 
         const STEPS = ['START', 'Developer', 'Tester', 'Router', 'END'];
         let currentStepIndex = 0;
         let autoPlayTimer = null;
 
         function selectNode(nodeKey) {
-            const data = NODE_DATA[nodeKey];
+            const data = getDynamicNodeData(nodeKey, currentTaskSpec);
             if (!data) return;
 
             STEPS.forEach(key => {
