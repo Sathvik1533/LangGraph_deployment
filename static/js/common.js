@@ -575,17 +575,24 @@ function openPlatformGuide() {
     startFullTourManually();
 }
 
-// Global Hover Tooltip System
+// Global Hover Tooltip System (Smart Top-Positioned & Unobstructive)
 function initHoverTooltips() {
     let tooltipPopup = document.getElementById('customTooltipPopup');
     if (!tooltipPopup) {
         tooltipPopup = document.createElement('div');
         tooltipPopup.id = 'customTooltipPopup';
         tooltipPopup.className = 'custom-tooltip-popup';
+        tooltipPopup.style.pointerEvents = 'none';
         document.body.appendChild(tooltipPopup);
     }
 
     document.addEventListener('mouseover', (e) => {
+        // Do not display tooltips if a custom dropdown menu is currently open
+        if (document.querySelector('.custom-select-wrapper.open')) {
+            tooltipPopup.style.opacity = '0';
+            return;
+        }
+
         const target = e.target.closest('[data-tooltip]');
         if (target) {
             const text = target.getAttribute('data-tooltip');
@@ -594,12 +601,20 @@ function initHoverTooltips() {
                 tooltipPopup.style.opacity = '1';
 
                 const rect = target.getBoundingClientRect();
-                let top = rect.bottom + 8;
-                let left = rect.left + (rect.width / 2) - 140;
+                const tooltipHeight = tooltipPopup.offsetHeight || 44;
+                const tooltipWidth = tooltipPopup.offsetWidth || 240;
+
+                // Position above the target element by default to prevent covering dropdowns/inputs below
+                let top = rect.top - tooltipHeight - 10;
+                let left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
+
+                if (top < 10) {
+                    // Fallback to below if top viewport edge is reached
+                    top = rect.bottom + 10;
+                }
 
                 if (left < 10) left = 10;
-                if (left + 280 > window.innerWidth) left = window.innerWidth - 290;
-                if (top + 60 > window.innerHeight) top = rect.top - 60;
+                if (left + tooltipWidth > window.innerWidth - 10) left = window.innerWidth - tooltipWidth - 10;
 
                 tooltipPopup.style.top = top + 'px';
                 tooltipPopup.style.left = left + 'px';
