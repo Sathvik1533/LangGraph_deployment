@@ -1,4 +1,4 @@
-// Executive Engineering Platform Controller & Strict Guided Tour Engine
+// Executive Engineering Platform Controller & Viewport-Clamped Guided Tour Engine
 
 const API_URL = window.location.origin + '/invoke';
 const HEALTH_API_URL = window.location.origin + '/health';
@@ -434,7 +434,6 @@ function renderSpotlightStep() {
                 nextBtn.title = 'Please enter a task or click a preset button first';
             }
 
-            // Bind input listener to dynamically enable next button when text is provided
             if (taskInput && !taskInput.dataset.tourBound) {
                 taskInput.dataset.tourBound = 'true';
                 taskInput.addEventListener('input', () => {
@@ -472,12 +471,24 @@ function renderSpotlightStep() {
         const rect = targetEl.getBoundingClientRect();
         callout.style.display = 'block';
 
+        const cardWidth = 380;
+        const cardHeight = 220;
+
+        // Ideal position: 16px below target element
         let top = rect.bottom + 16;
         let left = rect.left;
 
-        if (left + 380 > window.innerWidth) left = window.innerWidth - 400;
-        if (left < 20) left = 20;
-        if (top + 200 > window.innerHeight) top = rect.top - 210;
+        // If placing below goes past bottom of viewport, place above element:
+        if (top + cardHeight > window.innerHeight - 20) {
+            top = rect.top - cardHeight - 16;
+        }
+
+        // STRICT VIEWPORT CLAMPING (Never go off-screen!):
+        // Top boundary: Keep below navbar (min 88px) and above viewport bottom (max innerHeight - cardHeight - 20)
+        top = Math.max(88, Math.min(top, window.innerHeight - cardHeight - 20));
+
+        // Left boundary: Keep at least 20px from left edge and 20px from right edge
+        left = Math.max(20, Math.min(left, window.innerWidth - cardWidth - 20));
 
         callout.style.top = top + 'px';
         callout.style.left = left + 'px';
@@ -511,7 +522,7 @@ function nextSpotlightStep() {
                 document.getElementById('taskInlineAlertText').textContent = 'Please enter a task specification or click a quick preset button (Fibonacci, Palindrome, Safe Division) before proceeding.';
             }
             taskInput?.focus();
-            return; // STRICT BLOCK: Do not advance until user specifies requirement!
+            return;
         }
     }
 
