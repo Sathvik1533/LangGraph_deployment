@@ -14,7 +14,10 @@
         .node-active circle, .node-active rect, .node-active polygon {
             stroke: #ea580c !important;
             stroke-width: 3.5px !important;
-            filter: drop-shadow(0 0 8px rgba(234, 88, 12, 0.4));
+            filter: drop-shadow(0 0 10px rgba(234, 88, 12, 0.45));
+        }
+        .node-active text {
+            font-weight: 800 !important;
         }
         .edge-active {
             stroke: #ea580c !important;
@@ -37,9 +40,13 @@
             </div>
 
             <div style="display: flex; gap: 10px;">
-                <button id="simStepBtn" class="cyber-btn cyber-btn-primary" onclick="stepSimulation()">
-                    <span class="material-symbols-outlined">play_arrow</span>
-                    Simulate Backend Execution Step
+                <button id="simAutoBtn" class="cyber-btn cyber-btn-primary" onclick="toggleAutoPlay()">
+                    <span class="material-symbols-outlined" id="simAutoIcon">play_circle</span>
+                    <span id="simAutoText">Auto-Play Tour</span>
+                </button>
+                <button id="simStepBtn" class="cyber-btn cyber-btn-secondary" onclick="stepSimulation()">
+                    <span class="material-symbols-outlined">skip_next</span>
+                    Step Forward
                 </button>
                 <button class="cyber-btn cyber-btn-secondary" onclick="resetSimulation()">
                     <span class="material-symbols-outlined">restart_alt</span>
@@ -48,13 +55,13 @@
             </div>
         </header>
 
+        <!-- SVG Visual State Canvas -->
         <div class="studio-card" style="margin-bottom: 28px; position: relative; background: #ffffff;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
                 <span class="cyber-badge cyber-badge-terracotta">SCHEMA: StateGraph(CrewState)</span>
-                <span style="font-size: 13px; font-weight: 600; color: var(--accent-terracotta);" id="simStepStatus">Click 'Simulate Backend Execution Step' to step through live node states</span>
+                <span style="font-size: 13.5px; font-weight: 700; color: var(--accent-terracotta);" id="simStepStatus">Step 1 of 5: START Node (Workflow Initialized)</span>
             </div>
 
-            <!-- SVG Visual State Canvas -->
             <div style="padding: 40px 10px; display: flex; align-items: center; justify-content: center;">
                 <svg width="860" height="200" viewBox="0 0 860 200" style="width: 100%; max-width: 860px;">
                     <defs>
@@ -79,33 +86,33 @@
                     <path id="edgeLoop" d="M 700 70 Q 450 -10 250 70" fill="none" stroke="#d97706" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#arrow-amber)"/>
 
                     <!-- START Node -->
-                    <g id="nodeSTART" transform="translate(40, 100)" class="node-item node-active" onclick="selectNode('START')" style="cursor: pointer;">
+                    <g id="nodeSTART" transform="translate(40, 100)" class="node-item node-active" onclick="selectNode('START')" style="cursor: pointer;" data-tooltip="START Node: Entry point receiving task payload.">
                         <circle r="26" fill="#ffffff" stroke="#ea580c" stroke-width="2"/>
                         <text text-anchor="middle" dy="4" fill="#0f172a" font-size="11" font-weight="700">START</text>
                     </g>
 
                     <!-- Developer Engine Node -->
-                    <g id="nodeDeveloper" transform="translate(250, 100)" class="node-item" onclick="selectNode('Developer')" style="cursor: pointer;">
+                    <g id="nodeDeveloper" transform="translate(250, 100)" class="node-item" onclick="selectNode('Developer')" style="cursor: pointer;" data-tooltip="Developer Node: Drafts Python/Java/C++ code.">
                         <rect x="-65" y="-30" width="130" height="60" rx="8" fill="#ffffff" stroke="#ea580c" stroke-width="2"/>
                         <text text-anchor="middle" dy="-6" fill="#ea580c" font-size="10" font-weight="700">ENGINE</text>
                         <text text-anchor="middle" dy="10" fill="#0f172a" font-size="13" font-weight="700">Developer</text>
                     </g>
 
                     <!-- Sandbox Execution Node -->
-                    <g id="nodeTester" transform="translate(490, 100)" class="node-item" onclick="selectNode('Tester')" style="cursor: pointer;">
+                    <g id="nodeTester" transform="translate(490, 100)" class="node-item" onclick="selectNode('Tester')" style="cursor: pointer;" data-tooltip="Tester Node: Runs code in sandbox & evaluates assertion suite.">
                         <rect x="-65" y="-30" width="130" height="60" rx="8" fill="#ffffff" stroke="#059669" stroke-width="2"/>
                         <text text-anchor="middle" dy="-6" fill="#059669" font-size="10" font-weight="700">SANDBOX</text>
                         <text text-anchor="middle" dy="10" fill="#0f172a" font-size="13" font-weight="700">Tester</text>
                     </g>
 
                     <!-- Router Node -->
-                    <g id="nodeRouter" transform="translate(700, 100)" class="node-item" onclick="selectNode('Router')" style="cursor: pointer;">
+                    <g id="nodeRouter" transform="translate(700, 100)" class="node-item" onclick="selectNode('Router')" style="cursor: pointer;" data-tooltip="Router Node: Evaluates success & decides retry or finish.">
                         <polygon points="0,-35 40,0 0,35 -40,0" fill="#ffffff" stroke="#d97706" stroke-width="2"/>
                         <text text-anchor="middle" dy="4" fill="#d97706" font-size="10" font-weight="700">ROUTER</text>
                     </g>
 
                     <!-- END Node -->
-                    <g id="nodeEND" transform="translate(820, 100)" class="node-item" onclick="selectNode('END')" style="cursor: pointer;">
+                    <g id="nodeEND" transform="translate(820, 100)" class="node-item" onclick="selectNode('END')" style="cursor: pointer;" data-tooltip="END Node: Terminal state returning validated response.">
                         <circle r="18" fill="#ffffff" stroke="#059669" stroke-width="2"/>
                         <text text-anchor="middle" dy="4" fill="#059669" font-size="10" font-weight="700">END</text>
                     </g>
@@ -113,30 +120,39 @@
             </div>
         </div>
 
-        <!-- Node Inspector Card -->
+        <!-- High-Legibility Node Inspector Card -->
         <div class="studio-card" id="inspectorCard">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <span class="material-symbols-outlined" style="color: var(--accent-terracotta);">info</span>
-                    <h2 style="font-size: 19px; font-weight: 700;" id="nodeTitle">START Node</h2>
+                    <span class="material-symbols-outlined" style="color: var(--accent-terracotta); font-size: 24px;">info</span>
+                    <h2 style="font-size: 20px; font-weight: 700;" id="nodeTitle">START Node</h2>
                 </div>
                 <span class="cyber-badge cyber-badge-terracotta" id="nodeBadge">ENTRY POINT</span>
             </div>
 
-            <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.65;" id="nodeDescription">
+            <p style="font-size: 14.5px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.65;" id="nodeDescription">
                 Workflow entry point. Receives initial CrewState payload with user task specification and target programming language.
             </p>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div style="background: var(--bg-inset); padding: 20px; border-radius: 12px; border: 1px solid var(--border-subtle);">
-                    <div style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">State Inputs</div>
-                    <code style="font-size: 13.5px; color: var(--accent-terracotta);" id="nodeInputs">task: "Write a fibonacci function", language: "python"</code>
+            <!-- High Contrast Syntax Highlighted Code Panels -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                
+                <div style="background: #0f172a; padding: 20px; border-radius: 12px; border: 1px solid #334155; box-shadow: var(--shadow-sm);">
+                    <div style="font-size: 12px; font-weight: 700; color: #fb923c; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">input</span>
+                        STATE INPUTS (Received Payload)
+                    </div>
+                    <pre style="font-family: var(--font-mono); font-size: 13.5px; color: #f8fafc; line-height: 1.7; white-space: pre-wrap; margin: 0;" id="nodeInputs"></pre>
                 </div>
 
-                <div style="background: var(--bg-inset); padding: 20px; border-radius: 12px; border: 1px solid var(--border-subtle);">
-                    <div style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">State Reducer Output</div>
-                    <code style="font-size: 13.5px; color: var(--accent-emerald);" id="nodeOutputs">CrewState initialized with max_iterations=3, thread_id="thread_..."</code>
+                <div style="background: #0f172a; padding: 20px; border-radius: 12px; border: 1px solid #334155; box-shadow: var(--shadow-sm);">
+                    <div style="font-size: 12px; font-weight: 700; color: #34d399; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">output</span>
+                        STATE REDUCER OUTPUT (Updated State)
+                    </div>
+                    <pre style="font-family: var(--font-mono); font-size: 13.5px; color: #f8fafc; line-height: 1.7; white-space: pre-wrap; margin: 0;" id="nodeOutputs"></pre>
                 </div>
+
             </div>
         </div>
     </main>
@@ -149,60 +165,62 @@
                 document.getElementById('navbarContainer').innerHTML = await navbarRes.text();
                 setActiveNav('workflow');
             }
+            selectNode('START');
         });
 
         const NODE_DATA = {
             'START': {
-                title: 'START Node',
+                title: 'START Node (Workflow Entry)',
                 badge: 'ENTRY POINT',
                 desc: 'Workflow entry point. Receives initial CrewState payload with user task specification and target programming language.',
-                inputs: 'task: "Write a fibonacci function", language: "python"',
-                outputs: 'CrewState initialized with max_iterations=3, thread_id="thread_..."'
+                inputs: `{\n  "task": "Write a function to calculate fibonacci numbers",\n  "language": "python",\n  "max_iterations": 3\n}`,
+                outputs: `{\n  "messages": [HumanMessage("Write a fibonacci function")],\n  "iterations": 0,\n  "execution_success": false,\n  "thread_id": "thread_850afb3bb507"\n}`
             },
             'Developer': {
                 title: 'Developer Engine Node',
                 badge: 'CODE GENERATOR',
                 desc: 'Engine responsible for drafting and refining solution code. Automatically incorporates traceback feedback if self-correction is triggered.',
-                inputs: 'messages: [HumanMessage(...)], language: "python", report: null',
-                outputs: 'code: "def fibonacci(n): ...", messages: [AIMessage(content="Generated Python code")]'
+                inputs: `{\n  "messages": [HumanMessage("Write a fibonacci function")],\n  "language": "python",\n  "report": null\n}`,
+                outputs: `{\n  "code": "def fibonacci(n: int) -> list[int]:\\n    seq = [0, 1]\\n    while len(seq) < n:\\n        seq.append(seq[-1] + seq[-2])\\n    return seq",\n  "messages": [AIMessage("Generated Python code (iteration 1)")]\n}`
             },
             'Tester': {
-                title: 'Sandbox Execution & Verifier',
+                title: 'Sandbox Execution & Verifier Node',
                 badge: 'CODE VERIFIER',
                 desc: 'Executes generated solution code in an isolated scope. Validates syntax, captures stdout/stderr, and executes self-contained assertion tests.',
-                inputs: 'code: "def fibonacci(n): ...", language: "python"',
-                outputs: 'report: "[SANDBOX STDOUT] Fibonacci(7): [0, 1, 1, 2, 3, 5, 8]", execution_success: true, iterations: 1'
+                inputs: `{\n  "code": "def fibonacci(n: int) -> list[int]: ...",\n  "language": "python"\n}`,
+                outputs: `{\n  "execution_success": true,\n  "report": "[SANDBOX STDOUT]\\nFibonacci(7): [0, 1, 1, 2, 3, 5, 8]\\n\\n[EVALUATED TEST SCENARIOS]\\n✓ Assertion test passed: fibonacci(5) == [0, 1, 1, 2, 3]",\n  "iterations": 1\n}`
             },
             'Router': {
-                title: 'Conditional Edge Router',
+                title: 'Conditional Edge Router Node',
                 badge: 'GUARDRAIL ROUTER',
                 desc: 'Evaluates execution success. If code passed, routes to END. If code failed and iterations < max_iterations, routes back to Developer for self-correction.',
-                inputs: 'execution_success: true, iterations: 1, max_iterations: 3',
-                outputs: 'Route target: "end"'
+                inputs: `{\n  "execution_success": true,\n  "iterations": 1,\n  "max_iterations": 3\n}`,
+                outputs: `{\n  "route_target": "END",\n  "reason": "Code executed cleanly with 0 assertion failures."\n}`
             },
             'END': {
-                title: 'END Node',
+                title: 'END Node (Terminal State)',
                 badge: 'TERMINAL STATE',
                 desc: 'Workflow terminal state. Returns final validated code, test execution report, and total iteration count to API caller.',
-                inputs: 'Final CrewState',
-                outputs: 'AgentResponse REST JSON object { success: true, code: "...", iterations: 1 }'
+                inputs: `{\n  "final_code": "def fibonacci(n: int) -> list[int]: ...",\n  "report": "[VERIFICATION STATUS] All test scenarios passed."\n}`,
+                outputs: `{\n  "AgentResponse": {\n    "success": true,\n    "iterations": 1,\n    "thread_id": "thread_850afb3bb507"\n  }\n}`
             }
         };
 
         const STEPS = ['START', 'Developer', 'Tester', 'Router', 'END'];
         let currentStepIndex = 0;
+        let autoPlayTimer = null;
 
         function selectNode(nodeKey) {
             const data = NODE_DATA[nodeKey];
             if (!data) return;
 
-            // Remove active classes
             STEPS.forEach(key => {
-                document.getElementById('node' + key)?.classList.remove('node-active');
+                const el = document.getElementById('node' + key);
+                if (el) el.classList.remove('node-active');
             });
 
-            // Add active class
-            document.getElementById('node' + nodeKey)?.classList.add('node-active');
+            const activeEl = document.getElementById('node' + nodeKey);
+            if (activeEl) activeEl.classList.add('node-active');
 
             document.getElementById('nodeTitle').textContent = data.title;
             document.getElementById('nodeBadge').textContent = data.badge;
@@ -216,11 +234,36 @@
             const nodeKey = STEPS[currentStepIndex];
             selectNode(nodeKey);
 
-            document.getElementById('simStepStatus').textContent = `Simulated Active Node: ${nodeKey} (Step ${currentStepIndex + 1} of ${STEPS.length})`;
-            showToast(`Simulated Step ${currentStepIndex + 1}: ${nodeKey} Node Active`, 'info');
+            document.getElementById('simStepStatus').textContent = `Step ${currentStepIndex + 1} of ${STEPS.length}: ${nodeKey} Node Active`;
+            showToast(`Step ${currentStepIndex + 1}: ${nodeKey} Node Active`, 'info');
+        }
+
+        function toggleAutoPlay() {
+            const autoBtnIcon = document.getElementById('simAutoIcon');
+            const autoBtnText = document.getElementById('simAutoText');
+
+            if (autoPlayTimer) {
+                clearInterval(autoPlayTimer);
+                autoPlayTimer = null;
+                autoBtnIcon.textContent = 'play_circle';
+                autoBtnText.textContent = 'Auto-Play Tour';
+                showToast('Auto-play paused', 'info');
+            } else {
+                autoBtnIcon.textContent = 'pause_circle';
+                autoBtnText.textContent = 'Pause Tour';
+                stepSimulation();
+                autoPlayTimer = setInterval(stepSimulation, 3000);
+                showToast('Auto-play tour started (3s interval)', 'success');
+            }
         }
 
         function resetSimulation() {
+            if (autoPlayTimer) {
+                clearInterval(autoPlayTimer);
+                autoPlayTimer = null;
+                document.getElementById('simAutoIcon').textContent = 'play_circle';
+                document.getElementById('simAutoText').textContent = 'Auto-Play Tour';
+            }
             currentStepIndex = 0;
             selectNode('START');
             document.getElementById('simStepStatus').textContent = 'Simulation reset to START node.';
