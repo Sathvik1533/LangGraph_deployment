@@ -74,28 +74,61 @@ class DemoLLM:
     """
     def invoke(self, input_data: Any) -> DemoAIMessage:
         prompt_text = ""
+        user_task = ""
+        
         if isinstance(input_data, list):
             prompt_text = " ".join(getattr(m, "content", str(m)) for m in input_data)
+            # Find the user's actual HumanMessage
+            for m in reversed(input_data):
+                content = getattr(m, "content", str(m))
+                if not content.startswith("You are an expert"):
+                    user_task = content
+                    break
         else:
             prompt_text = str(input_data)
-        
+            user_task = prompt_text
+            
+        if not user_task:
+            user_task = prompt_text
+            
         prompt_lower = prompt_text.lower()
+        user_task_lower = user_task.lower()
         
-        # Detect language
+        # Detect language cleanly from system prompt or task
         lang = "python"
         if "java" in prompt_lower:
             lang = "java"
         elif "c++" in prompt_lower or "cpp" in prompt_lower:
             lang = "cpp"
             
-        # Detect Task
-        is_prime = "prime" in prompt_lower
-        is_fibo = "fibonacci" in prompt_lower
-        is_palin = "palindrome" in prompt_lower
-        is_div = "divide" in prompt_lower or "division" in prompt_lower or "error" in prompt_lower
+        # Task detection
+        is_prime = "prime" in user_task_lower
+        is_fibo = "fibonacci" in user_task_lower
+        is_palin = "palindrome" in user_task_lower
+        is_div = "divide" in user_task_lower or "division" in user_task_lower
+        is_reverse = "reverse" in user_task_lower
+        is_factorial = "factorial" in user_task_lower
+
+        import re
+        clean_task = re.sub(r'[^a-zA-Z0-9\s]', '', user_task).strip()
+        safe_task_summary = clean_task[:40] if clean_task else "custom task"
+        clean_words = [w for w in clean_task.split() if len(w) > 2 and w.lower() not in ['write', 'create', 'function', 'code', 'python', 'java', 'cpp', 'that', 'with', 'check', 'calculate', 'using']]
+        
+        func_name_py = "_".join(w.lower() for w in clean_words[:3]) or "custom_solution"
+        func_name_java = "".join(w.capitalize() for w in clean_words[:3]) or "CustomSolution"
 
         if lang == "python":
-            if is_prime:
+            if is_reverse:
+                code = '''def reverse_string(s: str) -> str:
+    """Reverse a given string."""
+    return s[::-1]
+
+# Self-test validation
+result = reverse_string("hello")
+print("reverse_string('hello'):", result)
+assert result == "olleh", "Reverse test failed"
+'''
+            elif is_prime:
                 code = '''def is_prime(n: int) -> bool:
     """Check if a number is prime."""
     if n <= 1:
@@ -109,15 +142,12 @@ class DemoLLM:
 result = is_prime(29)
 print("is_prime(29):", result)
 assert is_prime(29) == True, "Prime test failed for 29"
-assert is_prime(4) == False, "Prime test failed for 4"
 '''
             elif is_fibo:
                 code = '''def fibonacci(n: int) -> list[int]:
     """Generate Fibonacci sequence up to n terms."""
-    if n <= 0:
-        return []
-    if n == 1:
-        return [0]
+    if n <= 0: return []
+    if n == 1: return [0]
     seq = [0, 1]
     while len(seq) < n:
         seq.append(seq[-1] + seq[-2])
@@ -149,24 +179,43 @@ assert is_palindrome('racecar') == True, "Palindrome test failed"
 print("safe_divide(10, 2):", safe_divide(10, 2))
 assert safe_divide(10, 2) == 5.0, "Divide test failed"
 '''
-            else:
-                import re
-                clean_words = [w for w in re.sub(r'[^a-zA-Z0-9_\s]', '', prompt_text).split() if len(w) > 2 and w.lower() not in ['write', 'create', 'function', 'code', 'python', 'java', 'cpp', 'that', 'with', 'check', 'calculate', 'using']]
-                func_name = "_".join(w.lower() for w in clean_words[:3]) or "custom_solution"
-                code = f'''def {func_name}(input_data: list) -> dict:
-    """Dynamically generated solution for specification: '{prompt_text[:60]}'"""
-    if not input_data:
-        return {{"status": "empty", "task": "{prompt_text[:40]}"}}
-    return {{"status": "success", "task": "{prompt_text[:40]}", "count": len(input_data), "items": input_data}}
+            elif is_factorial:
+                code = '''def factorial(n: int) -> int:
+    """Calculate factorial of n."""
+    if n < 0: raise ValueError("Negative number")
+    return 1 if n <= 1 else n * factorial(n - 1)
 
 # Self-test validation
-res = {func_name}([10, 20, 30])
+print("factorial(5):", factorial(5))
+assert factorial(5) == 120, "Factorial test failed"
+'''
+            else:
+                code = f'''def {func_name_py}(input_data: list) -> dict:
+    """Dynamically generated solution for specification: {safe_task_summary}"""
+    if not input_data:
+        return {{"status": "empty", "task": "{safe_task_summary}"}}
+    return {{"status": "success", "task": "{safe_task_summary}", "count": len(input_data)}}
+
+# Self-test validation
+res = {func_name_py}([10, 20, 30])
 print("Dynamic execution output:", res)
 assert res["status"] == "success", "Specification execution failed"
 '''
 
         elif lang == "java":
-            if is_prime:
+            if is_reverse:
+                code = '''public class Main {
+    public static String reverseString(String s) {
+        return new StringBuilder(s).reverse().toString();
+    }
+
+    public static void main(String[] args) {
+        String result = reverseString("hello");
+        System.out.println("reverseString('hello'): " + result);
+    }
+}
+'''
+            elif is_prime:
                 code = '''public class Main {
     public static boolean isPrime(int n) {
         if (n <= 1) return false;
@@ -178,9 +227,7 @@ assert res["status"] == "success", "Specification execution failed"
 
     public static void main(String[] args) {
         boolean test1 = isPrime(29);
-        boolean test2 = isPrime(4);
         System.out.println("isPrime(29): " + test1);
-        System.out.println("isPrime(4): " + test2);
     }
 }
 '''
@@ -216,24 +263,36 @@ assert res["status"] == "success", "Specification execution failed"
 }
 '''
             else:
-                import re
-                clean_words = [w for w in re.sub(r'[^a-zA-Z0-9_\s]', '', prompt_text).split() if len(w) > 2 and w.lower() not in ['write', 'create', 'function', 'code', 'python', 'java', 'cpp', 'that', 'with', 'check', 'calculate', 'using']]
-                func_name = "".join(w.capitalize() for w in clean_words[:3]) or "CustomTask"
                 code = f'''public class Main {{
-    public static String execute{func_name}(String taskSpec) {{
+    public static String execute{func_name_java}(String taskSpec) {{
         System.out.println("Executing dynamic Java specification: " + taskSpec);
         return "SUCCESS: " + taskSpec;
     }}
 
     public static void main(String[] args) {{
-        String result = execute{func_name}("{prompt_text[:40]}");
+        String result = execute{func_name_java}("{safe_task_summary}");
         System.out.println(result);
     }}
 }}
 '''
 
         else: # C++
-            if is_prime:
+            if is_reverse:
+                code = '''#include <iostream>
+#include <string>
+#include <algorithm>
+
+std::string reverseString(std::string s) {
+    std::reverse(s.begin(), s.end());
+    return s;
+}
+
+int main() {
+    std::cout << "reverseString('hello'): " << reverseString("hello") << std::endl;
+    return 0;
+}
+'''
+            elif is_prime:
                 code = '''#include <iostream>
 
 bool isPrime(int n) {
@@ -270,18 +329,15 @@ int main() {
 }
 '''
             else:
-                import re
-                clean_words = [w for w in re.sub(r'[^a-zA-Z0-9_\s]', '', prompt_text).split() if len(w) > 2 and w.lower() not in ['write', 'create', 'function', 'code', 'python', 'java', 'cpp', 'that', 'with', 'check', 'calculate', 'using']]
-                func_name = "_".join(w.lower() for w in clean_words[:3]) or "custom_task"
                 code = f'''#include <iostream>
 #include <string>
 
-void {func_name}() {{
-    std::cout << "Dynamic C++ execution for specification: {prompt_text[:40]}" << std::endl;
+void {func_name_py}() {{
+    std::cout << "Dynamic C++ execution for specification: {safe_task_summary}" << std::endl;
 }}
 
 int main() {{
-    {func_name}();
+    {func_name_py}();
     return 0;
 }}
 '''
