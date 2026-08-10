@@ -22,7 +22,7 @@
                     <span class="material-symbols-outlined" style="color: var(--accent-terracotta);">code_blocks</span>
                     Code Workbench & Verification Studio
                 </h1>
-                <p class="page-subtitle">Submit task specifications to trigger multi-agent code generation, sandbox execution, and assertion loops.</p>
+                <p class="page-subtitle">Describe what code you want to build. Our AI team will write the code and run automatic tests to ensure it works!</p>
             </div>
 
             <div id="pipelineStepper" style="display: none; align-items: center; gap: 8px;">
@@ -43,7 +43,7 @@
                         <span>Task Specification</span>
                         <span class="kbd-badge">Press ⌘ + Enter to execute</span>
                     </label>
-                    <textarea id="taskInput" rows="3" style="width: 100%; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px; color: var(--text-primary); font-family: var(--font-sans); font-size: 14.5px; line-height: 1.6; outline: none; resize: vertical;" placeholder="e.g. Write a function to calculate fibonacci numbers with self-validation assertions..." data-tooltip="Task Specification: Describe what function, class, or algorithm you want the Developer agent to draft and validate."></textarea>
+                    <textarea id="taskInput" rows="3" style="width: 100%; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px; color: var(--text-primary); font-family: var(--font-sans); font-size: 14.5px; line-height: 1.6; outline: none; resize: vertical;" placeholder="e.g. Write a function to check if a number is prime..." data-tooltip="Task Input: Type what program or function you want our AI team to create for you."></textarea>
                     
                     <!-- Inline Validation Banner inside the Card -->
                     <div id="taskInlineAlert" style="display: none; margin-top: 10px; padding: 10px 14px; background: var(--accent-terracotta-bg); border: 1px solid rgba(234, 88, 12, 0.3); border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--accent-terracotta); align-items: center; gap: 8px;">
@@ -55,7 +55,7 @@
                 <!-- Custom Studio Web Dropdown: Target Language -->
                 <div>
                     <label style="display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Target Language</label>
-                    <div class="custom-select-wrapper" id="langSelectWrapper" data-tooltip="Target Language: Choose target syntax (Python 3.11, Java 17, or C++ 20).">
+                    <div class="custom-select-wrapper" id="langSelectWrapper" data-tooltip="Target Language: Choose the programming language you want your code written in (Python 3.11, Java 17, or C++ 20).">
                         <input type="hidden" id="languageSelect" value="python"/>
                         <div class="custom-select-trigger" onclick="toggleCustomSelect(this, event)">
                             <span class="custom-select-value" id="langSelectValue">Python 3.11</span>
@@ -81,7 +81,7 @@
                 <!-- Custom Studio Web Dropdown: Self-Fix Ceiling -->
                 <div>
                     <label style="display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Self-Fix Ceiling</label>
-                    <div class="custom-select-wrapper" id="ceilingSelectWrapper" data-tooltip="Self-Fix Ceiling: Max retries allowed before the conditional router terminates the loop.">
+                    <div class="custom-select-wrapper" id="ceilingSelectWrapper" data-tooltip="Self-Fix Limit: Choose how many times the AI can try automatically fixing its code if errors occur.">
                         <input type="hidden" id="maxIterationsSelect" value="3"/>
                         <div class="custom-select-trigger" onclick="toggleCustomSelect(this, event)">
                             <span class="custom-select-value" id="ceilingSelectValue">3 Loops (Default)</span>
@@ -99,12 +99,12 @@
 
             <div style="display: flex; align-items: center; justify-content: space-between;">
                 <div style="display: flex; gap: 8px;">
-                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Write a function to calculate fibonacci numbers')" data-tooltip="Pre-fill Fibonacci calculation prompt.">Fibonacci</button>
-                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Create a function that checks if a string is a palindrome')" data-tooltip="Pre-fill Palindrome validator prompt.">Palindrome</button>
-                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Write a function to divide two numbers with proper error handling')" data-tooltip="Pre-fill Safe division exception handling prompt.">Safe Division</button>
+                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Write a function to calculate fibonacci numbers')" data-tooltip="Quick Fill: Fills in a sample Fibonacci sequence calculation task.">Fibonacci</button>
+                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Create a function that checks if a string is a palindrome')" data-tooltip="Quick Fill: Fills in a sample Palindrome checker task.">Palindrome</button>
+                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Write a function to divide two numbers with proper error handling')" data-tooltip="Quick Fill: Fills in a sample Safe Division task.">Safe Division</button>
                 </div>
 
-                <button id="generateBtn" class="cyber-btn cyber-btn-primary" data-tooltip="Execute & Verify: Triggers multi-agent code generation, sandbox testing, and assertion loops.">
+                <button id="generateBtn" class="cyber-btn cyber-btn-primary" data-tooltip="Run Task: Click here to start AI code generation and run automatic test checks.">
                     <span class="material-symbols-outlined">code_blocks</span>
                     <span>Execute & Verify Specification</span>
                     <span class="kbd-badge" style="margin-left: 4px; background: #ffffff; color: #0f172a; border: none;">⌘↵</span>
@@ -117,33 +117,31 @@
         <!-- Workbench Dual IDE Window -->
         <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 28px;">
             
-            <div class="code-editor-pane" data-tooltip="Solution Code Viewer: View line-numbered source code output generated by Developer agent.">
+            <div class="code-editor-pane" data-tooltip="Generated Code Window: Shows the completed source code written by our Developer AI.">
                 <div class="code-editor-header">
                     <span style="font-size: 12.5px; font-weight: 600; color: #fb923c; font-family: var(--font-mono);">solution_code.py</span>
 
                     <div style="display: flex; gap: 8px;">
-                        <button id="copyCodeBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 12px; background: #334155; color: #ffffff; border: none;" data-tooltip="Copy code to system clipboard.">
+                        <button id="copyCodeBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 12px; background: #334155; color: #ffffff; border: none;" data-tooltip="Copy Code: Copies the generated code to your clipboard.">
                             <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span>
                             Copy
                         </button>
-                        <button id="downloadCodeBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 12px; background: #334155; color: #ffffff; border: none;" data-tooltip="Download source file to disk.">
+                        <button id="downloadCodeBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 12px; background: #334155; color: #ffffff; border: none;" data-tooltip="Download File: Saves the code file directly to your computer.">
                             <span class="material-symbols-outlined" style="font-size: 14px;">download</span>
                             Download
                         </button>
                     </div>
                 </div>
 
-                <!-- NO HASHTAGS in placeholder text! -->
                 <div class="code-editor-body" id="codeDisplay">Press 'Execute & Verify Specification' or ⌘ + Enter to initiate orchestration...</div>
             </div>
 
-            <div class="code-editor-pane" data-tooltip="Verification Report Terminal: View test stdout/stderr, evaluation output, and assertion matrix.">
+            <div class="code-editor-pane" data-tooltip="Test Output Window: Shows the results of running your code in our test environment.">
                 <div class="code-editor-header">
                     <span style="font-size: 12.5px; font-weight: 600; color: #94a3b8; font-family: var(--font-mono);">verification_report.log</span>
                     <span class="cyber-badge cyber-badge-terracotta" id="reportBadge">READY</span>
                 </div>
 
-                <!-- NO HASHTAGS in placeholder text! -->
                 <div class="code-editor-body" id="reportDisplay" style="color: #94a3b8;">Test execution output, captured stdout/stderr, and assertion evaluations will appear here.</div>
             </div>
 
