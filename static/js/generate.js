@@ -1,12 +1,12 @@
-// Linear Studio Code Engine Controller
+// Warm Executive Studio Code Engine Controller
 
 let currentResponseData = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Load Sidebar
-    const sidebarRes = await fetch('/templates/navigation.html');
-    if (sidebarRes.ok) {
-        document.getElementById('sidebarContainer').innerHTML = await sidebarRes.text();
+    // Load Navbar
+    const navbarRes = await fetch('/templates/navigation.html');
+    if (navbarRes.ok) {
+        document.getElementById('navbarContainer').innerHTML = await navbarRes.text();
         setActiveNav('generator');
     }
 
@@ -80,29 +80,34 @@ async function handleGenerate() {
     generateBtn.disabled = true;
     generateBtn.innerHTML = `
         <span class="material-symbols-outlined spin" style="font-size: 16px;">sync</span>
-        <span>Running Execution Pipeline...</span>
+        <span>Orchestrating Backend Graph...</span>
     `;
 
     statusBanner.style.display = 'flex';
-    statusBanner.className = 'card';
+    statusBanner.className = 'studio-card';
+    statusBanner.style.borderColor = 'var(--accent-blue)';
+    statusBanner.style.background = 'var(--accent-blue-bg)';
     statusBanner.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <span class="material-symbols-outlined" style="color: var(--primary);">sync</span>
-            <div>
-                <div style="font-weight: 600; font-size: 13.5px;">Developer Engine Generating & Sandbox Validating Code</div>
-                <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 2px;">Evaluating conditional router assertions...</div>
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span class="material-symbols-outlined spin" style="color: var(--accent-blue); font-size: 22px;">sync</span>
+                <div>
+                    <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">Backend State Machine Executing</div>
+                    <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Developer Node → Sandbox Verifier → Conditional Edge Router</div>
+                </div>
             </div>
+            <span class="cyber-badge cyber-badge-blue">ACTIVE BACKEND GRAPH</span>
         </div>
     `;
 
     if (pipelineStepper) {
         pipelineStepper.style.display = 'flex';
-        document.getElementById('stepDeveloper').className = 'badge badge-info';
-        document.getElementById('stepDeveloper').textContent = '1. Drafting Code...';
-        document.getElementById('stepSandbox').className = 'badge';
-        document.getElementById('stepSandbox').textContent = '2. Testing...';
-        document.getElementById('stepRouter').className = 'badge';
-        document.getElementById('stepRouter').textContent = '3. Route Guard';
+        document.getElementById('stepDeveloper').className = 'cyber-badge cyber-badge-blue';
+        document.getElementById('stepDeveloper').textContent = '1. Developer Node';
+        document.getElementById('stepSandbox').className = 'cyber-badge';
+        document.getElementById('stepSandbox').textContent = '2. Sandbox Verifier';
+        document.getElementById('stepRouter').className = 'cyber-badge';
+        document.getElementById('stepRouter').textContent = '3. Edge Router';
     }
 
     try {
@@ -123,27 +128,28 @@ async function handleGenerate() {
 
         if (response.ok && data.code) {
             // Success
-            statusBanner.className = 'card';
-            statusBanner.style.borderColor = 'var(--accent-emerald)';
+            statusBanner.className = 'studio-card';
+            statusBanner.style.borderColor = 'rgba(5, 150, 105, 0.4)';
+            statusBanner.style.background = 'var(--accent-emerald-bg)';
             statusBanner.innerHTML = `
                 <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span class="material-symbols-outlined" style="color: var(--accent-emerald); font-size: 22px;">check_circle</span>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span class="material-symbols-outlined" style="color: var(--accent-emerald); font-size: 24px;">check_circle</span>
                         <div>
-                            <div style="font-weight: 600; font-size: 13.5px;">Verification Passed</div>
-                            <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 1px;">Completed in ${data.iterations} iteration(s) • Thread: ${data.thread_id}</div>
+                            <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">Verification Passed & State Saved</div>
+                            <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Completed in ${data.iterations} loop(s) • Thread: ${data.thread_id} • Checkpointer: MemorySaver</div>
                         </div>
                     </div>
-                    <span class="badge badge-success">PASSED ALL CHECKS</span>
+                    <span class="cyber-badge cyber-badge-emerald">VERIFICATION PASSED</span>
                 </div>
             `;
 
             if (pipelineStepper) {
-                document.getElementById('stepDeveloper').className = 'badge badge-success';
+                document.getElementById('stepDeveloper').className = 'cyber-badge cyber-badge-emerald';
                 document.getElementById('stepDeveloper').textContent = '1. Drafted ✓';
-                document.getElementById('stepSandbox').className = 'badge badge-success';
-                document.getElementById('stepSandbox').textContent = '2. Verified ✓';
-                document.getElementById('stepRouter').className = 'badge badge-success';
+                document.getElementById('stepSandbox').className = 'cyber-badge cyber-badge-emerald';
+                document.getElementById('stepSandbox').textContent = '2. Tested ✓';
+                document.getElementById('stepRouter').className = 'cyber-badge cyber-badge-emerald';
                 document.getElementById('stepRouter').textContent = '3. Approved ✓';
             }
 
@@ -164,14 +170,15 @@ async function handleGenerate() {
             showToast('Code verified successfully!', 'success');
 
         } else {
-            statusBanner.className = 'card';
-            statusBanner.style.borderColor = 'var(--accent-rose)';
+            statusBanner.className = 'studio-card';
+            statusBanner.style.borderColor = 'rgba(220, 38, 38, 0.4)';
+            statusBanner.style.background = 'var(--accent-rose-bg)';
             statusBanner.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span class="material-symbols-outlined" style="color: var(--accent-rose); font-size: 22px;">error</span>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span class="material-symbols-outlined" style="color: var(--accent-rose); font-size: 24px;">error</span>
                     <div>
-                        <div style="font-weight: 600; font-size: 13.5px;">Execution Error</div>
-                        <div style="font-size: 11.5px; color: var(--text-secondary);">${data.detail?.message || data.error || 'Failed to process request.'}</div>
+                        <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">Execution Error</div>
+                        <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">${data.detail?.message || data.error || 'Failed to process request.'}</div>
                     </div>
                 </div>
             `;
@@ -179,14 +186,15 @@ async function handleGenerate() {
         }
 
     } catch (err) {
-        statusBanner.className = 'card';
-        statusBanner.style.borderColor = 'var(--accent-rose)';
+        statusBanner.className = 'studio-card';
+        statusBanner.style.borderColor = 'rgba(220, 38, 38, 0.4)';
+        statusBanner.style.background = 'var(--accent-rose-bg)';
         statusBanner.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <span class="material-symbols-outlined" style="color: var(--accent-rose); font-size: 22px;">wifi_off</span>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span class="material-symbols-outlined" style="color: var(--accent-rose); font-size: 24px;">wifi_off</span>
                 <div>
-                    <div style="font-weight: 600; font-size: 13.5px;">Network Failure</div>
-                    <div style="font-size: 11.5px; color: var(--text-secondary);">${err.message}</div>
+                    <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">Network Connection Error</div>
+                    <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">${err.message}</div>
                 </div>
             </div>
         `;
@@ -196,7 +204,7 @@ async function handleGenerate() {
         generateBtn.innerHTML = `
             <span class="material-symbols-outlined">code_blocks</span>
             <span>Execute & Verify Specification</span>
-            <span class="kbd-badge" style="margin-left: 4px; background: #ffffff; color: #000000; border: none;">⌘↵</span>
+            <span class="kbd-badge" style="margin-left: 4px; background: #ffffff; color: #0f172a;">⌘↵</span>
         `;
     }
 }
