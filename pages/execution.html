@@ -1,371 +1,119 @@
 <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>LangGraph Studio | System Telemetry & Logs</title>
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="/static/css/shared.css"/>
+</head>
+<body>
 
-<html class="light" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>LangGraph - Agent Runs</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;700&amp;family=Space+Grotesk:wght@700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    "colors": {
-                        "surface-container-highest": "#e2e2e2",
-                        "surface-container-high": "#e8e8e8",
-                        "on-tertiary-fixed": "#241a00",
-                        "surface-bright": "#f9f9f9",
-                        "primary-container": "#0066ff",
-                        "secondary": "#006d37",
-                        "on-secondary-fixed-variant": "#005228",
-                        "background": "#f9f9f9",
-                        "surface-tint": "#0054d6",
-                        "primary-fixed-dim": "#b3c5ff",
-                        "inverse-surface": "#303030",
-                        "surface": "#f9f9f9",
-                        "on-secondary-container": "#006e37",
-                        "on-secondary": "#ffffff",
-                        "on-primary-fixed-variant": "#003fa4",
-                        "error-container": "#ffdad6",
-                        "outline-variant": "#c2c6d8",
-                        "primary-fixed": "#dae1ff",
-                        "surface-container": "#eeeeee",
-                        "on-surface-variant": "#424656",
-                        "on-background": "#1b1b1b",
-                        "secondary-fixed": "#60ff99",
-                        "outline": "#727687",
-                        "surface-dim": "#dadada",
-                        "tertiary-fixed-dim": "#f1c100",
-                        "tertiary": "#745b00",
-                        "tertiary-fixed": "#ffe08b",
-                        "on-tertiary-container": "#4f3e00",
-                        "on-surface": "#1b1b1b",
-                        "on-error": "#ffffff",
-                        "on-primary": "#ffffff",
-                        "secondary-container": "#00fa85",
-                        "on-secondary-fixed": "#00210c",
-                        "primary": "#0050cb",
-                        "on-tertiary": "#ffffff",
-                        "inverse-primary": "#b3c5ff",
-                        "surface-container-low": "#f3f3f3",
-                        "on-primary-fixed": "#001849",
-                        "error": "#ba1a1a",
-                        "surface-variant": "#e2e2e2",
-                        "inverse-on-surface": "#f1f1f1",
-                        "secondary-fixed-dim": "#00e479",
-                        "on-primary-container": "#f8f7ff",
-                        "surface-container-lowest": "#ffffff",
-                        "tertiary-container": "#d1a600",
-                        "on-tertiary-fixed-variant": "#584400",
-                        "on-error-container": "#93000a"
-                    },
-                    "borderRadius": {
-                        "DEFAULT": "0.125rem",
-                        "lg": "0.25rem",
-                        "xl": "0.5rem",
-                        "full": "0.75rem"
-                    },
-                    "spacing": {
-                        "base": "4px",
-                        "sm": "16px",
-                        "xs": "8px",
-                        "lg": "32px",
-                        "xl": "64px",
-                        "margin": "32px",
-                        "gutter": "24px",
-                        "md": "24px"
-                    },
-                    "fontFamily": {
-                        "label-sm": ["Inter"],
-                        "code-md": ["JetBrains Mono"],
-                        "display-lg": ["Space Grotesk"],
-                        "body-lg": ["Inter"],
-                        "body-md": ["Inter"],
-                        "code-bold": ["JetBrains Mono"],
-                        "display-xl": ["Space Grotesk"]
-                    },
-                    "fontSize": {
-                        "label-sm": ["12px", { "lineHeight": "1", "fontWeight": "600" }],
-                        "code-md": ["14px", { "lineHeight": "1.6", "fontWeight": "400" }],
-                        "display-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }],
-                        "body-lg": ["18px", { "lineHeight": "1.5", "fontWeight": "500" }],
-                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
-                        "code-bold": ["14px", { "lineHeight": "1.6", "fontWeight": "700" }],
-                        "display-xl": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+    <div id="navbarContainer"></div>
+
+    <main class="studio-layout">
+        <header class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <span class="material-symbols-outlined" style="color: var(--cyan-glow);">analytics</span>
+                    System Telemetry & Execution Logs
+                </h1>
+                <p class="page-subtitle">Production health monitors, rate limit state, circuit breaker status, and real-time execution trace logs.</p>
+            </div>
+
+            <button onclick="fetchHealthMetrics()" class="cyber-btn cyber-btn-secondary">
+                <span class="material-symbols-outlined">refresh</span>
+                Refresh Telemetry
+            </button>
+        </header>
+
+        <!-- Metric Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 32px;">
+            <div class="studio-card">
+                <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">API Health Status</div>
+                <div style="font-size: 24px; font-weight: 800; color: var(--emerald-green); margin-top: 8px;" id="valHealth">HEALTHY</div>
+                <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">FastAPI Router v3.0</div>
+            </div>
+
+            <div class="studio-card">
+                <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Circuit Breaker</div>
+                <div style="font-size: 24px; font-weight: 800; color: var(--emerald-green); margin-top: 8px;" id="valCircuit">CLOSED (OK)</div>
+                <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">0 Failures Recorded</div>
+            </div>
+
+            <div class="studio-card">
+                <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Rate Limiter</div>
+                <div style="font-size: 24px; font-weight: 800; color: var(--cyan-glow); margin-top: 8px;">10 REQ / MIN</div>
+                <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">Sliding window algorithm</div>
+            </div>
+
+            <div class="studio-card">
+                <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">State Persistence</div>
+                <div style="font-size: 24px; font-weight: 800; color: var(--amber-gold); margin-top: 8px;" id="valCheckpoint">IN-MEMORY</div>
+                <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">MemorySaver active</div>
+            </div>
+        </div>
+
+        <!-- Terminal Terminal Log Stream -->
+        <div class="studio-card">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="material-symbols-outlined" style="color: var(--cyan-glow);">terminal</span>
+                    <h2 style="font-size: 18px; font-weight: 700;">Live Diagnostics Terminal Log</h2>
+                </div>
+                <span class="cyber-badge cyber-badge-emerald">STREAMING OK</span>
+            </div>
+
+            <div class="code-editor-pane">
+                <div class="code-editor-header">
+                    <span style="font-size: 12px; font-family: var(--font-code); color: var(--text-secondary);">system_diagnostics.log</span>
+                </div>
+
+                <div class="code-editor-body" id="logTerminal" style="height: 380px; overflow-y: auto;">
+[SYSTEM] Initializing LangGraph Self-Correcting Engine...
+[CONFIG] Checkpointing mode: MemorySaver (Development)
+[HEALTH] FastAPI REST Router online on port 8000
+[HEALTH] Circuit breaker status: CLOSED (0 failures)
+[HEALTH] Fallback engine chain active
+[INFO] Ready to process code specifications.
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/js/common.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const navbarRes = await fetch('/templates/navigation.html');
+            if (navbarRes.ok) {
+                document.getElementById('navbarContainer').innerHTML = await navbarRes.text();
+                setActiveNav('execution');
+            }
+            fetchHealthMetrics();
+        });
+
+        async function fetchHealthMetrics() {
+            try {
+                const res = await fetch('/health');
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('valHealth').textContent = data.status.toUpperCase();
+                    if (data.circuit_breaker) {
+                        document.getElementById('valCircuit').textContent = data.circuit_breaker.open ? 'OPEN' : 'CLOSED (OK)';
                     }
+                    const terminal = document.getElementById('logTerminal');
+                    const timestamp = new Date().toISOString();
+                    terminal.textContent += `\n[${timestamp}] Telemetry update: Status ${data.status.toUpperCase()}`;
+                    terminal.scrollTop = terminal.scrollHeight;
                 }
+            } catch (e) {
+                console.warn('Failed to fetch telemetry:', e);
             }
         }
     </script>
-<style>
-        .neo-border { border: 3px solid #1b1b1b; }
-        .neo-shadow { box-shadow: 6px 6px 0px 0px #000000; }
-        .neo-shadow-hover:hover { box-shadow: 8px 8px 0px 0px #000000; transform: translate(-2px, -2px); }
-        .neo-shadow-active:active { box-shadow: 2px 2px 0px 0px #000000; transform: translate(4px, 4px); }
-        .neo-input:focus { box-shadow: 4px 4px 0px 0px #0050cb; outline: none; }
-        
-        .status-success { background-color: #60ff99; }
-        .status-error { background-color: #ffdad6; }
-    </style>
-</head>
-<body class="bg-background text-on-background min-h-screen flex flex-col md:flex-row overflow-x-hidden">
-<!-- SideNavBar -->
-<nav class="hidden md:flex flex-col h-screen sticky top-0 w-[280px] border-r-3 border-on-background bg-surface dark:bg-background shadow-[6px_6px_0px_0px_#000000] p-sm gap-md shrink-0 neo-border">
-<div class="flex items-center gap-xs mb-lg">
-<span class="material-symbols-outlined text-display-lg" data-icon="account_tree">account_tree</span>
-<div>
-<h1 class="font-display-lg text-display-lg font-bold text-on-surface uppercase tracking-tighter">LANGGRAPH</h1>
-<p class="font-label-sm text-label-sm text-on-surface-variant">Orchestration Engine</p>
-</div>
-</div>
-<button class="h-[56px] w-full bg-primary text-on-primary font-display-lg text-[18px] neo-border neo-shadow neo-shadow-hover neo-shadow-active transition-all flex items-center justify-center gap-xs mb-md">
-<span class="material-symbols-outlined" data-icon="add">add</span>
-            New Run
-        </button>
-<ul class="flex flex-col gap-xs flex-1">
-<!-- Active: Agent Runs -->
-<li>
-<a class="flex items-center gap-sm px-xs py-xs bg-primary-container text-on-primary-container border-3 border-on-background shadow-[2px_2px_0px_0px_#000000] translate-x-[2px] translate-y-[2px] font-label-sm text-label-sm transition-all" href="#">
-<span class="material-symbols-outlined font-code-md text-code-md" data-icon="analytics">analytics</span>
-                    Agent Runs
-                </a>
-</li>
-<li>
-<a class="flex items-center gap-sm px-xs py-xs text-on-surface hover:bg-surface-container-high hover:border-3 hover:border-on-background hover:shadow-[8px_8px_0px_0px_#000000] hover:-translate-x-1 hover:-translate-y-1 transition-all font-label-sm text-label-sm border-3 border-transparent" href="#">
-<span class="material-symbols-outlined font-code-md text-code-md" data-icon="account_tree">account_tree</span>
-                    Workflows
-                </a>
-</li>
-<li>
-<a class="flex items-center gap-sm px-xs py-xs text-on-surface hover:bg-surface-container-high hover:border-3 hover:border-on-background hover:shadow-[8px_8px_0px_0px_#000000] hover:-translate-x-1 hover:-translate-y-1 transition-all font-label-sm text-label-sm border-3 border-transparent" href="#">
-<span class="material-symbols-outlined font-code-md text-code-md" data-icon="monitoring">monitoring</span>
-                    Monitors
-                </a>
-</li>
-<li class="mt-auto">
-<a class="flex items-center gap-sm px-xs py-xs text-on-surface hover:bg-surface-container-high hover:border-3 hover:border-on-background hover:shadow-[8px_8px_0px_0px_#000000] hover:-translate-x-1 hover:-translate-y-1 transition-all font-label-sm text-label-sm border-3 border-transparent" href="#">
-<span class="material-symbols-outlined font-code-md text-code-md" data-icon="settings">settings</span>
-                    Settings
-                </a>
-</li>
-</ul>
-</nav>
-<div class="flex-1 flex flex-col min-w-0">
-<!-- TopNavBar (Mobile Only) -->
-<header class="md:hidden flex justify-between items-center px-margin w-full h-[72px] sticky top-0 z-40 bg-surface dark:bg-background border-b-3 border-on-background neo-border">
-<h1 class="font-display-lg text-display-lg font-bold text-on-surface uppercase tracking-tighter">LANGGRAPH</h1>
-<div class="flex gap-sm">
-<button class="text-on-surface-variant hover:text-primary transition-colors focus-within:shadow-[4px_4px_0px_0px_#0050cb]">
-<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
-</button>
-<button class="text-on-surface-variant hover:text-primary transition-colors focus-within:shadow-[4px_4px_0px_0px_#0050cb]">
-<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
-</button>
-</div>
-</header>
-<!-- Main Content Canvas -->
-<main class="flex-1 p-sm md:p-lg lg:p-xl flex flex-col gap-xl">
-<header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-md">
-<div>
-<h2 class="font-display-xl text-display-xl mb-xs">Agent Runs</h2>
-<p class="font-body-lg text-body-lg text-on-surface-variant">Detailed log of all AI agent executions across active workflows.</p>
-</div>
-<!-- Filters -->
-<div class="flex flex-wrap gap-sm w-full md:w-auto">
-<div class="relative w-full md:w-auto">
-<span class="material-symbols-outlined absolute left-xs top-1/2 -translate-y-1/2 text-on-surface-variant" data-icon="calendar_month">calendar_month</span>
-<input class="h-[48px] w-full md:w-[200px] pl-lg pr-xs neo-border neo-input font-body-md text-body-md bg-surface-container-lowest text-on-background placeholder:text-on-surface-variant transition-shadow" placeholder="Date Range" type="text"/>
-</div>
-<div class="relative w-full md:w-auto">
-<span class="material-symbols-outlined absolute left-xs top-1/2 -translate-y-1/2 text-on-surface-variant" data-icon="filter_list">filter_list</span>
-<select class="h-[48px] w-full md:w-[150px] pl-lg pr-xs neo-border neo-input font-body-md text-body-md bg-surface-container-lowest text-on-background appearance-none transition-shadow cursor-pointer">
-<option value="">All Status</option>
-<option value="success">Success</option>
-<option value="error">Error</option>
-<option value="running">Running</option>
-</select>
-<span class="material-symbols-outlined absolute right-xs top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none" data-icon="expand_more">expand_more</span>
-</div>
-</div>
-</header>
-<!-- Data Table Module -->
-<div class="bg-surface-container-lowest neo-border neo-shadow p-lg overflow-hidden flex flex-col">
-<div class="border-b-3 border-on-background pb-xs mb-sm flex justify-between items-end">
-<h3 class="font-display-lg text-display-lg text-on-background">Execution Logs</h3>
-<span class="font-code-md text-code-md text-on-surface-variant">Showing latest 5 runs</span>
-</div>
-<div class="overflow-x-auto">
-<table class="w-full text-left border-collapse min-w-[800px]">
-<thead>
-<tr class="border-b-3 border-on-background font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
-<th class="p-sm">Run ID</th>
-<th class="p-sm">Agent Name</th>
-<th class="p-sm">Status</th>
-<th class="p-sm">Start Time</th>
-<th class="p-sm">Duration</th>
-<th class="p-sm text-right">Actions</th>
-</tr>
-</thead>
-<tbody class="font-body-md text-body-md">
-<!-- Row 1: Success -->
-<tr class="border-b-3 border-surface-container-highest hover:bg-surface-container-low transition-colors group">
-<td class="p-sm font-code-bold text-code-bold text-primary">RUN-a9f2b1</td>
-<td class="p-sm font-body-lg text-body-lg">Data_Extraction_Bot</td>
-<td class="p-sm">
-<span class="inline-flex items-center gap-1 px-xs py-1 status-success text-on-secondary-fixed neo-border font-label-sm text-label-sm">
-<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
-                                        SUCCESS
-                                    </span>
-</td>
-<td class="p-sm font-code-md text-code-md text-on-surface-variant">2024-05-20 14:22:01</td>
-<td class="p-sm font-code-md text-code-md">1.2s</td>
-<td class="p-sm text-right">
-<button class="opacity-0 group-hover:opacity-100 transition-opacity p-1 border-3 border-transparent hover:border-on-background hover:bg-surface-container-highest" title="View Details">
-<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
-</button>
-</td>
-</tr>
-<!-- Row 2: Error -->
-<tr class="border-b-3 border-surface-container-highest hover:bg-surface-container-low transition-colors group">
-<td class="p-sm font-code-bold text-code-bold text-primary">RUN-c3e4d5</td>
-<td class="p-sm font-body-lg text-body-lg">API_Sync_Agent</td>
-<td class="p-sm">
-<span class="inline-flex items-center gap-1 px-xs py-1 status-error text-on-error-container neo-border font-label-sm text-label-sm">
-<span class="material-symbols-outlined text-[14px]" data-icon="error">error</span>
-                                        ERROR
-                                    </span>
-</td>
-<td class="p-sm font-code-md text-code-md text-on-surface-variant">2024-05-20 14:15:30</td>
-<td class="p-sm font-code-md text-code-md">4.5s</td>
-<td class="p-sm text-right">
-<button class="opacity-0 group-hover:opacity-100 transition-opacity p-1 border-3 border-transparent hover:border-on-background hover:bg-surface-container-highest" title="View Details">
-<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
-</button>
-</td>
-</tr>
-<!-- Row 3: Success -->
-<tr class="border-b-3 border-surface-container-highest hover:bg-surface-container-low transition-colors group">
-<td class="p-sm font-code-bold text-code-bold text-primary">RUN-f8g9h0</td>
-<td class="p-sm font-body-lg text-body-lg">Report_Generator</td>
-<td class="p-sm">
-<span class="inline-flex items-center gap-1 px-xs py-1 status-success text-on-secondary-fixed neo-border font-label-sm text-label-sm">
-<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
-                                        SUCCESS
-                                    </span>
-</td>
-<td class="p-sm font-code-md text-code-md text-on-surface-variant">2024-05-20 13:45:12</td>
-<td class="p-sm font-code-md text-code-md">12.8s</td>
-<td class="p-sm text-right">
-<button class="opacity-0 group-hover:opacity-100 transition-opacity p-1 border-3 border-transparent hover:border-on-background hover:bg-surface-container-highest" title="View Details">
-<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
-</button>
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="mt-sm flex justify-between items-center pt-xs border-t-3 border-on-background">
-<span class="font-code-md text-code-md text-on-surface-variant">Page 1 of 42</span>
-<div class="flex gap-xs">
-<button class="h-[40px] px-sm neo-border bg-surface-container-highest hover:bg-surface-dim font-label-sm text-label-sm transition-colors flex items-center justify-center disabled:opacity-50" disabled="">Prev</button>
-<button class="h-[40px] px-sm neo-border bg-surface-container-highest hover:bg-surface-dim font-label-sm text-label-sm transition-colors flex items-center justify-center">Next</button>
-</div>
-</div>
-</div>
-</main>
-<!-- Footer -->
-<footer class="w-full border-t-3 border-on-background py-xs px-margin bg-surface-container-low dark:bg-surface-dim flex justify-between items-center mt-auto shrink-0 neo-border">
-<span class="font-code-bold text-code-bold text-on-surface">LangGraph v2.4.0</span>
-<ul class="flex gap-sm">
-<li><a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary underline transition-opacity duration-200" href="#">API Heartbeat</a></li>
-<li><a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary underline transition-opacity duration-200" href="#">System Status</a></li>
-<li><a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary underline transition-opacity duration-200" href="#">Docs</a></li>
-</ul>
-</footer>
-</div>
-
-<script>
-// Load recent generations from localStorage and display in table
-function loadExecutionLogs() {
-    const recent = JSON.parse(localStorage.getItem('recentGenerations') || '[]');
-    const tbody = document.querySelector('tbody');
-    
-    if (recent.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6" class="p-sm text-center text-on-surface-variant font-body-md">
-                    No execution logs yet. Generate some code first!
-                </td>
-            </tr>
-        `;
-        return;
-    }
-    
-    // Take first 5 most recent
-    const logs = recent.slice(0, 5);
-    
-    tbody.innerHTML = logs.map((log, index) => {
-        const runId = `RUN-${Math.random().toString(36).substr(2, 6)}`;
-        const agentName = `Code_Generator_${log.language.toUpperCase()}`;
-        const status = log.success ? 'SUCCESS' : 'ERROR';
-        const statusClass = log.success ? 'status-success text-on-secondary-fixed' : 'status-error text-on-error-container';
-        const statusIcon = log.success ? 'check_circle' : 'error';
-        const timestamp = new Date(log.timestamp).toLocaleString('en-US', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false
-        });
-        const duration = `${(Math.random() * 10 + 1).toFixed(1)}s`;
-        
-        return `
-            <tr class="border-b-3 border-surface-container-highest hover:bg-surface-container-low transition-colors group">
-                <td class="p-sm font-code-bold text-code-bold text-primary">${runId}</td>
-                <td class="p-sm font-body-lg text-body-lg">${agentName}</td>
-                <td class="p-sm">
-                    <span class="inline-flex items-center gap-1 px-xs py-1 ${statusClass} neo-border font-label-sm text-label-sm">
-                        <span class="material-symbols-outlined text-[14px]" data-icon="${statusIcon}">${statusIcon}</span>
-                        ${status}
-                    </span>
-                </td>
-                <td class="p-sm font-code-md text-code-md text-on-surface-variant">${timestamp}</td>
-                <td class="p-sm font-code-md text-code-md">${duration}</td>
-                <td class="p-sm text-right">
-                    <button onclick="viewDetails(${index})" class="opacity-0 group-hover:opacity-100 transition-opacity p-1 border-3 border-transparent hover:border-on-background hover:bg-surface-container-highest" title="View Details">
-                        <span class="material-symbols-outlined" data-icon="visibility">visibility</span>
-                    </button>
-                </td>
-            </tr>
-        `;
-    }).join('');
-}
-
-// View details of a specific generation
-function viewDetails(index) {
-    const recent = JSON.parse(localStorage.getItem('recentGenerations') || '[]');
-    const log = recent[index];
-    
-    if (!log) return;
-    
-    // Store as current view
-    localStorage.setItem('currentExecutionView', JSON.stringify(log));
-    
-    // Show alert with details
-    alert(`Task: ${log.task}\nLanguage: ${log.language}\nStatus: ${log.success ? 'Success' : 'Failed'}\nTimestamp: ${log.timestamp}`);
-}
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', () => {
-    loadExecutionLogs();
-    console.log('Execution logs loaded from localStorage');
-});
-</script>
-</body></html>
+</body>
+</html>

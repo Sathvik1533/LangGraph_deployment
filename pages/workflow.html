@@ -1,513 +1,182 @@
 <!DOCTYPE html>
-
-<html class="light" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Workflow Builder - LangGraph</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;700&amp;family=Space+Grotesk:wght@700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
-        tailwind.config = {
-          darkMode: "class",
-          theme: {
-            extend: {
-              "colors": {
-                      "surface-container-highest": "#e2e2e2",
-                      "surface-container-high": "#e8e8e8",
-                      "on-tertiary-fixed": "#241a00",
-                      "surface-bright": "#f9f9f9",
-                      "primary-container": "#0066ff",
-                      "secondary": "#006d37",
-                      "on-secondary-fixed-variant": "#005228",
-                      "background": "#f9f9f9",
-                      "surface-tint": "#0054d6",
-                      "primary-fixed-dim": "#b3c5ff",
-                      "inverse-surface": "#303030",
-                      "surface": "#f9f9f9",
-                      "on-secondary-container": "#006e37",
-                      "on-secondary": "#ffffff",
-                      "on-primary-fixed-variant": "#003fa4",
-                      "error-container": "#ffdad6",
-                      "outline-variant": "#c2c6d8",
-                      "primary-fixed": "#dae1ff",
-                      "surface-container": "#eeeeee",
-                      "on-surface-variant": "#424656",
-                      "on-background": "#1b1b1b",
-                      "secondary-fixed": "#60ff99",
-                      "outline": "#727687",
-                      "surface-dim": "#dadada",
-                      "tertiary-fixed-dim": "#f1c100",
-                      "tertiary": "#745b00",
-                      "tertiary-fixed": "#ffe08b",
-                      "on-tertiary-container": "#4f3e00",
-                      "on-surface": "#1b1b1b",
-                      "on-error": "#ffffff",
-                      "on-primary": "#ffffff",
-                      "secondary-container": "#00fa85",
-                      "on-secondary-fixed": "#00210c",
-                      "primary": "#0050cb",
-                      "on-tertiary": "#ffffff",
-                      "inverse-primary": "#b3c5ff",
-                      "surface-container-low": "#f3f3f3",
-                      "on-primary-fixed": "#001849",
-                      "error": "#ba1a1a",
-                      "surface-variant": "#e2e2e2",
-                      "inverse-on-surface": "#f1f1f1",
-                      "secondary-fixed-dim": "#00e479",
-                      "on-primary-container": "#f8f7ff",
-                      "surface-container-lowest": "#ffffff",
-                      "tertiary-container": "#d1a600",
-                      "on-tertiary-fixed-variant": "#584400",
-                      "on-error-container": "#93000a"
-              },
-              "borderRadius": {
-                      "DEFAULT": "0.125rem",
-                      "lg": "0.25rem",
-                      "xl": "0.5rem",
-                      "full": "0.75rem"
-              },
-              "spacing": {
-                      "base": "4px",
-                      "sm": "16px",
-                      "xs": "8px",
-                      "lg": "32px",
-                      "xl": "64px",
-                      "margin": "32px",
-                      "gutter": "24px",
-                      "md": "24px"
-              },
-              "fontFamily": {
-                      "label-sm": [
-                              "Inter"
-                      ],
-                      "code-md": [
-                              "JetBrains Mono"
-                      ],
-                      "display-lg": [
-                              "Space Grotesk"
-                      ],
-                      "body-lg": [
-                              "Inter"
-                      ],
-                      "body-md": [
-                              "Inter"
-                      ],
-                      "code-bold": [
-                              "JetBrains Mono"
-                      ],
-                      "display-xl": [
-                              "Space Grotesk"
-                      ]
-              },
-              "fontSize": {
-                      "label-sm": [
-                              "12px",
-                              {
-                                      "lineHeight": "1",
-                                      "fontWeight": "600"
-                              }
-                      ],
-                      "code-md": [
-                              "14px",
-                              {
-                                      "lineHeight": "1.6",
-                                      "fontWeight": "400"
-                              }
-                      ],
-                      "display-lg": [
-                              "32px",
-                              {
-                                      "lineHeight": "1.2",
-                                      "fontWeight": "700"
-                              }
-                      ],
-                      "body-lg": [
-                              "18px",
-                              {
-                                      "lineHeight": "1.5",
-                                      "fontWeight": "500"
-                              }
-                      ],
-                      "body-md": [
-                              "16px",
-                              {
-                                      "lineHeight": "1.5",
-                                      "fontWeight": "400"
-                              }
-                      ],
-                      "code-bold": [
-                              "14px",
-                              {
-                                      "lineHeight": "1.6",
-                                      "fontWeight": "700"
-                              }
-                      ],
-                      "display-xl": [
-                              "48px",
-                              {
-                                      "lineHeight": "1.1",
-                                      "letterSpacing": "-0.02em",
-                                      "fontWeight": "700"
-                              }
-                      ]
-              }
-      },
-          },
-        }
-      </script>
-<style>
-        .neo-shadow { box-shadow: 6px 6px 0px 0px #000000; }
-        .neo-shadow-hover { box-shadow: 8px 8px 0px 0px #000000; transform: translate(-2px, -2px); }
-        .neo-shadow-active { box-shadow: 2px 2px 0px 0px #000000; transform: translate(4px, 4px); }
-        
-        /* Grid Background for Canvas */
-        .bg-grid-pattern {
-            background-image: linear-gradient(to right, #e2e2e2 1px, transparent 1px),
-                              linear-gradient(to bottom, #e2e2e2 1px, transparent 1px);
-            background-size: 24px 24px;
-        }
-
-        /* SVG Connectors */
-        .connector-line {
-            stroke: #1b1b1b;
-            stroke-width: 3px;
-            fill: none;
-            stroke-linejoin: miter;
-        }
-        .connector-arrow {
-            fill: #1b1b1b;
-        }
-    </style>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>LangGraph Studio | Interactive State Canvas</title>
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="/static/css/shared.css"/>
 </head>
-<body class="bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden">
-<!-- TopNavBar -->
-<nav aria-label="Top Navigation" class="w-full h-[72px] sticky top-0 z-40 border-b-3 border-on-background bg-surface flex justify-between items-center px-margin shrink-0 shadow-[0_4px_0_0_rgba(0,0,0,1)] relative z-50 border-b-[3px]">
-<div class="flex items-center gap-sm">
-<span class="font-display-lg text-display-lg font-bold text-on-surface uppercase tracking-tighter hidden md:block">LANGGRAPH</span>
-<div class="h-6 w-3 bg-primary ml-4 hidden md:block"></div>
-<span class="font-body-lg text-body-lg text-on-surface-variant font-medium ml-2 hidden md:block">Workflow Builder</span>
-</div>
-<div class="flex items-center gap-md">
-<!-- Search -->
-<div class="relative focus-within:shadow-[4px_4px_0px_0px_#0050cb] transition-shadow">
-<input class="h-[48px] px-sm w-64 border-3 border-on-background bg-surface font-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary" placeholder="Search Nodes..." type="text"/>
-<span class="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">search</span>
-</div>
-<!-- Actions -->
-<button class="w-[48px] h-[48px] border-3 border-on-background bg-surface flex items-center justify-center hover:text-primary transition-colors hover:shadow-[4px_4px_0px_0px_#000000] hover:-translate-y-1 hover:-translate-x-1 active:shadow-[2px_2px_0px_0px_#000000] active:translate-x-1 active:translate-y-1">
-<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
-</button>
-<button class="w-[48px] h-[48px] border-3 border-on-background bg-surface-container-high flex items-center justify-center hover:text-primary transition-colors hover:shadow-[4px_4px_0px_0px_#000000] hover:-translate-y-1 hover:-translate-x-1 active:shadow-[2px_2px_0px_0px_#000000] active:translate-x-1 active:translate-y-1 overflow-hidden">
-<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
-</button>
-</div>
-</nav>
-<!-- Main Workspace -->
-<div class="flex flex-1 overflow-hidden relative">
-<!-- SideNavBar (Left Panel: Node Library) -->
-<aside class="w-[280px] h-full sticky top-0 border-r-3 border-on-background bg-surface border-r-[3px] shadow-[6px_6px_0px_0px_#000000] z-30 flex flex-col p-sm gap-md shrink-0">
-<!-- Mobile Toggle (Hidden on Desktop) -->
-<div class="md:hidden flex justify-between items-center mb-sm">
-<span class="font-display-lg text-display-lg font-bold text-on-surface uppercase tracking-tighter">LANGGRAPH</span>
-<button class="p-xs border-3 border-on-background"><span class="material-symbols-outlined">menu</span></button>
-</div>
-<div class="flex flex-col gap-xs flex-1 overflow-y-auto pr-xs">
-<h3 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mb-xs mt-sm">Navigation</h3>
-<nav class="flex flex-col gap-xs mb-lg">
-<a class="flex items-center gap-sm p-xs text-on-surface hover:bg-surface-container-high hover:border-3 hover:border-on-background hover:shadow-[8px_8px_0px_0px_#000000] hover:-translate-x-1 hover:-translate-y-1 transition-all active:shadow-[2px_2px_0px_0px_#000000] active:translate-x-1 active:translate-y-1 border-3 border-transparent" href="#">
-<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
-<span class="font-label-sm text-label-sm">Agent Runs</span>
-</a>
-<a class="flex items-center gap-sm p-xs bg-primary-container text-on-primary-container border-3 border-on-background shadow-[2px_2px_0px_0px_#000000] translate-x-[2px] translate-y-[2px]" href="#">
-<span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
-<span class="font-label-sm text-label-sm">Workflows</span>
-</a>
-<a class="flex items-center gap-sm p-xs text-on-surface hover:bg-surface-container-high hover:border-3 hover:border-on-background hover:shadow-[8px_8px_0px_0px_#000000] hover:-translate-x-1 hover:-translate-y-1 transition-all active:shadow-[2px_2px_0px_0px_#000000] active:translate-x-1 active:translate-y-1 border-3 border-transparent" href="#">
-<span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
-<span class="font-label-sm text-label-sm">Monitors</span>
-</a>
-<a class="flex items-center gap-sm p-xs text-on-surface hover:bg-surface-container-high hover:border-3 hover:border-on-background hover:shadow-[8px_8px_0px_0px_#000000] hover:-translate-x-1 hover:-translate-y-1 transition-all active:shadow-[2px_2px_0px_0px_#000000] active:translate-x-1 active:translate-y-1 border-3 border-transparent" href="#">
-<span class="material-symbols-outlined" data-icon="settings">settings</span>
-<span class="font-label-sm text-label-sm">Settings</span>
-</a>
-</nav>
-<h3 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mb-xs mt-sm">Node Library</h3>
-<!-- Draggable Nodes -->
-<div class="flex flex-col gap-sm pb-lg">
-<div class="border-3 border-on-background bg-surface p-sm cursor-move neo-shadow hover:neo-shadow-hover transition-all active:neo-shadow-active">
-<div class="flex items-center justify-between mb-xs">
-<span class="font-code-bold text-code-bold text-on-surface">Entry Point</span>
-<span class="material-symbols-outlined text-secondary">input</span>
-</div>
-<p class="font-body-md text-body-md text-on-surface-variant text-sm">Initializes graph state.</p>
-</div>
-<div class="border-3 border-on-background bg-primary-fixed p-sm cursor-move neo-shadow hover:neo-shadow-hover transition-all active:neo-shadow-active">
-<div class="flex items-center justify-between mb-xs">
-<span class="font-code-bold text-code-bold text-on-primary-fixed">LLM Node</span>
-<span class="material-symbols-outlined text-primary">psychology</span>
-</div>
-<p class="font-body-md text-body-md text-on-primary-fixed-variant text-sm">Invokes language model.</p>
-</div>
-<div class="border-3 border-on-background bg-tertiary-fixed p-sm cursor-move neo-shadow hover:neo-shadow-hover transition-all active:neo-shadow-active">
-<div class="flex items-center justify-between mb-xs">
-<span class="font-code-bold text-code-bold text-on-tertiary-fixed">Tool Node</span>
-<span class="material-symbols-outlined text-tertiary">build</span>
-</div>
-<p class="font-body-md text-body-md text-on-tertiary-fixed-variant text-sm">Executes external tools.</p>
-</div>
-<div class="border-3 border-on-background bg-secondary-fixed p-sm cursor-move neo-shadow hover:neo-shadow-hover transition-all active:neo-shadow-active">
-<div class="flex items-center justify-between mb-xs">
-<span class="font-code-bold text-code-bold text-on-secondary-fixed">Conditional Edge</span>
-<span class="material-symbols-outlined text-secondary">call_split</span>
-</div>
-<p class="font-body-md text-body-md text-on-secondary-fixed-variant text-sm">Routes based on state.</p>
-</div>
-</div>
-</div>
-<button class="h-[56px] bg-primary text-on-primary font-display-lg text-[20px] uppercase border-3 border-on-background neo-shadow hover:neo-shadow-hover active:neo-shadow-active transition-all mt-auto shrink-0 flex items-center justify-center gap-xs">
-<span class="material-symbols-outlined">play_arrow</span>
-                New Run
-            </button>
-</aside>
-<!-- Main Canvas -->
-<main class="flex-1 bg-surface-container-low relative overflow-hidden bg-grid-pattern cursor-grab active:cursor-grabbing">
-<!-- Toolbar -->
-<div class="absolute top-sm left-sm right-sm flex justify-between items-start pointer-events-none z-20">
-<div class="flex gap-xs pointer-events-auto">
-<button class="w-10 h-10 bg-surface border-3 border-on-background flex items-center justify-center neo-shadow hover:neo-shadow-hover active:neo-shadow-active transition-all" title="Zoom In">
-<span class="material-symbols-outlined">zoom_in</span>
-</button>
-<button class="w-10 h-10 bg-surface border-3 border-on-background flex items-center justify-center neo-shadow hover:neo-shadow-hover active:neo-shadow-active transition-all" title="Zoom Out">
-<span class="material-symbols-outlined">zoom_out</span>
-</button>
-<button class="w-10 h-10 bg-surface border-3 border-on-background flex items-center justify-center neo-shadow hover:neo-shadow-hover active:neo-shadow-active transition-all" title="Fit to Screen">
-<span class="material-symbols-outlined">fit_screen</span>
-</button>
-</div>
-<div class="bg-surface border-3 border-on-background p-xs neo-shadow flex gap-sm pointer-events-auto">
-<div class="flex items-center gap-xs">
-<div class="w-3 h-3 bg-secondary border border-on-background"></div>
-<span class="font-label-sm text-label-sm">Valid</span>
-</div>
-<div class="flex items-center gap-xs">
-<div class="w-3 h-3 bg-error border border-on-background"></div>
-<span class="font-label-sm text-label-sm">Error</span>
-</div>
-</div>
-</div>
-<!-- Graph Visualizer (Absolute Positioning for Nodes) -->
-<div class="w-full h-full relative" id="graph-container">
-<!-- SVG Connectors Background Layer -->
-<svg class="absolute inset-0 w-full h-full pointer-events-none z-0" style="min-width: 100%; min-height: 100%;">
-<defs>
-<marker id="arrowhead" markerheight="7" markerwidth="10" orient="auto" refx="9" refy="3.5">
-<polygon class="connector-arrow" points="0 0, 10 3.5, 0 7"></polygon>
-</marker>
-</defs>
-<!-- Line: Entry to LLM -->
-<path class="connector-line" d="M 250 150 L 320 150 L 320 250 L 400 250" marker-end="url(#arrowhead)"></path>
-<!-- Line: LLM to Tool -->
-<path class="connector-line" d="M 600 250 L 650 250 L 650 400 L 750 400" marker-end="url(#arrowhead)"></path>
-<!-- Line: LLM to End -->
-<path class="connector-line" d="M 600 250 L 650 250 L 650 100 L 800 100" marker-end="url(#arrowhead)"></path>
-</svg>
-<!-- Node: Entry -->
-<div class="absolute top-[120px] left-[100px] w-[150px] bg-surface border-3 border-on-background rounded-lg neo-shadow z-10 cursor-pointer hover:border-primary transition-colors">
-<div class="border-b-3 border-on-background p-xs bg-surface-container-high rounded-t-[0.125rem] flex items-center justify-between">
-<span class="font-code-bold text-code-bold text-on-surface">__start__</span>
-<span class="material-symbols-outlined text-[16px]">play_circle</span>
-</div>
-<div class="p-xs">
-<span class="inline-block bg-surface-variant border border-on-background px-1 py-0.5 font-code-md text-[10px] text-on-surface">dict</span>
-</div>
-<!-- Output Port -->
-<div class="absolute top-1/2 -right-[6px] -translate-y-1/2 w-[12px] h-[12px] bg-on-background border border-surface rounded-full"></div>
-</div>
-<!-- Node: LLM (Active/Selected) -->
-<div class="absolute top-[200px] left-[400px] w-[200px] bg-primary-fixed border-3 border-primary rounded-lg neo-shadow-active z-20 cursor-pointer">
-<div class="border-b-3 border-primary p-xs bg-primary-container text-on-primary-container rounded-t-[0.125rem] flex items-center justify-between">
-<div class="flex items-center gap-xs">
-<span class="material-symbols-outlined text-[16px]">psychology</span>
-<span class="font-code-bold text-code-bold">call_model</span>
-</div>
-</div>
-<div class="p-sm flex flex-col gap-xs">
-<div class="flex justify-between items-center">
-<span class="font-label-sm text-[10px] text-on-primary-fixed-variant">Type</span>
-<span class="font-code-md text-[12px] text-on-primary-fixed">ChatOpenAI</span>
-</div>
-<div class="flex justify-between items-center">
-<span class="font-label-sm text-[10px] text-on-primary-fixed-variant">Model</span>
-<span class="font-code-md text-[12px] text-on-primary-fixed">gpt-4-turbo</span>
-</div>
-</div>
-<!-- Input Port -->
-<div class="absolute top-1/2 -left-[6px] -translate-y-1/2 w-[12px] h-[12px] bg-primary border border-surface rounded-full"></div>
-<!-- Output Port -->
-<div class="absolute top-1/2 -right-[6px] -translate-y-1/2 w-[12px] h-[12px] bg-primary border border-surface rounded-full"></div>
-</div>
-<!-- Node: Tool -->
-<div class="absolute top-[350px] left-[750px] w-[180px] bg-surface border-3 border-on-background rounded-lg neo-shadow z-10 cursor-pointer hover:border-primary transition-colors">
-<div class="border-b-3 border-on-background p-xs bg-tertiary-fixed rounded-t-[0.125rem] flex items-center gap-xs">
-<span class="material-symbols-outlined text-[16px] text-tertiary">build</span>
-<span class="font-code-bold text-code-bold text-on-surface">search_web</span>
-</div>
-<div class="p-xs">
-<div class="flex flex-wrap gap-1">
-<span class="inline-block bg-surface-variant border border-on-background px-1 py-0.5 font-code-md text-[10px] text-on-surface">Tavily</span>
-<span class="inline-block bg-surface-variant border border-on-background px-1 py-0.5 font-code-md text-[10px] text-on-surface">max_results=3</span>
-</div>
-</div>
-<!-- Input Port -->
-<div class="absolute top-1/2 -left-[6px] -translate-y-1/2 w-[12px] h-[12px] bg-on-background border border-surface rounded-full"></div>
-</div>
-<!-- Node: End -->
-<div class="absolute top-[70px] left-[800px] w-[120px] bg-surface border-3 border-on-background rounded-lg neo-shadow z-10 cursor-pointer hover:border-primary transition-colors">
-<div class="border-b-3 border-on-background p-xs bg-surface-container-high rounded-t-[0.125rem] flex items-center justify-center">
-<span class="font-code-bold text-code-bold text-on-surface">__end__</span>
-</div>
-<!-- Input Port -->
-<div class="absolute top-1/2 -left-[6px] -translate-y-1/2 w-[12px] h-[12px] bg-on-background border border-surface rounded-full"></div>
-</div>
-</div>
-</main>
-<!-- Right Panel: Node Inspector -->
-<aside class="w-[360px] h-full border-l-3 border-on-background bg-surface border-l-[3px] shadow-[-6px_0px_0px_0px_rgba(0,0,0,0.1)] z-30 flex flex-col shrink-0">
-<div class="p-sm border-b-3 border-on-background bg-primary-container text-on-primary-container flex justify-between items-center">
-<h2 class="font-display-lg text-[24px] uppercase font-bold tracking-tight">Inspector</h2>
-<span class="material-symbols-outlined">tune</span>
-</div>
-<!-- Inspector Content (Scrollable) -->
-<div class="flex-1 overflow-y-auto p-sm flex flex-col gap-md">
-<!-- Header Info -->
-<div>
-<div class="flex items-center gap-xs mb-xs">
-<div class="w-3 h-3 bg-primary rounded-full border border-on-background"></div>
-<h3 class="font-code-bold text-body-lg">call_model</h3>
-</div>
-<p class="font-body-md text-on-surface-variant text-sm">LLM Node instance invoking OpenAI.</p>
-</div>
-<hr class="border-t-3 border-on-background"/>
-<!-- Properties Form -->
-<div class="flex flex-col gap-sm">
-<div>
-<label class="block font-label-sm text-label-sm text-on-surface mb-xs uppercase">Node ID</label>
-<input class="w-full h-[48px] px-sm border-3 border-on-background bg-surface-container-high font-code-md text-on-surface opacity-70" disabled="" type="text" value="call_model"/>
-</div>
-<div>
-<label class="block font-label-sm text-label-sm text-on-surface mb-xs uppercase">Model</label>
-<select class="w-full h-[48px] px-sm border-3 border-on-background bg-surface font-code-md text-on-surface focus:outline-none focus:border-primary focus:shadow-[4px_4px_0px_0px_#0050cb] appearance-none">
-<option>gpt-4-turbo</option>
-<option>gpt-3.5-turbo</option>
-<option>claude-3-opus</option>
-</select>
-</div>
-<div>
-<label class="block font-label-sm text-label-sm text-on-surface mb-xs uppercase">Temperature</label>
-<input class="w-full h-[48px] px-sm border-3 border-on-background bg-surface font-code-md text-on-surface focus:outline-none focus:border-primary focus:shadow-[4px_4px_0px_0px_#0050cb]" max="1" min="0" step="0.1" type="number" value="0.7"/>
-</div>
-</div>
-<hr class="border-t-3 border-on-background"/>
-<!-- JSON Editor (State Schema) -->
-<div class="flex flex-col gap-xs flex-1">
-<div class="flex justify-between items-center">
-<label class="font-label-sm text-label-sm text-on-surface uppercase">State Schema (JSON)</label>
-<button class="text-primary hover:underline font-label-sm text-[10px] uppercase">Format</button>
-</div>
-<div class="flex-1 min-h-[200px] border-3 border-on-background bg-[#1e1e1e] p-xs relative group">
-<textarea class="w-full h-full bg-transparent text-[#d4d4d4] font-code-md text-[13px] resize-none focus:outline-none p-2 border-none" spellcheck="false">{
-  "messages": {
-    "type": "list",
-    "reducer": "add_messages"
-  },
-  "current_tool": {
-    "type": "str",
-    "default": null
-  }
-}
-                        </textarea>
-<div class="absolute bottom-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-<button class="bg-surface text-on-surface border-2 border-on-background p-1 hover:bg-primary-container hover:text-on-primary-container" title="Copy JSON">
-<span class="material-symbols-outlined text-[16px]">content_copy</span>
-</button>
-</div>
-</div>
-</div>
-</div>
-<!-- Save Action -->
-<div class="p-sm border-t-3 border-on-background bg-surface-container-low">
-<button class="w-full h-[56px] bg-primary text-on-primary font-display-lg text-[18px] border-3 border-on-background neo-shadow hover:neo-shadow-hover active:neo-shadow-active transition-all">
-                    Apply Changes
-                </button>
-</div>
-</aside>
-</div>
-<!-- Footer -->
-<footer class="w-full border-t-3 border-on-background py-xs px-margin bg-surface-container-low flex justify-between items-center shrink-0 z-40 relative shadow-[0_-4px_0_0_rgba(0,0,0,1)]">
-<div class="font-code-bold text-code-bold text-on-surface">LangGraph v2.4.0</div>
-<div class="flex gap-md">
-<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary underline transition-opacity duration-200" href="#">API Heartbeat</a>
-<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary underline transition-opacity duration-200" href="#">System Status</a>
-<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary underline transition-opacity duration-200" href="#">Docs</a>
-</div>
-</footer>
+<body>
 
-<script>
-// Make navigation links functional
-document.querySelectorAll('nav a[href="#"]').forEach(link => {
-    link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const text = link.textContent.trim();
-        
-        if (text === 'Agent Runs') window.location.href = '/execution';
-        else if (text === 'Workflows') window.location.href = '/workflow';
-        else if (text === 'Monitors') window.location.href = '/history';
-        else if (text === 'Settings') window.location.href = '/';
-    });
-});
+    <div id="navbarContainer"></div>
 
-// Make "New Run" button functional
-document.querySelector('button.neo-shadow').addEventListener('click', () => {
-    window.location.href = '/generate';
-});
+    <main class="studio-layout">
+        <header class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <span class="material-symbols-outlined" style="color: var(--cyan-glow);">account_tree</span>
+                    State Graph Canvas
+                </h1>
+                <p class="page-subtitle">Visual representation of execution state nodes, conditional edge routing, and self-correction loops.</p>
+            </div>
+        </header>
 
-// Load workflow from last generation
-function loadWorkflowData() {
-    const lastGen = JSON.parse(localStorage.getItem('lastGeneration') || 'null');
-    
-    if (!lastGen) {
-        console.log('No workflow data available yet');
-        return;
-    }
-    
-    // Update the LLM node with actual model info
-    const modelNameEl = document.querySelector('.font-code-md.text-\\[12px\\].text-on-primary-fixed');
-    if (modelNameEl && modelNameEl.textContent === 'gpt-4-turbo') {
-        modelNameEl.textContent = 'Llama 3.3 70B';
-    }
-    
-    const modelTypeEl = document.querySelector('.font-code-md.text-\\[12px\\].text-on-primary-fixed');
-    if (modelTypeEl) {
-        const typeEl = modelTypeEl.parentElement.previousElementSibling;
-        if (typeEl) {
-            const nextSibling = typeEl.nextElementSibling?.querySelector('.font-code-md');
-            if (nextSibling && nextSibling.textContent === 'ChatOpenAI') {
-                nextSibling.textContent = 'ChatGroq';
+        <div class="studio-card" style="margin-bottom: 24px; position: relative; background: #050609;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                <span class="cyber-badge cyber-badge-cyan">SCHEMA: StateGraph(CrewState)</span>
+                <span style="font-size: 12px; color: var(--text-muted);">Click any node on the graph to inspect state parameters</span>
+            </div>
+
+            <!-- SVG Visual State Canvas -->
+            <div style="padding: 40px 10px; display: flex; align-items: center; justify-content: center;">
+                <svg width="860" height="200" viewBox="0 0 860 200" style="width: 100%; max-width: 860px;">
+                    <defs>
+                        <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#3f3f46"/>
+                        </marker>
+                        <marker id="arrow-emerald" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#00e676"/>
+                        </marker>
+                        <marker id="arrow-amber" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#ffb300"/>
+                        </marker>
+                    </defs>
+
+                    <!-- Edges -->
+                    <line x1="80" y1="100" x2="180" y2="100" stroke="#3f3f46" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="320" y1="100" x2="420" y2="100" stroke="#3f3f46" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="560" y1="100" x2="660" y2="100" stroke="#3f3f46" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="740" y1="100" x2="800" y2="100" stroke="#00e676" stroke-width="2" marker-end="url(#arrow-emerald)"/>
+
+                    <!-- Conditional Feedback Loop -->
+                    <path d="M 700 70 Q 450 -10 250 70" fill="none" stroke="#ffb300" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#arrow-amber)"/>
+
+                    <!-- START Node -->
+                    <g transform="translate(40, 100)" class="node-item" onclick="selectNode('START')" style="cursor: pointer;">
+                        <circle r="26" fill="#0d0f15" stroke="#00f2fe" stroke-width="2"/>
+                        <text text-anchor="middle" dy="4" fill="#ffffff" font-size="11" font-weight="700">START</text>
+                    </g>
+
+                    <!-- Developer Engine Node -->
+                    <g transform="translate(250, 100)" class="node-item" onclick="selectNode('Developer')" style="cursor: pointer;">
+                        <rect x="-65" y="-30" width="130" height="60" rx="8" fill="#0d0f15" stroke="#00f2fe" stroke-width="2"/>
+                        <text text-anchor="middle" dy="-6" fill="#00f2fe" font-size="10" font-weight="700">ENGINE</text>
+                        <text text-anchor="middle" dy="10" fill="#ffffff" font-size="13" font-weight="700">Developer</text>
+                    </g>
+
+                    <!-- Sandbox Execution Node -->
+                    <g transform="translate(490, 100)" class="node-item" onclick="selectNode('Tester')" style="cursor: pointer;">
+                        <rect x="-65" y="-30" width="130" height="60" rx="8" fill="#0d0f15" stroke="#00e676" stroke-width="2"/>
+                        <text text-anchor="middle" dy="-6" fill="#00e676" font-size="10" font-weight="700">SANDBOX</text>
+                        <text text-anchor="middle" dy="10" fill="#ffffff" font-size="13" font-weight="700">Tester</text>
+                    </g>
+
+                    <!-- Router Node -->
+                    <g transform="translate(700, 100)" class="node-item" onclick="selectNode('Router')" style="cursor: pointer;">
+                        <polygon points="0,-35 40,0 0,35 -40,0" fill="#0d0f15" stroke="#ffb300" stroke-width="2"/>
+                        <text text-anchor="middle" dy="4" fill="#ffb300" font-size="10" font-weight="700">ROUTER</text>
+                    </g>
+
+                    <!-- END Node -->
+                    <g transform="translate(820, 100)" class="node-item" onclick="selectNode('END')" style="cursor: pointer;">
+                        <circle r="18" fill="#0d0f15" stroke="#00e676" stroke-width="2"/>
+                        <text text-anchor="middle" dy="4" fill="#00e676" font-size="10" font-weight="700">END</text>
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Node Inspector Card -->
+        <div class="studio-card" id="inspectorCard">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="material-symbols-outlined" style="color: var(--cyan-glow);">info</span>
+                    <h2 style="font-size: 18px; font-weight: 700;" id="nodeTitle">Developer Engine Node</h2>
+                </div>
+                <span class="cyber-badge cyber-badge-cyan" id="nodeBadge">ACTIVE NODE</span>
+            </div>
+
+            <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.6;" id="nodeDescription">
+                Generates Python/Java/C++ solution code based on task specification. Learns from error feedback when routed back by the Tester node during self-correction iterations.
+            </p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div style="background: #050609; padding: 16px; border-radius: 8px; border: 1px solid var(--border-hairline);">
+                    <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">State Inputs</div>
+                    <code style="font-size: 13px; color: var(--cyan-glow);" id="nodeInputs">messages, language, iterations, report</code>
+                </div>
+
+                <div style="background: #050609; padding: 16px; border-radius: 8px; border: 1px solid var(--border-hairline);">
+                    <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">State Reducer Output</div>
+                    <code style="font-size: 13px; color: var(--emerald-green);" id="nodeOutputs">code, messages (appended via add_messages)</code>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/js/common.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const navbarRes = await fetch('/templates/navigation.html');
+            if (navbarRes.ok) {
+                document.getElementById('navbarContainer').innerHTML = await navbarRes.text();
+                setActiveNav('workflow');
             }
-        }
-    }
-    
-    console.log('Workflow loaded with Groq Llama model');
-}
+        });
 
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', () => {
-    loadWorkflowData();
-    console.log('Workflow Builder initialized');
-});
-</script>
-</body></html>
+        const NODE_DATA = {
+            'START': {
+                title: 'START Node',
+                badge: 'ENTRY POINT',
+                desc: 'Workflow entry point. Receives initial CrewState payload with user task specification and target programming language.',
+                inputs: 'Task Specification, Target Language',
+                outputs: 'CrewState initialized with max_iterations=3'
+            },
+            'Developer': {
+                title: 'Developer Engine Node',
+                badge: 'CODE GENERATOR',
+                desc: 'Engine responsible for drafting and refining solution code. Automatically incorporates traceback feedback if self-correction is triggered.',
+                inputs: 'messages (history), language, report',
+                outputs: 'code, AIMessage appended to state'
+            },
+            'Tester': {
+                title: 'Sandbox Execution & Verifier',
+                badge: 'CODE VERIFIER',
+                desc: 'Executes generated solution code in an isolated scope. Validates syntax, captures stdout/stderr, and executes self-contained assertion tests.',
+                inputs: 'code, language',
+                outputs: 'report, execution_success (True/False), iterations++'
+            },
+            'Router': {
+                title: 'Conditional Edge Router',
+                badge: 'GUARDRAIL ROUTER',
+                desc: 'Evaluates execution success. If code passed, routes to END. If code failed and iterations < max_iterations, routes back to Developer for self-correction.',
+                inputs: 'execution_success, iterations, max_iterations',
+                outputs: 'Route target: "developer" OR "end"'
+            },
+            'END': {
+                title: 'END Node',
+                badge: 'TERMINAL STATE',
+                desc: 'Workflow terminal state. Returns final validated code, test execution report, and total iteration count to API caller.',
+                inputs: 'Final CrewState',
+                outputs: 'AgentResponse REST JSON object'
+            }
+        };
+
+        function selectNode(nodeKey) {
+            const data = NODE_DATA[nodeKey];
+            if (!data) return;
+
+            document.getElementById('nodeTitle').textContent = data.title;
+            document.getElementById('nodeBadge').textContent = data.badge;
+            document.getElementById('nodeDescription').textContent = data.desc;
+            document.getElementById('nodeInputs').textContent = data.inputs;
+            document.getElementById('nodeOutputs').textContent = data.outputs;
+        }
+    </script>
+</body>
+</html>
