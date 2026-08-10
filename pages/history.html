@@ -25,18 +25,18 @@
                 <p class="page-subtitle">Review previous agent executions, inspect code outputs, and audit assertion reports.</p>
             </div>
 
-            <button id="clearHistoryBtn" class="cyber-btn cyber-btn-secondary" style="color: var(--accent-terracotta);">
+            <button id="clearHistoryBtn" class="cyber-btn cyber-btn-secondary" style="color: var(--accent-terracotta);" data-tooltip="Clear Audit Log History: Empties local history store.">
                 <span class="material-symbols-outlined">delete</span>
                 Clear Logs
             </button>
         </header>
 
         <!-- Search Controls -->
-        <div class="studio-card" style="margin-bottom: 24px; padding: 20px;">
+        <div class="studio-card" style="margin-bottom: 24px; padding: 20px;" data-tooltip="Audit Search & Filter Controls: Filter runs by keyword or execution status.">
             <div style="display: grid; grid-template-columns: 1fr 220px; gap: 20px;">
-                <input id="searchInput" type="text" placeholder="Search prompts or code content..." style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px 16px; color: var(--text-primary); outline: none; font-size: 14px;"/>
+                <input id="searchInput" type="text" placeholder="Search prompts or code content..." style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px 16px; color: var(--text-primary); outline: none; font-size: 14px;" data-tooltip="Search input: Filter runs by task specification keyword."/>
 
-                <select id="filterStatusSelect" style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px 16px; color: var(--text-primary); outline: none; font-size: 14px;">
+                <select id="filterStatusSelect" style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px 16px; color: var(--text-primary); outline: none; font-size: 14px;" data-tooltip="Filter status: Select Passed or Failed verification runs.">
                     <option value="all">All Statuses</option>
                     <option value="passed">Passed Runs</option>
                     <option value="failed">Failed Runs</option>
@@ -45,7 +45,7 @@
         </div>
 
         <!-- History Table -->
-        <div class="studio-card">
+        <div class="studio-card" data-tooltip="Audit Run Table: Click any row to open the complete source code & execution report inspector modal.">
             <div style="overflow-x: auto;">
                 <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
                     <thead>
