@@ -13,7 +13,7 @@ from agent import agent
 from langchain_core.messages import HumanMessage
 
 
-def test_agent(task: str, expect_failure: bool = False):
+def run_single_agent_test(task: str, expect_failure: bool = False):
     """
     Test the agent with a task.
     
@@ -76,6 +76,10 @@ def test_agent(task: str, expect_failure: bool = False):
         return False
 
 
+def test_agent_graph_execution():
+    assert run_single_agent_test("Write a function to calculate fibonacci numbers") is True
+
+
 if __name__ == "__main__":
     # Test cases including ones that might need self-correction
     test_tasks = [
@@ -92,7 +96,7 @@ if __name__ == "__main__":
     
     success_count = 0
     for task, expect_failure in test_tasks:
-        if test_agent(task, expect_failure):
+        if run_single_agent_test(task, expect_failure):
             success_count += 1
         print("\n")
     
