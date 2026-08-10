@@ -187,7 +187,7 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// Comprehensive Element-by-Element Tour Specification
+// Comprehensive Element-by-Element Tour Specification in Plain English
 const FULL_PLATFORM_TOUR = [
     {
         path: '/',
@@ -196,43 +196,43 @@ const FULL_PLATFORM_TOUR = [
         steps: [
             {
                 selector: '.top-navbar',
-                title: '1/5 Navigation Header Bar',
-                desc: 'Floating pill bar with quick links to Overview, Code Workbench, State Graph, Telemetry, and Audit Logs.'
+                title: '1/5 Navigation Bar',
+                desc: 'Use these top links to easily move between the Overview, Code Workbench, State Graph, Telemetry, and Audit Log pages.'
             },
             {
                 selector: '[data-tooltip*="Total Executions"]',
-                title: '1/5 Metric: Total Executions',
-                desc: 'Displays the total number of code verification runs processed by the LangGraph multi-agent engine.'
+                title: '1/5 Total Tasks Completed',
+                desc: 'Shows how many coding tasks our AI team has generated and tested so far.'
             },
             {
                 selector: '[data-tooltip*="Pass Rate"]',
-                title: '1/5 Metric: Verification Pass Rate',
-                desc: 'Percentage of code generation runs that executed cleanly without assertion failures.'
+                title: '1/5 Test Pass Rate',
+                desc: 'The percentage of AI-generated code that passed all automated test checks cleanly.'
             },
             {
                 selector: '[data-tooltip*="Self-Fix Ceiling"]',
-                title: '1/5 Metric: Self-Fix Ceiling',
-                desc: 'Maximum self-correction loops allowed before the conditional edge router terminates.'
+                title: '1/5 Max Fix Attempts',
+                desc: 'The maximum number of times (up to 3 times) the AI can automatically fix its own code if an error happens.'
             },
             {
-                selector: '[data-tooltip*="Runtime Sandbox"]',
-                title: '1/5 Metric: Runtime Sandbox Scope',
-                desc: 'Supports multi-language execution in Python 3.11, Java 17, and C++ 20.'
+                selector: '[data-tooltip*="Coding Languages"]',
+                title: '1/5 Supported Languages',
+                desc: 'You can generate and test code in Python, Java, or C++.'
             },
             {
                 selector: '[data-tooltip*="Task Specification Presets"]',
-                title: '1/5 Presets Grid',
-                desc: 'One-click task presets (Fibonacci, Palindrome, Safe Division, Data Aggregator) ready for instant execution.'
+                title: '1/5 Ready-Made Examples',
+                desc: 'Click any example (like Prime Checker or Fibonacci) to generate code instantly.'
             },
             {
                 selector: '.studio-card:has(.cyber-badge-terracotta)',
-                title: '1/5 State Graph Pipeline Overview',
-                desc: 'Visual summary of the Developer → Sandbox → Router agent execution chain.'
+                title: '1/5 AI Team Pipeline',
+                desc: 'Shows how our AI team works together: Developer writes code -> Tester tests code -> Router fixes errors.'
             },
             {
                 selector: '#dashboardHistoryBody',
-                title: '1/5 Recent Executions Audit Table',
-                desc: 'Real-time table tracking the 5 most recent runs, language tags, pass/fail status, and timestamps.'
+                title: '1/5 Recent Activity Log',
+                desc: 'A real-time list of your 5 most recent code generation tasks and whether they passed or failed.'
             }
         ]
     },
@@ -243,33 +243,33 @@ const FULL_PLATFORM_TOUR = [
         steps: [
             {
                 selector: '#taskInput',
-                title: '2/5 Task Specification Requirement',
-                desc: 'Please specify your coding task by typing in this box OR clicking a quick preset button (Fibonacci, Palindrome, Safe Division) below to unlock the tour!'
+                title: '2/5 Task Specification Input',
+                desc: 'Please type what program you want to build in this box, OR click one of the quick preset buttons below (Fibonacci, Palindrome, Safe Division) to continue!'
             },
             {
                 selector: '#langSelectWrapper',
-                title: '2/5 Custom Target Language Dropdown',
-                desc: 'Bespoke custom web dropdown selector for Python 3.11, Java 17, or C++ 20 target syntax.'
+                title: '2/5 Target Language Selector',
+                desc: 'Choose whether you want your code written in Python 3.11, Java 17, or C++ 20.'
             },
             {
                 selector: '#ceilingSelectWrapper',
-                title: '2/5 Custom Self-Fix Ceiling Dropdown',
-                desc: 'Custom studio dropdown configuring maximum self-correction loops (1, 3, or 5 iterations).'
+                title: '2/5 Self-Fix Limit',
+                desc: 'Choose how many times (1, 3, or 5 loops) the AI can try fixing its own code errors.'
             },
             {
                 selector: '#generateBtn',
-                title: '2/5 Execute & Verify Action',
-                desc: 'Submits your specification to trigger multi-agent generation, sandbox testing, and assertion checks.'
+                title: '2/5 Run Task Button',
+                desc: 'Click this button to start the AI code generation and run automatic test checks.'
             },
             {
                 selector: '.code-editor-pane:first-child',
-                title: '2/5 Solution Code Viewer',
-                desc: 'Displays line-numbered source code output generated by the Developer agent.'
+                title: '2/5 Generated Code Window',
+                desc: 'Displays the complete source code written by our Developer AI.'
             },
             {
                 selector: '.code-editor-pane:last-child',
-                title: '2/5 Verification Report Terminal',
-                desc: 'Displays test stdout/stderr, evaluation output, and assertion results.'
+                title: '2/5 Test Results Terminal',
+                desc: 'Displays the test results and log outputs from running your code.'
             }
         ]
     },
@@ -280,23 +280,23 @@ const FULL_PLATFORM_TOUR = [
         steps: [
             {
                 selector: '#canvasTaskInput',
-                title: '3/5 Dynamic Task Simulation Bar',
-                desc: 'Enter any prompt or pick a preset (Prime Checker, Fibonacci, Palindrome, Factorial) to update the graph canvas.'
+                title: '3/5 Task Simulator Bar',
+                desc: 'Type any task or pick a preset to update the live visual graph diagram.'
             },
             {
                 selector: 'svg',
-                title: '3/5 Visual State Graph Canvas',
-                desc: 'SVG canvas showing active node highlights (START → Developer → Tester → Router → END).'
+                title: '3/5 Visual State Graph Diagram',
+                desc: 'A visual diagram showing how data flows between our AI agents (START -> Developer -> Tester -> Router -> END).'
             },
             {
                 selector: '#simStepBtn',
-                title: '3/5 Step Simulator Controls',
-                desc: 'Click "Step Forward" to step node-by-node through the graph, OR click "Auto-Play Tour" to watch active nodes illuminate in real time!'
+                title: '3/5 Simulator Controls',
+                desc: 'Click "Step Forward" to move step-by-step through the process, OR click "Auto-Play Tour" to watch active nodes glow in real time!'
             },
             {
                 selector: '#inspectorCard',
-                title: '3/5 High-Legibility State Inspector',
-                desc: 'Syntax-highlighted dark containers displaying exact CrewState inputs and updated reducer outputs.'
+                title: '3/5 State Inspector Card',
+                desc: 'Displays the exact input payload and code output at each step of the process.'
             }
         ]
     },
@@ -306,24 +306,24 @@ const FULL_PLATFORM_TOUR = [
         nextUrl: '/history',
         steps: [
             {
-                selector: '[data-tooltip*="API Health Status"]',
-                title: '4/5 Metric: API Health Status',
-                desc: 'Operational status of the FastAPI REST backend engine.'
+                selector: '[data-tooltip*="System Status"]',
+                title: '4/5 Server Status',
+                desc: 'Shows if our server and AI helpers are online and ready to build your code.'
             },
             {
-                selector: '[data-tooltip*="Circuit Breaker"]',
-                title: '4/5 Metric: Circuit Breaker Status',
-                desc: 'Protection mechanism that trips if consecutive upstream errors occur.'
+                selector: '[data-tooltip*="Safety Guard"]',
+                title: '4/5 Safety Guard',
+                desc: 'Automatically pauses requests if server issues occur, protecting your app from crashing.'
             },
             {
-                selector: '[data-tooltip*="Rate Limiter"]',
-                title: '4/5 Metric: Rate Limiter Guardrail',
-                desc: 'Sliding-window rate limit guardrail preventing API abuse.'
+                selector: '[data-tooltip*="Speed Limiter"]',
+                title: '4/5 Speed Limiter',
+                desc: 'Prevents too many requests at once so everyone gets fast and reliable answers.'
             },
             {
                 selector: '#logTerminal',
-                title: '4/5 Live Diagnostics Terminal',
-                desc: 'Real-time trace logs streaming system events, health status, and execution flows.'
+                title: '4/5 Live System Log Stream',
+                desc: 'A live scrolling terminal showing internal system health logs and execution events.'
             }
         ]
     },
@@ -334,13 +334,13 @@ const FULL_PLATFORM_TOUR = [
         steps: [
             {
                 selector: '#searchInput',
-                title: '5/5 Search & Filter Controls',
-                desc: 'Search past executions by keyword or filter by Passed/Failed status.'
+                title: '5/5 Search & Filter Bar',
+                desc: 'Search past code runs by keyword or filter by Passed/Failed status.'
             },
             {
                 selector: 'table',
-                title: '5/5 Audit Log Table',
-                desc: 'Click any row to open the complete source code and verification report modal.'
+                title: '5/5 Audit History Table',
+                desc: 'Click any row in this table to open a pop-up window showing the full source code and test details.'
             }
         ]
     }
@@ -615,7 +615,7 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (path.includes('execution')) pageId = 'execution';
     else if (path.includes('history')) pageId = 'history';
     
-    setActiveNav(pageId);
+    setActiveNav('pageId');
     initCommandPalette();
     initHoverTooltips();
 
