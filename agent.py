@@ -119,18 +119,22 @@ class DemoLLM:
         elif "c++" in prompt_lower or "cpp" in prompt_lower:
             lang = "cpp"
             
-        # Task detection
+        # Task detection & categorization
         is_prime = "prime" in user_task_lower
         is_fibo = "fibonacci" in user_task_lower
         is_palin = "palindrome" in user_task_lower
         is_div = "divide" in user_task_lower or "division" in user_task_lower
         is_reverse = "reverse" in user_task_lower
         is_factorial = "factorial" in user_task_lower
+        is_sort = any(k in user_task_lower for k in ["sort", "bubble", "quicksort", "mergesort", "order"])
+        is_search = any(k in user_task_lower for k in ["binary search", "search", "lookup", "find"])
+        is_stats = any(k in user_task_lower for k in ["stats", "statistics", "average", "sum", "count", "min", "max", "aggregate"])
+        is_anagram = "anagram" in user_task_lower
 
         import re
         clean_task = re.sub(r'[^a-zA-Z0-9\s]', '', user_task).strip()
         safe_task_summary = clean_task[:40] if clean_task else "custom task"
-        clean_words = [w for w in clean_task.split() if len(w) > 2 and w.lower() not in ['write', 'create', 'function', 'code', 'python', 'java', 'cpp', 'that', 'with', 'check', 'calculate', 'using']]
+        clean_words = [w for w in clean_task.split() if len(w) > 2 and w.lower() not in ['write', 'create', 'function', 'code', 'python', 'java', 'cpp', 'that', 'with', 'check', 'calculate', 'using', 'return', 'make']]
         
         func_name_py = "_".join(w.lower() for w in clean_words[:3]) or "custom_solution"
         func_name_java = "".join(w.capitalize() for w in clean_words[:3]) or "CustomSolution"
@@ -159,7 +163,7 @@ assert result == "olleh", "Reverse test failed"
 # Self-test validation
 result = is_prime(29)
 print("is_prime(29):", result)
-assert is_prime(29) == True, "Prime test failed for 29"
+assert result == True, "Prime test failed for 29"
 '''
             elif is_fibo:
                 code = '''def fibonacci(n: int) -> list[int]:
@@ -207,17 +211,82 @@ assert safe_divide(10, 2) == 5.0, "Divide test failed"
 print("factorial(5):", factorial(5))
 assert factorial(5) == 120, "Factorial test failed"
 '''
-            else:
-                code = f'''def {func_name_py}(input_data: list) -> dict:
-    """Dynamically generated solution for specification: {safe_task_summary}"""
-    if not input_data:
-        return {{"status": "empty", "task": "{safe_task_summary}"}}
-    return {{"status": "success", "task": "{safe_task_summary}", "count": len(input_data)}}
+            elif is_sort:
+                code = '''def quick_sort(arr: list) -> list:
+    """Sort a list in ascending order."""
+    if len(arr) <= 1:
+        return arr
+    pivot = arr[len(arr) // 2]
+    left = [x for x in arr if x < pivot]
+    middle = [x for x in arr if x == pivot]
+    right = [x for x in arr if x > pivot]
+    return quick_sort(left) + middle + quick_sort(right)
 
 # Self-test validation
-res = {func_name_py}([10, 20, 30])
-print("Dynamic execution output:", res)
-assert res["status"] == "success", "Specification execution failed"
+result = quick_sort([64, 34, 25, 12, 22, 11, 90])
+print("quick_sort result:", result)
+assert result == [11, 12, 22, 25, 34, 64, 90], "Sort test failed"
+'''
+            elif is_search:
+                code = '''def binary_search(arr: list, target: int) -> int:
+    """Search for target in sorted array. Returns index or -1."""
+    left, right = 0, len(arr) - 1
+    while left <= right:
+        mid = (left + right) // 2
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    return -1
+
+# Self-test validation
+data = [10, 20, 30, 40, 50]
+idx = binary_search(data, 30)
+print("binary_search for 30:", idx)
+assert idx == 2, "Search test failed"
+'''
+            elif is_stats:
+                code = '''def compute_statistics(numbers: list[float]) -> dict:
+    """Compute aggregate count, sum, average, min, and max."""
+    if not numbers:
+        return {"count": 0, "sum": 0, "avg": 0, "min": None, "max": None}
+    return {
+        "count": len(numbers),
+        "sum": sum(numbers),
+        "avg": sum(numbers) / len(numbers),
+        "min": min(numbers),
+        "max": max(numbers)
+    }
+
+# Self-test validation
+stats = compute_statistics([10, 20, 30, 40, 50])
+print("compute_statistics:", stats)
+assert stats["avg"] == 30.0 and stats["sum"] == 150
+'''
+            elif is_anagram:
+                code = '''def is_anagram(s1: str, s2: str) -> bool:
+    """Check if two strings are anagrams."""
+    c1 = sorted(c.lower() for c in s1 if c.isalnum())
+    c2 = sorted(c.lower() for c in s2 if c.isalnum())
+    return c1 == c2
+
+# Self-test validation
+res = is_anagram("listen", "silent")
+print("is_anagram('listen', 'silent'):", res)
+assert res == True, "Anagram test failed"
+'''
+            else:
+                code = f'''def {func_name_py}(input_data: list = None) -> dict:
+    """Dynamically generated solution for: {safe_task_summary}"""
+    data = input_data or [10, 20, 30]
+    return {{"status": "success", "task": "{safe_task_summary}", "processed_count": len(data)}}
+
+# Self-test validation
+res = {func_name_py}([1, 2, 3, 4])
+print("Execution output:", res)
+assert res["status"] == "success", "Execution assertion failed"
 '''
 
         elif lang == "java":
