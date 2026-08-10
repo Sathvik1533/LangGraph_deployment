@@ -7,6 +7,10 @@ This module defines a two-agent system with self-correction loops:
 - Conditional Routing: Routes back to developer if tests fail (max 3 iterations)
 
 Pattern: State Machine with Conditional Loops and State Reducers
+
+Guardrails: Inspired by Guardrails AI, LLM Guard, and NeMo Guardrails
+  - Input: Prompt injection, topic boundary, content safety
+  - Output: Dangerous code, PII leaks, code relevance, language correctness
 """
 
 import os
@@ -33,9 +37,19 @@ from tenacity import (
     after_log
 )
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+# Import LLM Guardrails Engine
+try:
+    from guardrails import InputGuard, OutputGuard, guardrail_stats
+    GUARDRAILS_AVAILABLE = True
+    logger.info("🛡️ LLM Guardrails Engine loaded successfully")
+except ImportError:
+    GUARDRAILS_AVAILABLE = False
+    logger.warning("⚠️ Guardrails module not found — running without guardrails")
 
 
 # ============================================================================
@@ -567,6 +581,19 @@ def developer_node(state: CrewState) -> Dict[str, Any]:
                 "execution_success": False
             }
         
+        # OUTPUT GUARDRAILS: Scan generated code for dangerous patterns, PII, relevance
+        if GUARDRAILS_AVAILABLE:
+            output_report = OutputGuard.scan_all(clean_code, target_language)
+            guardrail_stats.record_output_scan(output_report)
+            if not output_report.passed:
+                logger.warning(f"🔒 Output guardrail blocked: {output_report.blocked_by}")
+                return {
+                    "code": f"// GUARDRAIL BLOCKED: {output_report.reason}",
+                    "messages": [AIMessage(content=f"🛡️ Output blocked by {output_report.blocked_by}: {output_report.reason}")],
+                    "iterations": state.get("iterations", 0) + 1,
+                    "execution_success": False
+                }
+        
         return {
             "code": clean_code,
             "messages": [AIMessage(content=f"✅ Generated {target_language.upper()} code (iteration {state.get('iterations', 0) + 1})")],
@@ -648,12 +675,36 @@ def should_continue(state: CrewState) -> Literal["developer", "end"]:
     return "developer"
 
 
+def guardrail_node(state: CrewState) -> Dict[str, Any]:
+    """Input guardrail node — scans user task before reaching the developer."""
+    if not GUARDRAILS_AVAILABLE:
+        return {"messages": []}  # Pass through if guardrails not loaded
+    
+    task = state["messages"][0].content if state["messages"] else ""
+    input_report = InputGuard.scan_all(task)
+    guardrail_stats.record_input_scan(input_report)
+    
+    if not input_report.passed:
+        logger.warning(f"🛡️ Input guardrail blocked: {input_report.blocked_by}")
+        return {
+            "code": f"// GUARDRAIL BLOCKED: {input_report.reason}",
+            "report": f"### 🛡️ Input Guardrail Alert\n{input_report.reason}\n\nBlocked by: {input_report.blocked_by}\nSeverity: {input_report.severity.value}",
+            "execution_success": False,
+            "iterations": state.get("max_iterations", 3),  # Skip to end
+            "messages": [AIMessage(content=f"🛡️ {input_report.reason}")]
+        }
+    
+    return {"messages": []}  # Pass through to developer
+
+
 def create_workflow() -> StateGraph:
     workflow = StateGraph(CrewState)
+    workflow.add_node("guardrail", guardrail_node)
     workflow.add_node("developer", developer_node)
     workflow.add_node("tester", tester_node)
     
-    workflow.add_edge(START, "developer")
+    workflow.add_edge(START, "guardrail")
+    workflow.add_edge("guardrail", "developer")
     workflow.add_edge("developer", "tester")
     
     workflow.add_conditional_edges(
