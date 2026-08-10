@@ -39,11 +39,19 @@
                     <input id="searchInput" type="text" style="width: 100%; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px 14px 12px 44px; font-size: 14px; color: var(--text-primary); outline: none;" placeholder="Search task specifications or code keywords..." oninput="filterHistoryTable()" data-tooltip="Search Runs: Type any keyword (like 'prime' or 'fibonacci') to find past code runs."/>
                 </div>
 
-                <select id="filterStatusSelect" style="background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px 18px; font-size: 13.5px; font-weight: 600; color: var(--text-primary); outline: none;" onchange="filterHistoryTable()" data-tooltip="Filter Status: Filter past runs by Passed or Failed results.">
-                    <option value="all">All Execution Statuses</option>
-                    <option value="success">Passed Only</option>
-                    <option value="failed">Failed Only</option>
-                </select>
+                <!-- Custom Web Select Component (No Native OS Dropdown) -->
+                <div class="custom-select-wrapper" style="width: 220px;" data-tooltip="Filter Status: Filter past runs by Passed or Failed results.">
+                    <input type="hidden" id="filterStatusSelect" value="all"/>
+                    <div class="custom-select-trigger" onclick="toggleCustomSelect(this, event)">
+                        <span class="custom-select-value" id="filterStatusValue">All Execution Statuses</span>
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: var(--text-muted);">expand_more</span>
+                    </div>
+                    <div class="custom-select-menu" style="z-index: 3000;">
+                        <div class="custom-select-option selected" data-value="all" onclick="selectFilterStatus(this, 'all', 'All Execution Statuses', event)">All Execution Statuses</div>
+                        <div class="custom-select-option" data-value="success" onclick="selectFilterStatus(this, 'success', 'Passed Only', event)">Passed Only</div>
+                        <div class="custom-select-option" data-value="failed" onclick="selectFilterStatus(this, 'failed', 'Failed Only', event)">Failed Only</div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -97,6 +105,31 @@
     <script src="/static/js/common.js"></script>
     <script>
         let fullHistory = [];
+
+        function toggleCustomSelect(trigger, e) {
+            if (e) e.stopPropagation();
+            const wrapper = trigger.closest('.custom-select-wrapper');
+            document.querySelectorAll('.custom-select-wrapper').forEach(w => {
+                if (w !== wrapper) w.classList.remove('open');
+            });
+            wrapper.classList.toggle('open');
+        }
+
+        function selectFilterStatus(opt, val, label, e) {
+            if (e) e.stopPropagation();
+            const wrapper = opt.closest('.custom-select-wrapper');
+            const hidden = wrapper.querySelector('input[type="hidden"]');
+            const valSpan = wrapper.querySelector('.custom-select-value');
+
+            wrapper.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
+            opt.classList.add('selected');
+
+            if (hidden) hidden.value = val;
+            if (valSpan) valSpan.textContent = label;
+
+            wrapper.classList.remove('open');
+            filterHistoryTable();
+        }
 
         document.addEventListener('DOMContentLoaded', async () => {
             const navbarRes = await fetch('/templates/navigation.html');
@@ -177,6 +210,10 @@
             clearRunHistory();
             loadAuditHistoryTable();
         }
+
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
+        });
     </script>
 </body>
 </html>
