@@ -1,419 +1,132 @@
 <!DOCTYPE html>
-
-<html class="light" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>LangGraph Code Generator</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;700&amp;family=Space+Grotesk:wght@700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            "colors": {
-                    "secondary-fixed-dim": "#00e479",
-                    "surface-container-high": "#e8e8e8",
-                    "on-primary-fixed-variant": "#003fa4",
-                    "secondary": "#006d37",
-                    "surface-container-lowest": "#ffffff",
-                    "surface-bright": "#f9f9f9",
-                    "on-secondary-fixed-variant": "#005228",
-                    "surface-dim": "#dadada",
-                    "outline": "#727687",
-                    "surface-container": "#eeeeee",
-                    "on-primary-container": "#f8f7ff",
-                    "on-background": "#1b1b1b",
-                    "secondary-fixed": "#60ff99",
-                    "inverse-on-surface": "#f1f1f1",
-                    "on-tertiary-fixed": "#241a00",
-                    "on-error-container": "#93000a",
-                    "on-tertiary": "#ffffff",
-                    "outline-variant": "#c2c6d8",
-                    "surface-container-highest": "#e2e2e2",
-                    "secondary-container": "#00fa85",
-                    "primary-fixed": "#dae1ff",
-                    "inverse-primary": "#b3c5ff",
-                    "on-error": "#ffffff",
-                    "tertiary": "#745b00",
-                    "error-container": "#ffdad6",
-                    "surface": "#f9f9f9",
-                    "on-primary-fixed": "#001849",
-                    "surface-variant": "#e2e2e2",
-                    "on-surface": "#1b1b1b",
-                    "primary": "#0050cb",
-                    "on-tertiary-fixed-variant": "#584400",
-                    "on-secondary-fixed": "#00210c",
-                    "primary-container": "#0066ff",
-                    "background": "#f9f9f9",
-                    "on-surface-variant": "#424656",
-                    "primary-fixed-dim": "#b3c5ff",
-                    "tertiary-container": "#d1a600",
-                    "error": "#ba1a1a",
-                    "surface-tint": "#0054d6",
-                    "on-secondary": "#ffffff",
-                    "tertiary-fixed-dim": "#f1c100",
-                    "on-tertiary-container": "#4f3e00",
-                    "on-secondary-container": "#006e37",
-                    "inverse-surface": "#303030",
-                    "surface-container-low": "#f3f3f3",
-                    "on-primary": "#ffffff",
-                    "tertiary-fixed": "#ffe08b"
-            },
-            "borderRadius": {
-                    "DEFAULT": "0.125rem",
-                    "lg": "0.25rem",
-                    "xl": "0.5rem",
-                    "full": "0.75rem"
-            },
-            "spacing": {
-                    "base": "4px",
-                    "lg": "32px",
-                    "sm": "16px",
-                    "md": "24px",
-                    "gutter": "24px",
-                    "margin": "32px",
-                    "xs": "8px",
-                    "xl": "64px"
-            },
-            "fontFamily": {
-                    "body-md": [
-                            "Inter"
-                    ],
-                    "body-lg": [
-                            "Inter"
-                    ],
-                    "code-md": [
-                            "JetBrains Mono"
-                    ],
-                    "code-bold": [
-                            "JetBrains Mono"
-                    ],
-                    "display-xl": [
-                            "Space Grotesk"
-                    ],
-                    "display-lg": [
-                            "Space Grotesk"
-                    ],
-                    "label-sm": [
-                            "Inter"
-                    ]
-            },
-            "fontSize": {
-                    "body-md": [
-                            "16px",
-                            {
-                                    "lineHeight": "1.5",
-                                    "fontWeight": "400"
-                            }
-                    ],
-                    "body-lg": [
-                            "18px",
-                            {
-                                    "lineHeight": "1.5",
-                                    "fontWeight": "500"
-                            }
-                    ],
-                    "code-md": [
-                            "14px",
-                            {
-                                    "lineHeight": "1.6",
-                                    "fontWeight": "400"
-                            }
-                    ],
-                    "code-bold": [
-                            "14px",
-                            {
-                                    "lineHeight": "1.6",
-                                    "fontWeight": "700"
-                            }
-                    ],
-                    "display-xl": [
-                            "48px",
-                            {
-                                    "lineHeight": "1.1",
-                                    "letterSpacing": "-0.02em",
-                                    "fontWeight": "700"
-                            }
-                    ],
-                    "display-lg": [
-                            "32px",
-                            {
-                                    "lineHeight": "1.2",
-                                    "fontWeight": "700"
-                            }
-                    ],
-                    "label-sm": [
-                            "12px",
-                            {
-                                    "lineHeight": "1",
-                                    "fontWeight": "600"
-                            }
-                    ]
-            }
-        },
-        },
-      }
-    </script>
-<style>
-        .neo-shadow {
-            box-shadow: 6px 6px 0px 0px #000000;
-        }
-        .neo-shadow-hover:hover {
-            box-shadow: 8px 8px 0px 0px #000000;
-            transform: translate(-2px, -2px);
-        }
-        .neo-shadow-active:active {
-            box-shadow: 2px 2px 0px 0px #000000;
-            transform: translate(4px, 4px);
-        }
-        .neo-border {
-            border: 3px solid #1b1b1b;
-        }
-        
-        .code-container {
-            background-color: #0f172a;
-        }
-        
-        /* Language radio button styling */
-        input[type="radio"]:checked + div {
-            border: 3px solid #1b1b1b;
-            background-color: #dae1ff; /* primary-fixed */
-            box-shadow: 6px 6px 0px 0px #000000;
-            transform: translate(-2px, -2px);
-        }
-        
-        /* Hide output initially */
-        #output-section {
-            display: none;
-        }
-        
-        #output-section.active {
-            display: block;
-            animation: slideUp 0.3s ease-out;
-        }
-        
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .loader {
-            border: 3px solid #f3f3f3;
-            border-radius: 50%;
-            border-top: 3px solid #1b1b1b;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-            display: none;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>LangGraph Studio | Code Workbench & Verifier</title>
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="/static/css/shared.css"/>
 </head>
-<body class="bg-surface text-on-surface font-body-md h-screen flex overflow-hidden">
-<!-- TopNavBar (Mobile Only) -->
-<header class="md:hidden w-full h-[72px] sticky top-0 z-40 bg-surface dark:bg-background border-b-3 border-on-background flex justify-between items-center px-margin no-shadow">
-<h1 class="font-display-lg text-display-lg font-bold uppercase tracking-tighter">LANGGRAPH</h1>
-<div class="flex gap-4">
-<button class="hover:text-primary transition-colors focus-within:shadow-[4px_4px_0px_0px_#0050cb]">
-<span class="material-symbols-outlined text-primary dark:text-primary-fixed">notifications</span>
-</button>
-<button class="hover:text-primary transition-colors focus-within:shadow-[4px_4px_0px_0px_#0050cb]">
-<span class="material-symbols-outlined text-primary dark:text-primary-fixed">account_circle</span>
-</button>
-</div>
-</header>
-<!-- SideNavBar (Desktop) -->
-<aside class="hidden md:flex w-[280px] h-screen sticky top-0 border-r-3 border-on-background shadow-[6px_6px_0px_0px_#000000] bg-surface dark:bg-background flex-col p-sm gap-md z-50 shrink-0">
-<div class="mb-lg">
-<div class="font-display-lg text-display-lg font-bold text-on-surface uppercase tracking-tighter">LANGGRAPH</div>
-<div class="font-label-sm text-label-sm text-on-surface-variant mt-1">Orchestration Engine</div>
-</div>
-<nav class="flex-1 flex flex-col gap-2">
-<a class="flex items-center gap-3 p-3 rounded-DEFAULT text-on-surface hover:bg-surface-container-high hover:border-3 hover:border-on-background hover:shadow-[8px_8px_0px_0px_#000000] hover:-translate-x-1 hover:-translate-y-1 transition-all active:shadow-[2px_2px_0px_0px_#000000] active:translate-x-1 active:translate-y-1 font-body-md text-body-md" href="#">
-<span class="material-symbols-outlined font-code-md text-code-md">analytics</span>
-<span>Dashboard</span>
-</a>
-<a class="flex items-center gap-3 p-3 rounded-DEFAULT text-on-surface hover:bg-surface-container-high hover:border-3 hover:border-on-background hover:shadow-[8px_8px_0px_0px_#000000] hover:-translate-x-1 hover:-translate-y-1 transition-all active:shadow-[2px_2px_0px_0px_#000000] active:translate-x-1 active:translate-y-1 font-body-md text-body-md" href="#">
-<span class="material-symbols-outlined font-code-md text-code-md">account_tree</span>
-<span>Workflows</span>
-</a>
-<a class="flex items-center gap-3 p-3 rounded-DEFAULT bg-primary-container text-on-primary-container border-3 border-on-background shadow-[2px_2px_0px_0px_#000000] translate-x-[2px] translate-y-[2px] font-body-md text-body-md font-bold" href="#">
-<span class="material-symbols-outlined font-code-md text-code-md">magic_button</span>
-<span>Code Generator</span>
-</a>
-<a class="flex items-center gap-3 p-3 rounded-DEFAULT text-on-surface hover:bg-surface-container-high hover:border-3 hover:border-on-background hover:shadow-[8px_8px_0px_0px_#000000] hover:-translate-x-1 hover:-translate-y-1 transition-all active:shadow-[2px_2px_0px_0px_#000000] active:translate-x-1 active:translate-y-1 font-body-md text-body-md" href="#">
-<span class="material-symbols-outlined font-code-md text-code-md">history</span>
-<span>Execution History</span>
-</a>
-<a class="flex items-center gap-3 p-3 rounded-DEFAULT text-on-surface hover:bg-surface-container-high hover:border-3 hover:border-on-background hover:shadow-[8px_8px_0px_0px_#000000] hover:-translate-x-1 hover:-translate-y-1 transition-all active:shadow-[2px_2px_0px_0px_#000000] active:translate-x-1 active:translate-y-1 font-body-md text-body-md" href="#">
-<span class="material-symbols-outlined font-code-md text-code-md">settings</span>
-<span>Settings</span>
-</a>
-</nav>
-<button class="w-full h-[56px] bg-primary text-on-primary font-display-lg text-[20px] font-bold uppercase tracking-wider neo-border neo-shadow neo-shadow-hover neo-shadow-active transition-all flex justify-center items-center gap-2">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add</span>
-            New Generation
-        </button>
-</aside>
-<!-- Main Content -->
-<main class="flex-1 overflow-y-auto bg-surface relative">
-<div class="max-w-4xl mx-auto p-margin md:p-xl flex flex-col gap-xl">
-<!-- Hero Section -->
-<section class="flex flex-col gap-4">
-<div class="flex items-center gap-4">
-<span class="material-symbols-outlined text-primary text-display-xl" style="font-variation-settings: 'FILL' 1; font-size: 48px;">auto_awesome</span>
-<h1 class="font-display-xl text-display-xl text-on-background m-0">Code Generator</h1>
-</div>
-<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
-                    Leverage self-correcting agents to generate, test, and refine code based on your natural language descriptions.
-                </p>
-</section>
-<!-- Input Section -->
-<section class="bg-surface-container-lowest neo-border neo-shadow p-lg rounded-DEFAULT flex flex-col gap-md">
-<div class="flex flex-col gap-2">
-<label class="font-label-sm text-label-sm text-on-surface uppercase tracking-wider font-bold" for="task-description">Task Description</label>
-<textarea class="w-full p-4 font-body-md text-body-md text-on-surface bg-surface border-3 border-on-background focus:ring-0 focus:outline-none focus:shadow-[4px_4px_0px_0px_#0050cb] transition-shadow resize-y" id="task-description" placeholder="What do you want to build? Example: Create a Python function that implements a rate limiter using Redis..." rows="6"></textarea>
-</div>
-<div>
-<span class="font-label-sm text-label-sm text-on-surface-variant mb-2 block">Quick Examples:</span>
-<div class="flex flex-wrap gap-3">
-<button class="px-4 py-2 bg-surface-variant text-on-surface font-code-bold text-code-bold neo-border hover:bg-surface-container-high neo-shadow-hover active:translate-x-[2px] active:translate-y-[2px] transition-all text-sm" onclick="document.getElementById('task-description').value = 'Write a Python function to generate the Fibonacci sequence up to N.'">
-                            Fibonacci sequence
-                        </button>
-<button class="px-4 py-2 bg-surface-variant text-on-surface font-code-bold text-code-bold neo-border hover:bg-surface-container-high neo-shadow-hover active:translate-x-[2px] active:translate-y-[2px] transition-all text-sm" onclick="document.getElementById('task-description').value = 'Create a Java method to check if a number is prime.'">
-                            Prime checker
-                        </button>
-<button class="px-4 py-2 bg-surface-variant text-on-surface font-code-bold text-code-bold neo-border hover:bg-surface-container-high neo-shadow-hover active:translate-x-[2px] active:translate-y-[2px] transition-all text-sm" onclick="document.getElementById('task-description').value = 'Generate a basic Node.js Express REST API template with GET and POST routes.'">
-                            REST API template
-                        </button>
-</div>
-</div>
-</section>
-<!-- Language Selector -->
-<section class="flex flex-col gap-4">
-<h3 class="font-label-sm text-label-sm text-on-surface uppercase tracking-wider font-bold">Target Language</h3>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-md">
-<label class="cursor-pointer group relative">
-<input checked="" class="peer sr-only" name="language" type="radio" value="python"/>
-<div class="h-16 bg-surface-container-lowest border-3 border-outline-variant p-4 flex items-center justify-center gap-3 transition-all hover:bg-surface-variant rounded-DEFAULT">
-<span class="text-2xl">🐍</span>
-<span class="font-display-lg text-[20px] font-bold text-on-surface">Python</span>
-</div>
-</label>
-<label class="cursor-pointer group relative">
-<input class="peer sr-only" name="language" type="radio" value="java"/>
-<div class="h-16 bg-surface-container-lowest border-3 border-outline-variant p-4 flex items-center justify-center gap-3 transition-all hover:bg-surface-variant rounded-DEFAULT">
-<span class="text-2xl">☕</span>
-<span class="font-display-lg text-[20px] font-bold text-on-surface">Java</span>
-</div>
-</label>
-<label class="cursor-pointer group relative">
-<input class="peer sr-only" name="language" type="radio" value="cpp"/>
-<div class="h-16 bg-surface-container-lowest border-3 border-outline-variant p-4 flex items-center justify-center gap-3 transition-all hover:bg-surface-variant rounded-DEFAULT">
-<span class="text-2xl">⚡</span>
-<span class="font-display-lg text-[20px] font-bold text-on-surface">C++</span>
-</div>
-</label>
-</div>
-</section>
-<!-- Generate Button -->
-<button class="h-[56px] w-full md:w-auto self-start bg-primary text-on-primary font-display-lg text-[20px] font-bold px-lg flex justify-center items-center gap-3 neo-border neo-shadow neo-shadow-hover neo-shadow-active transition-all rounded-DEFAULT" id="generate-btn">
-<span class="material-symbols-outlined" id="btn-icon">play_arrow</span>
-<span id="btn-text">Generate Code</span>
-<span class="font-code-md text-sm opacity-80 font-normal ml-2 hidden md:inline">(Cmd+Enter)</span>
-<div class="loader" id="btn-loader"></div>
-</button>
-<!-- Output Section -->
-<section class="flex flex-col gap-4 mt-8 pb-xl" id="output-section">
-<div class="flex justify-between items-end">
-<h2 class="font-display-lg text-[24px] text-on-background m-0">Generated Output</h2>
-<div class="flex gap-3">
-<button class="px-4 py-2 bg-surface-container-lowest text-on-surface font-label-sm text-label-sm uppercase font-bold neo-border hover:bg-surface-container-high neo-shadow-hover active:translate-x-[2px] active:translate-y-[2px] transition-all flex items-center gap-2">
-<span class="material-symbols-outlined font-code-md text-code-md">content_copy</span>
+<body>
+
+    <div id="navbarContainer"></div>
+
+    <main class="studio-layout">
+        <header class="page-header">
+            <div>
+                <h1 class="page-title">
+                    <span class="material-symbols-outlined" style="color: var(--cyan-glow);">code_blocks</span>
+                    Code Workbench & Verification Studio
+                </h1>
+                <p class="page-subtitle">Submit task specifications to trigger multi-agent code generation, sandbox execution, and assertion loops.</p>
+            </div>
+
+            <div id="pipelineStepper" style="display: none; align-items: center; gap: 8px;">
+                <span id="stepDeveloper" class="cyber-badge">1. Drafting...</span>
+                <span class="material-symbols-outlined" style="font-size: 14px; color: var(--text-muted);">arrow_forward</span>
+                <span id="stepSandbox" class="cyber-badge">2. Testing...</span>
+                <span class="material-symbols-outlined" style="font-size: 14px; color: var(--text-muted);">arrow_forward</span>
+                <span id="stepRouter" class="cyber-badge">3. Route Guard</span>
+            </div>
+        </header>
+
+        <!-- Controls Panel -->
+        <div class="studio-card" style="margin-bottom: 24px;">
+            <div style="display: grid; grid-template-columns: 1fr 200px 160px; gap: 16px; margin-bottom: 16px;">
+                
+                <div>
+                    <label style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">
+                        <span>Task Specification</span>
+                        <span class="cyber-badge cyber-badge-cyan" style="font-size: 10px;">⌘ + Enter to execute</span>
+                    </label>
+                    <textarea id="taskInput" rows="3" style="width: 100%; background: #050609; border: 1px solid var(--border-hairline); border-radius: 8px; padding: 12px; color: var(--text-pure); font-family: var(--font-sans); font-size: 14px; outline: none; resize: vertical;" placeholder="e.g. Write a function to calculate fibonacci numbers with self-validation assertions..."></textarea>
+                </div>
+
+                <div>
+                    <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Target Language</label>
+                    <select id="languageSelect" style="width: 100%; background: #050609; border: 1px solid var(--border-hairline); border-radius: 8px; padding: 12px; color: var(--text-pure); font-size: 14px; outline: none;">
+                        <option value="python" selected>Python 3.11</option>
+                        <option value="java">Java 17</option>
+                        <option value="cpp">C++ 20</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Self-Fix Ceiling</label>
+                    <select id="maxIterationsSelect" style="width: 100%; background: #050609; border: 1px solid var(--border-hairline); border-radius: 8px; padding: 12px; color: var(--text-pure); font-size: 14px; outline: none;">
+                        <option value="3" selected>3 Loops (Default)</option>
+                        <option value="5">5 Loops</option>
+                        <option value="1">1 Loop (No Retry)</option>
+                    </select>
+                </div>
+
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; gap: 8px;">
+                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="document.getElementById('taskInput').value='Write a function to calculate fibonacci numbers'">Fibonacci</button>
+                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="document.getElementById('taskInput').value='Create a function that checks if a string is a palindrome'">Palindrome</button>
+                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="document.getElementById('taskInput').value='Write a function to divide two numbers with proper error handling'">Safe Division</button>
+                </div>
+
+                <button id="generateBtn" class="cyber-btn cyber-btn-primary">
+                    <span class="material-symbols-outlined">code_blocks</span>
+                    <span>Execute & Verify Specification</span>
+                    <span class="cyber-badge" style="margin-left: 4px; background: #000000; color: #00f2fe;">⌘↵</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="statusBanner" style="display: none; margin-bottom: 24px;"></div>
+
+        <!-- Workbench Dual IDE Window -->
+        <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 24px;">
+            
+            <div class="code-editor-pane">
+                <div class="code-editor-header">
+                    <span style="font-size: 12px; font-weight: 600; color: var(--cyan-glow); font-family: var(--font-code);">solution_code.py</span>
+
+                    <div style="display: flex; gap: 8px;">
+                        <button id="copyCodeBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 10px;">
+                            <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span>
                             Copy
                         </button>
-<button class="px-4 py-2 bg-surface-container-lowest text-on-surface font-label-sm text-label-sm uppercase font-bold neo-border hover:bg-surface-container-high neo-shadow-hover active:translate-x-[2px] active:translate-y-[2px] transition-all flex items-center gap-2">
-<span class="material-symbols-outlined font-code-md text-code-md">download</span>
+                        <button id="downloadCodeBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 10px;">
+                            <span class="material-symbols-outlined" style="font-size: 14px;">download</span>
                             Download
                         </button>
-</div>
-</div>
-<div class="code-container rounded-DEFAULT neo-border neo-shadow overflow-hidden flex flex-col">
-<!-- Window Chrome -->
-<div class="bg-surface-container-high border-b-3 border-on-background px-4 py-2 flex items-center gap-2 h-10">
-<div class="w-3 h-3 rounded-full bg-error border border-on-background"></div>
-<div class="w-3 h-3 rounded-full bg-tertiary-container border border-on-background"></div>
-<div class="w-3 h-3 rounded-full bg-secondary-container border border-on-background"></div>
-<span class="ml-4 font-code-md text-code-md text-on-surface-variant">generated_code.py</span>
-</div>
-<!-- Code Editor -->
-<div class="p-6 overflow-x-auto">
-<pre class="font-code-md text-code-md text-inverse-on-surface m-0" style="color: #e2e8f0;"><span style="color: #c678dd;">def</span> <span style="color: #61afef;">generate_fibonacci</span>(n: <span style="color: #e5c07b;">int</span>) -&gt; <span style="color: #e5c07b;">list</span>[<span style="color: #e5c07b;">int</span>]:
-    <span style="color: #98c379;">"""
-    Generates a Fibonacci sequence up to n terms.
-    
-    Args:
-        n: The number of terms to generate.
-        
-    Returns:
-        A list containing the Fibonacci sequence.
-    """</span>
-    <span style="color: #c678dd;">if</span> n &lt;= <span style="color: #d19a66;">0</span>:
-        <span style="color: #c678dd;">return</span> []
-    <span style="color: #c678dd;">elif</span> n == <span style="color: #d19a66;">1</span>:
-        <span style="color: #c678dd;">return</span> [<span style="color: #d19a66;">0</span>]
-        
-    sequence = [<span style="color: #d19a66;">0</span>, <span style="color: #d19a66;">1</span>]
-    <span style="color: #c678dd;">while</span> <span style="color: #e5c07b;">len</span>(sequence) &lt; n:
-        next_val = sequence[-<span style="color: #d19a66;">1</span>] + sequence[-<span style="color: #d19a66;">2</span>]
-        sequence.append(next_val)
-        
-    <span style="color: #c678dd;">return</span> sequence
+                    </div>
+                </div>
 
-<span style="color: #5c6370;"># Example usage</span>
-<span style="color: #c678dd;">if</span> __name__ == <span style="color: #98c379;">"__main__"</span>:
-    <span style="color: #e5c07b;">print</span>(<span style="color: #98c379;">f"First 10 terms: {generate_fibonacci(10)}"</span>)
-</pre>
-</div>
-</div>
-<div class="mt-4 p-4 bg-secondary-fixed-dim border-3 border-on-background neo-shadow flex items-start gap-3 rounded-DEFAULT">
-<span class="material-symbols-outlined text-on-secondary-fixed font-bold mt-1">check_circle</span>
-<div>
-<h4 class="font-display-lg text-[18px] text-on-secondary-fixed font-bold">Generation Successful</h4>
-<p class="font-body-md text-body-md text-on-secondary-fixed mt-1">Agent successfully wrote, tested, and validated the requested code. No syntax errors detected.</p>
-</div>
-<button class="ml-auto px-4 py-2 bg-surface-container-lowest text-on-surface font-label-sm text-label-sm uppercase font-bold neo-border hover:bg-surface-variant transition-all mt-2">
-                        View Report
-                     </button>
-</div>
-</section>
-</div>
-</main>
-<!-- BottomNavBar (Mobile Only) -->
-<nav class="md:hidden w-full bg-surface dark:bg-background border-t-3 border-on-background flex justify-around items-center p-sm z-40 shrink-0 shadow-[0_-6px_0_0_#000000]">
-<a class="flex flex-col items-center gap-1 text-on-surface-variant hover:text-primary" href="#">
-<span class="material-symbols-outlined font-code-md text-code-md">analytics</span>
-<span class="font-label-sm text-label-sm">Dashboard</span>
-</a>
-<a class="flex flex-col items-center gap-1 text-on-surface-variant hover:text-primary" href="#">
-<span class="material-symbols-outlined font-code-md text-code-md">account_tree</span>
-<span class="font-label-sm text-label-sm">Workflows</span>
-</a>
-<a class="flex flex-col items-center gap-1 text-primary font-bold" href="#">
-<span class="material-symbols-outlined font-code-md text-code-md">magic_button</span>
-<span class="font-label-sm text-label-sm">Generate</span>
-</a>
-<a class="flex flex-col items-center gap-1 text-on-surface-variant hover:text-primary" href="#">
-<span class="material-symbols-outlined font-code-md text-code-md">settings</span>
-<span class="font-label-sm text-label-sm">Settings</span>
-</a>
-</nav>
-<script src="/static/js/generate.js"></script>
-</body></html>
+                <div class="code-editor-body" id="codeDisplay"># Press 'Execute & Verify Specification' or ⌘ + Enter to initiate orchestration...</div>
+            </div>
+
+            <div class="code-editor-pane">
+                <div class="code-editor-header">
+                    <span style="font-size: 12px; font-weight: 600; color: var(--text-secondary); font-family: var(--font-code);">verification_report.log</span>
+                    <span class="cyber-badge cyber-badge-cyan" id="reportBadge">READY</span>
+                </div>
+
+                <div class="code-editor-body" id="reportDisplay" style="color: var(--text-muted);"># Test execution output, captured stdout/stderr, and assertion evaluations will appear here.</div>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="/static/js/common.js"></script>
+    <script src="/static/js/generate.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const navbarRes = await fetch('/templates/navigation.html');
+            if (navbarRes.ok) {
+                document.getElementById('navbarContainer').innerHTML = await navbarRes.text();
+                setActiveNav('generator');
+            }
+        });
+    </script>
+</body>
+</html>

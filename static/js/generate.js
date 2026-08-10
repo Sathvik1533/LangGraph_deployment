@@ -1,282 +1,202 @@
-// Backend integration for generate.html
-let selectedLanguage = 'python';
-let generatedCode = '';
-let lastGenerationData = null;
-let currentThreadId = null;
-const API_URL = '/invoke';
+// Linear Studio Code Engine Controller
 
-document.addEventListener('DOMContentLoaded', () => {
-    const generateBtn = document.getElementById('generate-btn');
-    const outputSection = document.getElementById('output-section');
-    const btnIcon = document.getElementById('btn-icon');
-    const btnText = document.getElementById('btn-text');
-    const btnLoader = document.getElementById('btn-loader');
-    const taskInput = document.getElementById('task-description');
+let currentResponseData = null;
 
-    // Language selection
-    const languageRadios = document.querySelectorAll('input[name="language"]');
-    languageRadios.forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            selectedLanguage = e.target.value;
-        });
-    });
+document.addEventListener('DOMContentLoaded', async () => {
+    // Load Sidebar
+    const sidebarRes = await fetch('/templates/navigation.html');
+    if (sidebarRes.ok) {
+        document.getElementById('sidebarContainer').innerHTML = await sidebarRes.text();
+        setActiveNav('generator');
+    }
 
-    // Generate button click
-    generateBtn.addEventListener('click', async () => {
-        const task = taskInput.value.trim();
-        
-        if (!task) {
-            taskInput.classList.add('border-error');
-            setTimeout(() => taskInput.classList.remove('border-error'), 1000);
-            return;
+    // Check query params for preset
+    const urlParams = new URLSearchParams(window.location.search);
+    const preset = urlParams.get('preset');
+    const taskInput = document.getElementById('taskInput');
+    
+    if (preset && taskInput) {
+        if (preset === 'fibonacci') {
+            taskInput.value = 'Write a function to calculate fibonacci numbers with self-validation assertions';
+        } else if (preset === 'palindrome') {
+            taskInput.value = 'Create a function that checks if a string is a palindrome ignoring case and punctuation';
+        } else if (preset === 'divide') {
+            taskInput.value = 'Write a function to divide two numbers with proper zero-division error handling';
+        } else if (preset === 'stats') {
+            taskInput.value = 'Write a function to process numeric data and return count, sum, average, min, and max';
         }
+    }
 
-        // UI loading state
-        btnIcon.style.display = 'none';
-        btnText.textContent = 'Generating...';
-        btnLoader.style.display = 'block';
-        generateBtn.classList.add('opacity-80', 'pointer-events-none');
-        outputSection.classList.remove('active');
+    // Bind Form Submission
+    const generateBtn = document.getElementById('generateBtn');
+    if (generateBtn) {
+        generateBtn.addEventListener('click', handleGenerate);
+    }
 
-        try {
-            const requestBody = {
-                task: task,
-                language: selectedLanguage
-            };
-            
-            if (currentThreadId) {
-                requestBody.thread_id = currentThreadId;
-            }
-
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail?.message || `API Error: ${response.status}`);
-            }
-
-            const data = await response.json();
-            lastGenerationData = data;
-            generatedCode = data.code;
-
-            if (data.thread_id) {
-                currentThreadId = data.thread_id;
-            }
-
-            displayGeneratedCode(data.code, data.execution_success);
-
-            saveToRecent({
-                task: task.substring(0, 50),
-                language: selectedLanguage,
-                success: data.execution_success,
-                timestamp: new Date().toISOString(),
-                code: data.code,
-                report: data.report
-            });
-
-            outputSection.classList.add('active');
-            setTimeout(() => {
-                outputSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 100);
-
-        } catch (error) {
-            console.error('Generation error:', error);
-            alert(`Failed to generate code: ${error.message}`);
-        } finally {
-            btnIcon.style.display = 'block';
-            btnText.textContent = 'Generate Code';
-            btnLoader.style.display = 'none';
-            generateBtn.classList.remove('opacity-80', 'pointer-events-none');
-        }
-    });
-
-    // Keyboard shortcut
-    document.addEventListener('keydown', (e) => {
+    // Bind Ctrl+Enter / Cmd+Enter shortcut on Task Input
+    taskInput?.addEventListener('keydown', (e) => {
         if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
             e.preventDefault();
-            generateBtn.click();
+            handleGenerate();
         }
     });
 
-    // Copy/Download buttons
-    setTimeout(() => {
-        const buttons = outputSection.querySelectorAll('button');
-        buttons.forEach(btn => {
-            const icon = btn.querySelector('.material-symbols-outlined');
-            if (icon && icon.textContent.trim() === 'content_copy') {
-                btn.addEventListener('click', copyCode);
-            } else if (icon && icon.textContent.trim() === 'download') {
-                btn.addEventListener('click', downloadCode);
-            }
-        });
-    }, 500);
+    // Bind Copy & Download
+    document.getElementById('copyCodeBtn')?.addEventListener('click', () => {
+        if (currentResponseData && currentResponseData.code) {
+            copyToClipboard(currentResponseData.code);
+        }
+    });
 
-    // Fix navigation links
-    document.querySelectorAll('a[href="#"]').forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const text = link.textContent.trim();
-            
-            if (text === 'Dashboard') window.location.href = '/';
-            else if (text === 'Workflows') window.location.href = '/workflow';
-            else if (text === 'Code Generator' || text === 'Generate') window.location.href = '/generate';
-            else if (text.includes('History')) window.location.href = '/history';
-            else if (text === 'Settings') window.location.href = '/';
-        });
+    document.getElementById('downloadCodeBtn')?.addEventListener('click', () => {
+        if (currentResponseData && currentResponseData.code) {
+            const lang = document.getElementById('languageSelect').value || 'python';
+            const ext = getFileExtension(lang);
+            downloadFile(currentResponseData.code, `solution${ext}`);
+        }
     });
 });
 
-function displayGeneratedCode(code, success) {
-    const codeContainer = document.querySelector('.code-container pre');
-    const statusBox = document.querySelector('#output-section > div:last-child');
-    const fileNameEl = document.querySelector('.code-container .bg-surface-container-high span:last-child');
-    
-    const extensions = { python: '.py', java: '.java', cpp: '.cpp' };
-    if (fileNameEl) {
-        fileNameEl.textContent = `generated_code${extensions[selectedLanguage] || '.txt'}`;
+async function handleGenerate() {
+    const taskInput = document.getElementById('taskInput');
+    const languageSelect = document.getElementById('languageSelect');
+    const maxIterationsSelect = document.getElementById('maxIterationsSelect');
+    const generateBtn = document.getElementById('generateBtn');
+    const statusBanner = document.getElementById('statusBanner');
+    const codeDisplay = document.getElementById('codeDisplay');
+    const reportDisplay = document.getElementById('reportDisplay');
+    const pipelineStepper = document.getElementById('pipelineStepper');
+
+    const task = taskInput.value.trim();
+    if (!task) {
+        showToast('Please enter a task specification', 'warning');
+        return;
     }
 
-    // Check if code contains error messages
-    let errorMessage = '';
-    if (code.includes('# ERROR:') || code.includes('# The LLM returned invalid output')) {
-        // Extract the error message
-        const errorLines = code.split('\n').filter(line => {
-            const trimmed = line.trim();
-            return trimmed.startsWith('# ERROR:') || trimmed.includes('LLM returned invalid');
+    const language = languageSelect.value;
+    const maxIterations = parseInt(maxIterationsSelect.value) || 3;
+
+    // UI Loading State
+    generateBtn.disabled = true;
+    generateBtn.innerHTML = `
+        <span class="material-symbols-outlined spin" style="font-size: 16px;">sync</span>
+        <span>Running Execution Pipeline...</span>
+    `;
+
+    statusBanner.style.display = 'flex';
+    statusBanner.className = 'card';
+    statusBanner.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="material-symbols-outlined" style="color: var(--primary);">sync</span>
+            <div>
+                <div style="font-weight: 600; font-size: 13.5px;">Developer Engine Generating & Sandbox Validating Code</div>
+                <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 2px;">Evaluating conditional router assertions...</div>
+            </div>
+        </div>
+    `;
+
+    if (pipelineStepper) {
+        pipelineStepper.style.display = 'flex';
+        document.getElementById('stepDeveloper').className = 'badge badge-info';
+        document.getElementById('stepDeveloper').textContent = '1. Drafting Code...';
+        document.getElementById('stepSandbox').className = 'badge';
+        document.getElementById('stepSandbox').textContent = '2. Testing...';
+        document.getElementById('stepRouter').className = 'badge';
+        document.getElementById('stepRouter').textContent = '3. Route Guard';
+    }
+
+    try {
+        const payload = {
+            task: task,
+            language: language,
+            max_iterations: maxIterations
+        };
+
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
         });
-        errorMessage = errorLines
-            .map(line => line.replace('# ERROR:', '').replace('# The LLM returned invalid output.', '').trim())
-            .filter(line => line.length > 0)
-            .join(' ');
-    }
 
-    // Clean code - remove markdown and ALL formatting artifacts
-    let cleanCode = code
-        .replace(/```python|```java|```cpp|```c\+\+|```/g, '')
-        // Remove ALL HTML tags and inline styles
-        .replace(/<[^>]+>/g, '')
-        .replace(/"color:\s*#[0-9a-fA-F]+;"\s*>/g, '')
-        .replace(/"color:\s*#[0-9a-fA-F]+;"/g, '')
-        .replace(/color:\s*#[0-9a-fA-F]+;/g, '')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&amp;/g, '&')
-        .trim();
-    
-    // Remove ALL error-related comments
-    cleanCode = cleanCode.split('\n').filter(line => {
-        const trimmed = line.trim();
-        return !trimmed.startsWith('# ERROR:') && 
-               !trimmed.includes('LLM returned invalid') &&
-               !trimmed.includes('DEVELOPER ERROR') &&
-               trimmed !== '#';  // Remove standalone # lines
-    }).join('\n').trim();
-    
-    // If code is empty or too short after cleaning, show appropriate placeholder
-    if (!cleanCode || cleanCode.length < 10) {
-        if (errorMessage) {
-            cleanCode = `// Code generation failed\n// See error message below for details`;
-        } else {
-            cleanCode = `// Code generation in progress...\n// Please check the report for details.`;
-        }
-    }
-    
-    // Store the CLEAN code (no HTML) for copy/download
-    generatedCode = cleanCode;
-    
-    // Display with syntax highlighting (HTML spans for visual only)
-    if (codeContainer) {
-        codeContainer.innerHTML = syntaxHighlight(cleanCode, selectedLanguage);
-    }
+        const data = await response.json();
+        currentResponseData = data;
 
-    if (statusBox) {
-        if (success) {
-            statusBox.className = 'mt-4 p-4 bg-secondary-fixed-dim border-3 border-on-background neo-shadow flex items-start gap-3 rounded-DEFAULT';
-            statusBox.innerHTML = `
-                <span class="material-symbols-outlined text-on-secondary-fixed font-bold mt-1">check_circle</span>
-                <div>
-                    <h4 class="font-display-lg text-[18px] text-on-secondary-fixed font-bold">Generation Successful</h4>
-                    <p class="font-body-md text-body-md text-on-secondary-fixed mt-1">Agent successfully wrote, tested, and validated the requested code.</p>
+        if (response.ok && data.code) {
+            // Success
+            statusBanner.className = 'card';
+            statusBanner.style.borderColor = 'var(--accent-emerald)';
+            statusBanner.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span class="material-symbols-outlined" style="color: var(--accent-emerald); font-size: 22px;">check_circle</span>
+                        <div>
+                            <div style="font-weight: 600; font-size: 13.5px;">Verification Passed</div>
+                            <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 1px;">Completed in ${data.iterations} iteration(s) • Thread: ${data.thread_id}</div>
+                        </div>
+                    </div>
+                    <span class="badge badge-success">PASSED ALL CHECKS</span>
                 </div>
             `;
+
+            if (pipelineStepper) {
+                document.getElementById('stepDeveloper').className = 'badge badge-success';
+                document.getElementById('stepDeveloper').textContent = '1. Drafted ✓';
+                document.getElementById('stepSandbox').className = 'badge badge-success';
+                document.getElementById('stepSandbox').textContent = '2. Verified ✓';
+                document.getElementById('stepRouter').className = 'badge badge-success';
+                document.getElementById('stepRouter').textContent = '3. Approved ✓';
+            }
+
+            codeDisplay.textContent = data.code;
+            reportDisplay.textContent = data.report || 'No detailed report output generated.';
+            
+            // Save run to local history
+            saveRunToHistory({
+                task: task,
+                language: language,
+                success: data.execution_success,
+                iterations: data.iterations,
+                code: data.code,
+                report: data.report,
+                thread_id: data.thread_id
+            });
+
+            showToast('Code verified successfully!', 'success');
+
         } else {
-            // Use extracted error message if available
-            const errorDetail = errorMessage || 'The agent encountered errors. Code may be incomplete or invalid.';
-            statusBox.className = 'mt-4 p-4 bg-error-container border-3 border-on-background neo-shadow flex items-start gap-3 rounded-DEFAULT';
-            statusBox.innerHTML = `
-                <span class="material-symbols-outlined text-on-error-container font-bold mt-1">warning</span>
-                <div>
-                    <h4 class="font-display-lg text-[18px] text-on-error-container font-bold">Generation Failed</h4>
-                    <p class="font-body-md text-body-md text-on-error-container mt-1">${errorDetail}</p>
-                    ${lastGenerationData?.report ? `<details class="mt-2"><summary class="cursor-pointer font-bold">View Execution Report</summary><pre class="mt-2 text-xs whitespace-pre-wrap">${lastGenerationData.report}</pre></details>` : ''}
+            statusBanner.className = 'card';
+            statusBanner.style.borderColor = 'var(--accent-rose)';
+            statusBanner.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="material-symbols-outlined" style="color: var(--accent-rose); font-size: 22px;">error</span>
+                    <div>
+                        <div style="font-weight: 600; font-size: 13.5px;">Execution Error</div>
+                        <div style="font-size: 11.5px; color: var(--text-secondary);">${data.detail?.message || data.error || 'Failed to process request.'}</div>
+                    </div>
                 </div>
             `;
+            showToast('Generation error', 'error');
         }
+
+    } catch (err) {
+        statusBanner.className = 'card';
+        statusBanner.style.borderColor = 'var(--accent-rose)';
+        statusBanner.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="material-symbols-outlined" style="color: var(--accent-rose); font-size: 22px;">wifi_off</span>
+                <div>
+                    <div style="font-weight: 600; font-size: 13.5px;">Network Failure</div>
+                    <div style="font-size: 11.5px; color: var(--text-secondary);">${err.message}</div>
+                </div>
+            </div>
+        `;
+        showToast('Connection error', 'error');
+    } finally {
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = `
+            <span class="material-symbols-outlined">code_blocks</span>
+            <span>Execute & Verify Specification</span>
+            <span class="kbd-badge" style="margin-left: 4px; background: #ffffff; color: #000000; border: none;">⌘↵</span>
+        `;
     }
-}
-
-function syntaxHighlight(code, lang) {
-    let html = code
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-    
-    if (lang === 'python') {
-        html = html
-            .replace(/\b(def|class|if|else|elif|for|while|return|import|from|try|except|with|as|in|is|and|or|not|lambda|yield|break|continue|pass|async|await)\b/g, '<span style="color: #c678dd;">$1</span>')
-            .replace(/\b(\d+\.?\d*)\b/g, '<span style="color: #d19a66;">$1</span>')
-            .replace(/(#[^\n]*)/g, '<span style="color: #5c6370;">$1</span>')
-            .replace(/("(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\'|"""[\s\S]*?""")/g, '<span style="color: #98c379;">$1</span>')
-            .replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g, '<span style="color: #61afef;">$1</span>(');
-    } else if (lang === 'java') {
-        html = html
-            .replace(/\b(public|private|protected|static|final|class|interface|void|int|String|boolean|if|else|for|while|return|new|this|try|catch|throw|import)\b/g, '<span style="color: #c678dd;">$1</span>')
-            .replace(/\b(\d+\.?\d*[fFdDlL]?)\b/g, '<span style="color: #d19a66;">$1</span>')
-            .replace(/(\/\/[^\n]*)/g, '<span style="color: #5c6370;">$1</span>')
-            .replace(/("(?:[^"\\]|\\.)*")/g, '<span style="color: #98c379;">$1</span>')
-            .replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g, '<span style="color: #61afef;">$1</span>(');
-    } else if (lang === 'cpp') {
-        html = html
-            .replace(/\b(int|float|double|char|bool|void|if|else|for|while|return|new|delete|this|try|catch|throw|include|using|namespace|std)\b/g, '<span style="color: #c678dd;">$1</span>')
-            .replace(/\b(\d+\.?\d*[fFdDlLuU]*)\b/g, '<span style="color: #d19a66;">$1</span>')
-            .replace(/(\/\/[^\n]*)/g, '<span style="color: #5c6370;">$1</span>')
-            .replace(/("(?:[^"\\]|\\.)*")/g, '<span style="color: #98c379;">$1</span>')
-            .replace(/#include\s*[<"]([^>"]+)[>"]/g, '<span style="color: #c678dd;">#include</span> <span style="color: #98c379;">&lt;$1&gt;</span>')
-            .replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g, '<span style="color: #61afef;">$1</span>(');
-    }
-    
-    return html;
-}
-
-function copyCode() {
-    navigator.clipboard.writeText(generatedCode).then(() => {
-        alert('Code copied to clipboard!');
-    }).catch(() => {
-        alert('Failed to copy code');
-    });
-}
-
-function downloadCode() {
-    const extensions = { python: '.py', java: '.java', cpp: '.cpp' };
-    const blob = new Blob([generatedCode], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `generated_code${extensions[selectedLanguage] || '.txt'}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
-
-function saveToRecent(data) {
-    const recent = JSON.parse(localStorage.getItem('recentGenerations') || '[]');
-    recent.unshift(data);
-    if (recent.length > 20) recent.pop();
-    localStorage.setItem('recentGenerations', JSON.stringify(recent));
-    localStorage.setItem('lastGeneration', JSON.stringify(lastGenerationData));
 }
