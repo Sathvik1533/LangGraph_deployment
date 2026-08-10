@@ -1,421 +1,365 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>History - LangGraph Agent</title>
-    
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
-    
-    <!-- Styles -->
-    <link rel="stylesheet" href="/static/css/shared.css">
-    
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #f8f9ff;
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LangGraph - Generation History</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;700&amp;family=Space+Grotesk:wght@700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "secondary-fixed-dim": "#00e479",
+                        "surface-container-high": "#e8e8e8",
+                        "on-primary-fixed-variant": "#003fa4",
+                        "secondary": "#006d37",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-bright": "#f9f9f9",
+                        "on-secondary-fixed-variant": "#005228",
+                        "surface-dim": "#dadada",
+                        "outline": "#727687",
+                        "surface-container": "#eeeeee",
+                        "on-primary-container": "#f8f7ff",
+                        "on-background": "#1b1b1b",
+                        "secondary-fixed": "#60ff99",
+                        "inverse-on-surface": "#f1f1f1",
+                        "on-tertiary-fixed": "#241a00",
+                        "on-error-container": "#93000a",
+                        "on-tertiary": "#ffffff",
+                        "outline-variant": "#c2c6d8",
+                        "surface-container-highest": "#e2e2e2",
+                        "secondary-container": "#00fa85",
+                        "primary-fixed": "#dae1ff",
+                        "inverse-primary": "#b3c5ff",
+                        "on-error": "#ffffff",
+                        "tertiary": "#745b00",
+                        "error-container": "#ffdad6",
+                        "surface": "#f9f9f9",
+                        "on-primary-fixed": "#001849",
+                        "surface-variant": "#e2e2e2",
+                        "on-surface": "#1b1b1b",
+                        "primary": "#0050cb",
+                        "on-tertiary-fixed-variant": "#584400",
+                        "on-secondary-fixed": "#00210c",
+                        "primary-container": "#0066ff",
+                        "background": "#f8f9ff", // Override to requested #f8f9ff
+                        "on-surface-variant": "#424656",
+                        "primary-fixed-dim": "#b3c5ff",
+                        "tertiary-container": "#d1a600",
+                        "error": "#ba1a1a",
+                        "surface-tint": "#0054d6",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed-dim": "#f1c100",
+                        "on-tertiary-container": "#4f3e00",
+                        "on-secondary-container": "#006e37",
+                        "inverse-surface": "#303030",
+                        "surface-container-low": "#f3f3f3",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#ffe08b"
+                    },
+                    borderRadius: {
+                        DEFAULT: "0",
+                        lg: "0",
+                        xl: "0",
+                        full: "0"
+                    },
+                    spacing: {
+                        base: "4px",
+                        lg: "32px",
+                        sm: "16px",
+                        md: "24px",
+                        gutter: "24px",
+                        margin: "32px",
+                        xs: "8px",
+                        xl: "64px"
+                    },
+                    fontFamily: {
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "code-md": ["JetBrains Mono"],
+                        "code-bold": ["JetBrains Mono"],
+                        "display-xl": ["Space Grotesk"],
+                        "display-lg": ["Space Grotesk"],
+                        "label-sm": ["Inter"]
+                    },
+                    fontSize: {
+                        "body-md": ["14px", { lineHeight: "1.5", fontWeight: "400" }], // Adjusted to requested task text size
+                        "body-lg": ["16px", { lineHeight: "1.5", fontWeight: "600" }], // Adjusted to requested card title size
+                        "code-md": ["12px", { lineHeight: "1.6", fontWeight: "400" }], // Adjusted to requested timestamp size
+                        "code-bold": ["12px", { lineHeight: "1.6", fontWeight: "700" }],
+                        "display-xl": ["48px", { lineHeight: "1.1", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "display-lg": ["32px", { lineHeight: "1.2", fontWeight: "700" }],
+                        "label-sm": ["10px", { lineHeight: "1", fontWeight: "700" }] // Adjusted to requested badge size
+                    }
+                }
+            }
         }
-        
-        .filter-bar {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-bottom: 24px;
+    </script>
+<style>
+        .neo-shadow {
+            box-shadow: 6px 6px 0px 0px #000000;
         }
-        
-        .filter-chip {
-            padding: 8px 16px;
-            border: 2px solid #e5eeff;
-            border-radius: 20px;
-            background: white;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+        .neo-shadow-hover:hover {
+            box-shadow: 8px 8px 0px 0px #000000;
+            transform: translate(-2px, -2px);
         }
-        
-        .filter-chip:hover {
-            border-color: #2563eb;
-            background: #f8f9ff;
+        .neo-shadow-active:active {
+            box-shadow: 2px 2px 0px 0px #000000;
+            transform: translate(4px, 4px);
         }
+        .success-bg { background-color: #00FF88; }
+        .error-bg { background-color: #FF0055; }
         
-        .filter-chip.active {
-            border-color: #2563eb;
-            background: #2563eb;
-            color: white;
-        }
-        
-        .search-box {
-            flex: 1;
-            min-width: 300px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 16px;
-            border: 2px solid #e5eeff;
-            border-radius: 8px;
-            background: white;
-        }
-        
-        .search-box input {
-            flex: 1;
-            border: none;
-            outline: none;
-            font-size: 14px;
-        }
-        
-        .history-item {
-            background: white;
-            border: 1px solid #e5eeff;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 16px;
-            transition: all 0.2s;
-            cursor: pointer;
-        }
-        
-        .history-item:hover {
-            border-color: #2563eb;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
-            transform: translateY(-2px);
-        }
-        
-        .history-item-header {
-            display: flex;
-            align-items: start;
-            justify-content: space-between;
-            margin-bottom: 16px;
-        }
-        
-        .history-item-body {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 16px;
-            padding-top: 16px;
-            border-top: 1px solid #e5eeff;
-        }
-        
-        .stat-item {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        
-        .stat-label {
-            font-size: 12px;
-            color: #64748b;
-            font-weight: 500;
-        }
-        
-        .stat-value {
-            font-size: 16px;
-            font-weight: 600;
-            color: #0b1c30;
-        }
-        
-        .code-preview {
-            background: #f8f9ff;
-            border: 1px solid #e5eeff;
-            border-radius: 6px;
-            padding: 12px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            color: #434655;
-            margin-top: 12px;
-        }
-        
-        .action-buttons {
-            display: flex;
-            gap: 8px;
-        }
-        
-        .icon-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            border: 1px solid #e5eeff;
-            background: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .icon-btn:hover {
-            background: #f8f9ff;
-            border-color: #2563eb;
-            color: #2563eb;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 64px 24px;
-            color: #64748b;
+        /* Reduce motion support */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
         }
     </style>
 </head>
-<body class="h-full">
-    
-    <!-- Include Navigation -->
-    <div id="navigation"></div>
-    
-    <!-- Main Content -->
-    <main class="main-content">
-        <!-- Page Header -->
-        <header class="page-header">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="page-title">
-                        <span class="material-symbols-outlined" style="font-size: 40px;">history</span>
-                        Generation History
-                    </h1>
-                    <p class="page-subtitle">View and manage your code generation history</p>
-                </div>
-                <button class="btn btn-secondary" onclick="clearHistory()">
-                    <span class="material-symbols-outlined">delete_sweep</span>
-                    Clear All
-                </button>
-            </div>
-        </header>
-        
-        <!-- Filters & Search -->
-        <div class="card mb-4">
-            <div class="filter-bar">
-                <!-- Search -->
-                <div class="search-box">
-                    <span class="material-symbols-outlined" style="color: #64748b;">search</span>
-                    <input type="text" id="searchInput" placeholder="Search by task description..." onkeyup="filterHistory()">
-                </div>
-                
-                <!-- Language Filters -->
-                <button class="filter-chip active" data-filter="all" onclick="setFilter('all')">
-                    All Languages
-                </button>
-                <button class="filter-chip" data-filter="python" onclick="setFilter('python')">
-                    🐍 Python
-                </button>
-                <button class="filter-chip" data-filter="java" onclick="setFilter('java')">
-                    ☕ Java
-                </button>
-                <button class="filter-chip" data-filter="cpp" onclick="setFilter('cpp')">
-                    ⚡ C++
-                </button>
-                
-                <!-- Status Filters -->
-                <button class="filter-chip" data-filter="success" onclick="setFilter('success')">
-                    <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span>
-                    Success Only
-                </button>
-            </div>
-        </div>
-        
-        <!-- History List -->
-        <div id="historyList">
-            <div class="empty-state">
-                <span class="material-symbols-outlined" style="font-size: 64px; opacity: 0.3;">history</span>
-                <p style="margin-top: 16px; font-size: 16px;">No generation history yet</p>
-                <p style="font-size: 14px; margin-top: 8px;">Start generating code to build your history</p>
-                <a href="/generate" class="btn btn-primary" style="margin-top: 24px; display: inline-flex;">
-                    <span class="material-symbols-outlined">auto_awesome</span>
-                    Generate Code
-                </a>
-            </div>
-        </div>
-    </main>
-    
-    <!-- Scripts -->
-    <script src="/static/js/common.js"></script>
-    <script>
-        // Load navigation
-        fetch('/templates/navigation.html')
-            .then(res => res.text())
-            .then(html => {
-                document.getElementById('navigation').innerHTML = html;
-                setActiveNav('history');
-            });
-        
-        let currentFilter = 'all';
-        let allHistory = [];
-        
-        // Load history
-        function loadHistory() {
-            allHistory = JSON.parse(localStorage.getItem('recentGenerations') || '[]');
-            renderHistory(allHistory);
-        }
-        
-        function renderHistory(items) {
-            const container = document.getElementById('historyList');
-            
-            if (items.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <span class="material-symbols-outlined" style="font-size: 64px; opacity: 0.3;">history</span>
-                        <p style="margin-top: 16px; font-size: 16px;">No results found</p>
-                        <p style="font-size: 14px; margin-top: 8px;">Try adjusting your filters</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = items.map((item, index) => `
-                <div class="history-item" onclick="viewGeneration(${index})">
-                    <div class="history-item-header">
-                        <div style="flex: 1;">
-                            <div class="flex items-center gap-3 mb-2">
-                                <span class="material-symbols-outlined" style="font-size: 28px; color: #2563eb;">code</span>
-                                <div>
-                                    <h3 class="font-semibold text-lg">${item.task || 'Code Generation'}</h3>
-                                    <p class="text-sm" style="color: #64748b;">${formatDate(item.timestamp)}</p>
-                                </div>
-                            </div>
-                            ${item.code ? `<div class="code-preview">${escapeHtml(item.code.substring(0, 100))}...</div>` : ''}
+<body class="bg-background text-on-background min-h-screen flex flex-col md:flex-row">
+<!-- Top Navigation (Mobile) -->
+<header class="md:hidden w-full h-[72px] sticky top-0 z-40 border-b-3 border-on-background bg-surface flex justify-between items-center px-margin">
+<div class="font-display-lg text-display-lg font-bold text-on-surface uppercase tracking-tighter">LANGGRAPH</div>
+<div class="flex gap-sm">
+<span class="material-symbols-outlined hover:text-primary transition-colors cursor-pointer">notifications</span>
+<span class="material-symbols-outlined hover:text-primary transition-colors cursor-pointer">account_circle</span>
+</div>
+</header>
+<!-- Side Navigation (Desktop) -->
+<nav class="hidden md:flex flex-col bg-surface w-[280px] h-screen sticky top-0 border-r-3 border-on-background shadow-[6px_6px_0px_0px_#000000] p-sm gap-md z-50">
+<div class="flex flex-col gap-xs mb-lg p-sm">
+<div class="font-display-lg text-display-lg font-bold text-on-surface uppercase tracking-tighter">LANGGRAPH</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Orchestration Engine</div>
+</div>
+<button class="bg-primary text-on-primary border-3 border-on-background h-[56px] font-display-lg text-[16px] font-bold neo-shadow neo-shadow-hover neo-shadow-active transition-all duration-200 mb-md w-full flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined font-code-md text-[20px]">add</span> New Run
+        </button>
+<div class="flex flex-col gap-xs flex-grow">
+<!-- Nav Item: Agent Runs (Inactive) -->
+<a class="flex items-center gap-sm p-sm border-3 border-transparent text-on-surface hover:bg-surface-container-high hover:border-3 hover:border-on-background transition-all duration-200" href="#">
+<span class="material-symbols-outlined font-code-md text-code-md">analytics</span>
+<span class="font-body-md font-bold">Agent Runs</span>
+</a>
+<!-- Nav Item: History (Active - Mapped from Workflows/History intent) -->
+<a class="flex items-center gap-sm p-sm bg-primary-container text-on-primary-container border-3 border-on-background shadow-[2px_2px_0px_0px_#000000] translate-x-[2px] translate-y-[2px] transition-all duration-200" href="#">
+<span class="material-symbols-outlined font-code-md text-code-md">history</span>
+<span class="font-body-md font-bold">History</span>
+</a>
+<!-- Nav Item: Monitors (Inactive) -->
+<a class="flex items-center gap-sm p-sm border-3 border-transparent text-on-surface hover:bg-surface-container-high hover:border-3 hover:border-on-background transition-all duration-200" href="#">
+<span class="material-symbols-outlined font-code-md text-code-md">monitoring</span>
+<span class="font-body-md font-bold">Monitors</span>
+</a>
+<!-- Nav Item: Settings (Inactive) -->
+<a class="flex items-center gap-sm p-sm border-3 border-transparent text-on-surface hover:bg-surface-container-high hover:border-3 hover:border-on-background transition-all duration-200" href="#">
+<span class="material-symbols-outlined font-code-md text-code-md">settings</span>
+<span class="font-body-md font-bold">Settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-grow flex flex-col p-margin max-w-7xl mx-auto w-full gap-[48px]">
+<!-- Header Section -->
+<header class="flex flex-col lg:flex-row lg:justify-between lg:items-end gap-md">
+<div class="flex flex-col gap-xs">
+<h1 class="font-display-xl text-display-xl">Generation History</h1>
+<p class="font-body-lg text-on-surface-variant font-normal">Browse all past code generations with filters</p>
+</div>
+<div class="relative w-full lg:w-96 focus-within:shadow-[4px_4px_0px_0px_#0050cb] transition-shadow duration-200">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full h-[48px] pl-[48px] pr-sm bg-surface-container-lowest border-3 border-on-background font-body-md text-on-background outline-none" placeholder="Search history..." type="text"/>
+</div>
+</header>
+<!-- Filters Section -->
+<section class="flex flex-col gap-[32px]">
+<div class="flex flex-wrap items-center justify-between gap-md">
+<div class="flex flex-wrap gap-[24px] items-center">
+<!-- Filter: All (Active) -->
+<button class="h-[44px] px-md bg-on-background text-on-primary border-3 border-on-background font-body-md font-bold flex items-center gap-xs neo-shadow neo-shadow-hover neo-shadow-active transition-all duration-200">
+                        All <span class="bg-surface-container-lowest text-on-background px-1 py-0.5 text-[10px]">142</span>
+</button>
+<!-- Filter: Python -->
+<button class="h-[44px] px-md bg-surface-container-lowest text-on-background border-3 border-on-background font-body-md font-bold flex items-center gap-xs neo-shadow neo-shadow-hover neo-shadow-active transition-all duration-200">
+                        Python <span class="bg-surface-container-high px-1 py-0.5 text-[10px]">85</span>
+</button>
+<!-- Filter: Java -->
+<button class="h-[44px] px-md bg-surface-container-lowest text-on-background border-3 border-on-background font-body-md font-bold flex items-center gap-xs neo-shadow neo-shadow-hover neo-shadow-active transition-all duration-200">
+                        Java <span class="bg-surface-container-high px-1 py-0.5 text-[10px]">34</span>
+</button>
+<!-- Filter: C++ -->
+<button class="h-[44px] px-md bg-surface-container-lowest text-on-background border-3 border-on-background font-body-md font-bold flex items-center gap-xs neo-shadow neo-shadow-hover neo-shadow-active transition-all duration-200">
+                        C++ <span class="bg-surface-container-high px-1 py-0.5 text-[10px]">12</span>
+</button>
+<!-- Filter: Success -->
+<button class="h-[44px] px-md bg-surface-container-lowest text-on-background border-3 border-on-background font-body-md font-bold flex items-center gap-xs neo-shadow neo-shadow-hover neo-shadow-active transition-all duration-200">
+                        Success <span class="success-bg text-on-background px-1 py-0.5 text-[10px] border-border-on-background border-2 border-on-background">130</span>
+</button>
+<!-- Filter: Failed -->
+<button class="h-[44px] px-md bg-surface-container-lowest text-on-background border-3 border-on-background font-body-md font-bold flex items-center gap-xs neo-shadow neo-shadow-hover neo-shadow-active transition-all duration-200">
+                        Failed <span class="error-bg text-on-primary px-1 py-0.5 text-[10px] border-2 border-on-background">12</span>
+</button>
+<button class="font-body-md text-on-surface-variant underline hover:text-primary transition-colors cursor-pointer ml-sm">
+                        Clear all
+                    </button>
+</div>
+<div class="relative w-full sm:w-auto">
+<select class="h-[44px] pl-sm pr-lg bg-surface-container-lowest border-3 border-on-background font-body-md font-bold appearance-none w-full neo-shadow cursor-pointer focus:outline-none">
+<option>Newest First</option>
+<option>Oldest First</option>
+<option>Language</option>
+</select>
+<span class="material-symbols-outlined absolute right-xs top-1/2 -translate-y-1/2 pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[24px]">
+<!-- Card 1 -->
+<article class="bg-surface-container-lowest border-3 border-on-background p-[24px] flex flex-col gap-sm neo-shadow neo-shadow-hover transition-all duration-200 group">
+<div class="flex justify-between items-start">
+<div class="bg-surface-container-high border-2 border-on-background px-xs py-1 flex items-center gap-1">
+<span>🐍</span> <span class="font-label-sm text-label-sm uppercase">Python</span>
+</div>
+<div class="success-bg border-2 border-on-background px-xs py-1 font-label-sm text-label-sm uppercase text-on-background">
+                            Success
                         </div>
-                        
-                        <div class="flex items-center gap-3">
-                            <span class="badge ${item.success ? 'badge-success' : 'badge-error'}">
-                                ${item.success ? '✓ Success' : '✗ Failed'}
-                            </span>
-                            <span class="badge badge-info">${getLanguageName(item.language)}</span>
-                            <div class="action-buttons" onclick="event.stopPropagation()">
-                                <button class="icon-btn" onclick="viewGeneration(${index})" title="View">
-                                    <span class="material-symbols-outlined">visibility</span>
-                                </button>
-                                <button class="icon-btn" onclick="downloadHistoryItem(${index})" title="Download">
-                                    <span class="material-symbols-outlined">download</span>
-                                </button>
-                                <button class="icon-btn" onclick="deleteHistoryItem(${index})" title="Delete">
-                                    <span class="material-symbols-outlined">delete</span>
-                                </button>
-                            </div>
+</div>
+<div class="flex flex-col gap-xs mt-xs">
+<h3 class="font-body-lg text-body-lg text-on-background line-clamp-2">Generate REST API endpoints for user management with FastAPI</h3>
+<p class="font-code-md text-code-md text-on-surface-variant flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[14px]">schedule</span> 2 hours ago
+                        </p>
+</div>
+<div class="mt-auto pt-sm flex gap-xs flex-wrap">
+<button class="flex-1 h-[44px] bg-primary text-on-primary border-3 border-on-background font-body-md font-bold flex justify-center items-center gap-xs hover:-translate-y-1 transition-transform">
+<span class="material-symbols-outlined text-[18px]">code</span> View Code
+                        </button>
+<button class="h-[44px] w-[44px] bg-surface-container-lowest border-3 border-on-background flex justify-center items-center hover:bg-primary-container transition-colors" title="Re-run">
+<span class="material-symbols-outlined text-[18px]">refresh</span>
+</button>
+<button class="h-[44px] w-[44px] bg-surface-container-lowest border-3 border-on-background flex justify-center items-center hover:bg-[#FF0055] hover:text-on-primary transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="bg-surface-container-lowest border-3 border-on-background p-[24px] flex flex-col gap-sm neo-shadow neo-shadow-hover transition-all duration-200 group">
+<div class="flex justify-between items-start">
+<div class="bg-surface-container-high border-2 border-on-background px-xs py-1 flex items-center gap-1">
+<span>☕</span> <span class="font-label-sm text-label-sm uppercase">Java</span>
+</div>
+<div class="error-bg border-2 border-on-background px-xs py-1 font-label-sm text-label-sm uppercase text-on-primary">
+                            Failed
                         </div>
-                    </div>
-                    
-                    <div class="history-item-body">
-                        <div class="stat-item">
-                            <span class="stat-label">Language</span>
-                            <span class="stat-value">${getLanguageName(item.language)}</span>
+</div>
+<div class="flex flex-col gap-xs mt-xs">
+<h3 class="font-body-lg text-body-lg text-on-background line-clamp-2">Implement A* pathfinding algorithm for isometric grid</h3>
+<p class="font-code-md text-code-md text-on-surface-variant flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[14px]">schedule</span> 5 hours ago
+                        </p>
+</div>
+<div class="mt-auto pt-sm flex gap-xs flex-wrap">
+<button class="flex-1 h-[44px] bg-primary text-on-primary border-3 border-on-background font-body-md font-bold flex justify-center items-center gap-xs hover:-translate-y-1 transition-transform">
+<span class="material-symbols-outlined text-[18px]">code</span> View Code
+                        </button>
+<button class="h-[44px] w-[44px] bg-surface-container-lowest border-3 border-on-background flex justify-center items-center hover:bg-primary-container transition-colors" title="Re-run">
+<span class="material-symbols-outlined text-[18px]">refresh</span>
+</button>
+<button class="h-[44px] w-[44px] bg-surface-container-lowest border-3 border-on-background flex justify-center items-center hover:bg-[#FF0055] hover:text-on-primary transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</article>
+<!-- Card 3 -->
+<article class="bg-surface-container-lowest border-3 border-on-background p-[24px] flex flex-col gap-sm neo-shadow neo-shadow-hover transition-all duration-200 group">
+<div class="flex justify-between items-start">
+<div class="bg-surface-container-high border-2 border-on-background px-xs py-1 flex items-center gap-1">
+<span>⚡</span> <span class="font-label-sm text-label-sm uppercase">C++</span>
+</div>
+<div class="success-bg border-2 border-on-background px-xs py-1 font-label-sm text-label-sm uppercase text-on-background">
+                            Success
                         </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Status</span>
-                            <span class="stat-value" style="color: ${item.success ? '#10b981' : '#ef4444'};">
-                                ${item.success ? 'Passed' : 'Failed'}
-                            </span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Lines</span>
-                            <span class="stat-value">${item.code ? item.code.split('\n').length : 0}</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Date</span>
-                            <span class="stat-value">${new Date(item.timestamp).toLocaleDateString()}</span>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-        
-        function setFilter(filter) {
-            currentFilter = filter;
-            
-            // Update active filter button
-            document.querySelectorAll('.filter-chip').forEach(chip => {
-                if (chip.dataset.filter === filter) {
-                    chip.classList.add('active');
-                } else {
-                    chip.classList.remove('active');
-                }
-            });
-            
-            filterHistory();
-        }
-        
-        function filterHistory() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            
-            let filtered = allHistory;
-            
-            // Apply language filter
-            if (currentFilter !== 'all' && currentFilter !== 'success') {
-                filtered = filtered.filter(item => item.language === currentFilter);
-            }
-            
-            // Apply success filter
-            if (currentFilter === 'success') {
-                filtered = filtered.filter(item => item.success);
-            }
-            
-            // Apply search filter
-            if (searchTerm) {
-                filtered = filtered.filter(item => 
-                    (item.task || '').toLowerCase().includes(searchTerm) ||
-                    (item.code || '').toLowerCase().includes(searchTerm)
-                );
-            }
-            
-            renderHistory(filtered);
-        }
-        
-        function viewGeneration(index) {
-            const item = allHistory[index];
-            
-            // Save as last generation for other pages
-            localStorage.setItem('lastGeneration', JSON.stringify({
-                code: item.code,
-                report: item.report,
-                execution_success: item.success,
-                iterations: 1,
-                language: item.language
-            }));
-            
-            // Navigate to generate page
-            window.location.href = '/generate';
-        }
-        
-        function downloadHistoryItem(index) {
-            const item = allHistory[index];
-            if (item.code) {
-                const ext = getFileExtension(item.language);
-                downloadFile(item.code, `generation_${index}${ext}`);
-            }
-        }
-        
-        function deleteHistoryItem(index) {
-            if (confirm('Delete this generation from history?')) {
-                allHistory.splice(index, 1);
-                localStorage.setItem('recentGenerations', JSON.stringify(allHistory));
-                filterHistory();
-                showToast('Generation deleted', 'success');
-            }
-        }
-        
-        function clearHistory() {
-            if (confirm('Clear all generation history? This cannot be undone.')) {
-                localStorage.removeItem('recentGenerations');
-                localStorage.removeItem('lastGeneration');
-                allHistory = [];
-                renderHistory([]);
-                showToast('History cleared', 'success');
-            }
-        }
-        
-        function escapeHtml(text) {
-            return text
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
-        }
-        
-        // Initialize
-        loadHistory();
-    </script>
-</body>
-</html>
+</div>
+<div class="flex flex-col gap-xs mt-xs">
+<h3 class="font-body-lg text-body-lg text-on-background line-clamp-2">Optimize matrix multiplication using SIMD instructions</h3>
+<p class="font-code-md text-code-md text-on-surface-variant flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[14px]">schedule</span> Yesterday
+                        </p>
+</div>
+<div class="mt-auto pt-sm flex gap-xs flex-wrap">
+<button class="flex-1 h-[44px] bg-primary text-on-primary border-3 border-on-background font-body-md font-bold flex justify-center items-center gap-xs hover:-translate-y-1 transition-transform">
+<span class="material-symbols-outlined text-[18px]">code</span> View Code
+                        </button>
+<button class="h-[44px] w-[44px] bg-surface-container-lowest border-3 border-on-background flex justify-center items-center hover:bg-primary-container transition-colors" title="Re-run">
+<span class="material-symbols-outlined text-[18px]">refresh</span>
+</button>
+<button class="h-[44px] w-[44px] bg-surface-container-lowest border-3 border-on-background flex justify-center items-center hover:bg-[#FF0055] hover:text-on-primary transition-colors" title="Delete">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</article>
+</div>
+<!-- Pagination -->
+<div class="flex flex-col sm:flex-row justify-between items-center mt-md pt-md border-t-3 border-on-background gap-md">
+<span class="font-code-bold text-code-bold">Page 1 of 10</span>
+<div class="flex gap-sm">
+<button class="h-[44px] px-md bg-surface-container-high border-3 border-on-background font-body-md font-bold opacity-50 cursor-not-allowed flex items-center gap-xs">
+<span class="material-symbols-outlined">arrow_back</span> Prev
+                    </button>
+<button class="h-[44px] px-md bg-surface-container-lowest border-3 border-on-background font-body-md font-bold flex items-center gap-xs neo-shadow neo-shadow-hover neo-shadow-active transition-all duration-200">
+                        Next <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Empty State Example (Hidden by default, structure provided) -->
+<section class="hidden flex-col items-center justify-center py-[100px] gap-md text-center">
+<div class="relative w-[120px] h-[120px] mb-sm">
+<span class="material-symbols-outlined text-[100px] text-outline opacity-20">history</span>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-full h-1 bg-on-background rotate-45"></div>
+</div>
+</div>
+<h2 class="font-display-lg text-display-lg">No generations yet.</h2>
+<p class="font-body-lg text-on-surface-variant max-w-md">Start creating code structures and logic graphs to build your history.</p>
+<button class="h-[56px] px-lg mt-md bg-primary text-on-primary border-3 border-on-background font-display-lg text-[18px] font-bold flex items-center gap-xs neo-shadow neo-shadow-hover neo-shadow-active transition-all duration-200">
+<span class="material-symbols-outlined">bolt</span> Code Generator
+            </button>
+</section>
+</main>
+<!-- Bottom Navigation (Mobile - Mapped from JSON intent) -->
+<nav class="md:hidden w-full h-[72px] sticky bottom-0 z-40 bg-surface border-t-3 border-on-background flex justify-around items-center px-sm pb-safe">
+<a class="flex flex-col items-center gap-1 p-2 text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-sm text-[10px]">Runs</span>
+</a>
+<a class="flex flex-col items-center gap-1 p-2 text-primary font-bold" href="#">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">history</span>
+<span class="font-label-sm text-[10px]">History</span>
+</a>
+<a class="flex flex-col items-center gap-1 p-2 text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+<span class="font-label-sm text-[10px]">Monitors</span>
+</a>
+<a class="flex flex-col items-center gap-1 p-2 text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-sm text-[10px]">Settings</span>
+</a>
+</nav>
+<script src="/static/js/history.js"></script>
+</body></html>
