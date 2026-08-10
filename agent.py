@@ -369,18 +369,22 @@ def validate_task_input(task: str) -> tuple[bool, Optional[str]]:
     return True, None
 
 
-def validate_code_output(code: str) -> tuple[bool, Optional[str]]:
+def validate_code_output(code: str, language: str = "python") -> tuple[bool, Optional[str]]:
     """
-    Validate LLM output is actually Python code.
+    Validate LLM output is actually valid code for the target language.
     
     Pattern: Output Validation
     Why: LLM sometimes returns explanations instead of code. Catch this early.
     
     Checks:
     - Not empty
-    - Has Python syntax (def, class, import, etc.)
+    - Has language-specific syntax keywords
     - Not just explanation text
-    - Can be parsed as Python
+    - Can be parsed (Python only, others just keyword check)
+    
+    Args:
+        code: Generated code to validate
+        language: Target language (python, java, cpp)
     
     Returns:
         (is_valid, error_message)
@@ -401,21 +405,54 @@ def validate_code_output(code: str) -> tuple[bool, Optional[str]]:
             lines = lines[:-1]
         cleaned_code = '\n'.join(lines).strip()
     
-    # Must contain Python keywords
-    python_keywords = ['def ', 'class ', 'import ', 'from ', 'return', '=']
-    if not any(keyword in cleaned_code for keyword in python_keywords):
-        return False, "Output doesn't look like Python code. Contains only text/explanation."
+    # Language-specific validation
+    language = language.lower()
     
-    # Try to parse as Python
-    try:
-        compile(cleaned_code, '<string>', 'exec')
+    if language == "python":
+        # Must contain Python keywords
+        python_keywords = ['def ', 'class ', 'import ', 'from ', 'return', '=', 'if ', 'for ', 'while ']
+        if not any(keyword in cleaned_code for keyword in python_keywords):
+            return False, "Output doesn't look like Python code. Contains only text/explanation."
+        
+        # Try to parse as Python
+        try:
+            compile(cleaned_code, '<string>', 'exec')
+            return True, None
+        except SyntaxError as e:
+            return False, f"Generated code has syntax errors: {str(e)}"
+        except Exception as e:
+            # Still accept it - might be valid code that needs imports
+            logger.warning(f"Code validation warning: {e}")
+            return True, None
+    
+    elif language == "java":
+        # Must contain Java keywords
+        java_keywords = ['class ', 'public ', 'private ', 'void ', 'int ', 'String ', 'return', 'static ', 'main(']
+        if not any(keyword in cleaned_code for keyword in java_keywords):
+            return False, "Output doesn't look like Java code. Contains only text/explanation."
+        
+        # Basic Java syntax checks
+        if 'class ' in cleaned_code:
+            # Check for at least one opening brace
+            if '{' not in cleaned_code:
+                return False, "Java code missing opening braces for class definition."
+        
         return True, None
-    except SyntaxError as e:
-        # More detailed error message
-        return False, f"Generated code has syntax errors: {str(e)}"
-    except Exception as e:
-        # Still accept it - might be valid code that needs imports
-        logger.warning(f"Code validation warning: {e}")
+    
+    elif language in ["cpp", "c++"]:
+        # Must contain C++ keywords
+        cpp_keywords = ['#include', 'int ', 'void ', 'return', 'std::', 'main(', 'using namespace', 'cout', 'cin']
+        if not any(keyword in cleaned_code for keyword in cpp_keywords):
+            return False, "Output doesn't look like C++ code. Contains only text/explanation."
+        
+        # Basic C++ syntax checks
+        if '#include' not in cleaned_code:
+            logger.warning("C++ code missing #include directives")
+        
+        return True, None
+    
+    else:
+        # Unknown language - just check it's not empty
         return True, None
 
 
@@ -642,7 +679,7 @@ def developer_node(state: CrewState) -> Dict[str, Any]:
         clean_code = code.replace("```python", "").replace("```java", "").replace("```cpp", "").replace("```c++", "").replace("```", "").strip()
         
         # VALIDATION: Check if output is actually code
-        is_valid, error_msg = validate_code_output(clean_code)
+        is_valid, error_msg = validate_code_output(clean_code, target_language)
         
         if not is_valid:
             logger.error(f"Developer output validation failed: {error_msg}")
@@ -698,6 +735,9 @@ def tester_node(state: CrewState) -> Dict[str, Any]:
     # Get original task from first message
     task = state["messages"][0].content
     
+    # Get target language from state
+    target_language = state.get("language", "python").lower()
+    
     # VALIDATION: Check if developer actually returned valid code
     code = state.get("code", "")
     if code.startswith("# ERROR:"):
@@ -709,7 +749,7 @@ def tester_node(state: CrewState) -> Dict[str, Any]:
         }
     
     # Double-check code validity (defense in depth)
-    is_valid, error_msg = validate_code_output(code)
+    is_valid, error_msg = validate_code_output(code, target_language)
     if not is_valid:
         return {
             "report": f"### CODE VALIDATION FAILED\n{error_msg}\n\n❌ Cannot run tests - code is invalid.",
