@@ -7,7 +7,7 @@
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="/static/css/shared.css"/>
 </head>
@@ -19,7 +19,7 @@
         <header class="page-header">
             <div>
                 <h1 class="page-title">
-                    <span class="material-symbols-outlined" style="color: var(--primary-blue);">analytics</span>
+                    <span class="material-symbols-outlined" style="color: var(--accent-terracotta);">analytics</span>
                     System Telemetry & Execution Logs
                 </h1>
                 <p class="page-subtitle">Production health monitors, rate limit state, circuit breaker status, and real-time execution trace logs.</p>
@@ -34,43 +34,43 @@
         <!-- Metric Cards -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 32px;">
             <div class="studio-card studio-card-hover">
-                <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">API Health Status</div>
+                <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">API Health Status</div>
                 <div style="font-size: 24px; font-weight: 800; color: var(--accent-emerald); margin-top: 8px;" id="valHealth">HEALTHY</div>
                 <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">FastAPI Router v3.0</div>
             </div>
 
             <div class="studio-card studio-card-hover">
-                <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Circuit Breaker</div>
+                <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">Circuit Breaker</div>
                 <div style="font-size: 24px; font-weight: 800; color: var(--accent-emerald); margin-top: 8px;" id="valCircuit">CLOSED (OK)</div>
                 <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">0 Failures Recorded</div>
             </div>
 
             <div class="studio-card studio-card-hover">
-                <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Rate Limiter</div>
-                <div style="font-size: 24px; font-weight: 800; color: var(--primary-blue); margin-top: 8px;">10 REQ / MIN</div>
+                <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">Rate Limiter</div>
+                <div style="font-size: 24px; font-weight: 800; color: var(--accent-terracotta); margin-top: 8px;">10 REQ / MIN</div>
                 <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">Sliding window algorithm</div>
             </div>
 
             <div class="studio-card studio-card-hover">
-                <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">State Persistence</div>
+                <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">State Persistence</div>
                 <div style="font-size: 24px; font-weight: 800; color: var(--accent-amber); margin-top: 8px;" id="valCheckpoint">IN-MEMORY</div>
                 <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">MemorySaver active</div>
             </div>
         </div>
 
-        <!-- Terminal Terminal Log Stream -->
+        <!-- Terminal Log Stream -->
         <div class="studio-card">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <span class="material-symbols-outlined" style="color: var(--primary-blue);">terminal</span>
-                    <h2 style="font-size: 18px; font-weight: 700;">Live Diagnostics Terminal Log</h2>
+                    <span class="material-symbols-outlined" style="color: var(--accent-terracotta);">terminal</span>
+                    <h2 style="font-size: 18px; font-weight: 800;">Live Diagnostics Terminal Log</h2>
                 </div>
                 <span class="cyber-badge cyber-badge-emerald">STREAMING OK</span>
             </div>
 
             <div class="code-editor-pane">
                 <div class="code-editor-header">
-                    <span style="font-size: 12px; font-family: var(--font-mono); color: #94a3b8;">system_diagnostics.log</span>
+                    <span style="font-size: 12px; font-family: var(--font-mono); color: #a8a29e;">system_diagnostics.log</span>
                 </div>
 
                 <div class="code-editor-body" id="logTerminal" style="height: 380px; overflow-y: auto;">
