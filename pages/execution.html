@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>LangGraph | System Telemetry & Logs</title>
+    <title>LangGraph | Telemetry & System Diagnostics</title>
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,67 +20,75 @@
             <div>
                 <h1 class="page-title">
                     <span class="material-symbols-outlined" style="color: var(--accent-terracotta);">analytics</span>
-                    System Telemetry & Execution Logs
+                    System Health & Live Telemetry
                 </h1>
-                <p class="page-subtitle">Production health monitors, rate limit state, circuit breaker status, and real-time execution trace logs.</p>
+                <p class="page-subtitle">Real-time status monitoring, API health diagnostics, and live system log stream.</p>
             </div>
 
-            <button onclick="fetchHealthMetrics()" class="cyber-btn cyber-btn-secondary" data-tooltip="Refresh Telemetry: Polls backend health API and appends status log line.">
+            <button class="cyber-btn cyber-btn-secondary" onclick="checkHealthNow()" data-tooltip="Click here to immediately check if our system and AI helpers are working properly.">
                 <span class="material-symbols-outlined">refresh</span>
-                Refresh Telemetry
+                Check Health Now
             </button>
         </header>
 
-        <!-- Metric Cards -->
+        <!-- Metric Grid -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-bottom: 36px;">
-            <div class="studio-card studio-card-hover" data-tooltip="API Health Status: Operational state of the FastAPI backend router.">
-                <div style="font-size: 12px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">API Health Status</div>
-                <div style="font-size: 26px; font-weight: 700; color: var(--accent-emerald); margin-top: 10px;" id="valHealth">HEALTHY</div>
-                <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 6px;">FastAPI Router v3.0</div>
+            
+            <div class="studio-card studio-card-hover" data-tooltip="System Status: Shows if our server and AI helpers are online and ready to build your code.">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">API Health Status</span>
+                    <span class="material-symbols-outlined" style="font-size: 22px; color: var(--accent-emerald);">task_alt</span>
+                </div>
+                <div style="font-size: 26px; font-weight: 700; color: var(--accent-emerald);" id="healthStatusText">OPERATIONAL</div>
+                <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 8px;">FastAPI Backend 200 OK</div>
             </div>
 
-            <div class="studio-card studio-card-hover" data-tooltip="Circuit Breaker Status: Tripping mechanism protecting upstream LLM services from cascading errors.">
-                <div style="font-size: 12px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">Circuit Breaker</div>
-                <div style="font-size: 26px; font-weight: 700; color: var(--accent-emerald); margin-top: 10px;" id="valCircuit">CLOSED (OK)</div>
-                <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 6px;">0 Failures Recorded</div>
+            <div class="studio-card studio-card-hover" data-tooltip="Safety Guard: Automatically pauses requests if server issues occur, protecting your app from crashing.">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Circuit Breaker</span>
+                    <span class="material-symbols-outlined" style="font-size: 22px; color: var(--accent-emerald);">verified_user</span>
+                </div>
+                <div style="font-size: 26px; font-weight: 700; color: var(--text-primary);" id="circuitBreakerText">CLOSED (Healthy)</div>
+                <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 8px;">0 / 5 Failures</div>
             </div>
 
-            <div class="studio-card studio-card-hover" data-tooltip="Rate Limiter: Sliding window rate limit guardrail preventing API abuse.">
-                <div style="font-size: 12px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">Rate Limiter</div>
-                <div style="font-size: 26px; font-weight: 700; color: var(--accent-terracotta); margin-top: 10px;">10 REQ / MIN</div>
-                <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 6px;">Sliding window algorithm</div>
+            <div class="studio-card studio-card-hover" data-tooltip="Speed Limiter: Prevents too many requests at once so everyone gets fast and reliable answers.">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Rate Limiter Guardrail</span>
+                    <span class="material-symbols-outlined" style="font-size: 22px; color: var(--accent-terracotta);">speed</span>
+                </div>
+                <div style="font-size: 26px; font-weight: 700; color: var(--text-primary);">60 req / min</div>
+                <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 8px;">Sliding window active</div>
             </div>
 
-            <div class="studio-card studio-card-hover" data-tooltip="State Persistence: Checkpointing mode for thread state recovery (MemorySaver / RedisSaver).">
-                <div style="font-size: 12px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">State Persistence</div>
-                <div style="font-size: 26px; font-weight: 700; color: var(--accent-amber); margin-top: 10px;" id="valCheckpoint">IN-MEMORY</div>
-                <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 6px;">MemorySaver active</div>
+            <div class="studio-card studio-card-hover" data-tooltip="AI Provider: Shows the active AI engine powering our code generation and testing.">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">LLM Provider</span>
+                    <span class="material-symbols-outlined" style="font-size: 22px; color: var(--accent-indigo);">psychology</span>
+                </div>
+                <div style="font-size: 24px; font-weight: 700; color: var(--text-primary);" id="llmProviderText">Groq Llama-3.3</div>
+                <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 8px;">Auto-fallback enabled</div>
             </div>
+
         </div>
 
-        <!-- Terminal Log Stream -->
-        <div class="studio-card" data-tooltip="Live Diagnostics Terminal Log: Real-time trace logs of system events, health checks, and execution flows.">
+        <!-- Terminal Diagnostic Stream -->
+        <div class="studio-card">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <span class="material-symbols-outlined" style="color: var(--accent-terracotta);">terminal</span>
-                    <h2 style="font-size: 19px; font-weight: 700;">Live Diagnostics Terminal Log</h2>
+                    <span class="material-symbols-outlined" style="color: var(--accent-terracotta); font-size: 22px;">terminal</span>
+                    <h2 style="font-size: 18px; font-weight: 700;">Live Diagnostics & Trace Stream</h2>
                 </div>
-                <span class="cyber-badge cyber-badge-emerald">STREAMING OK</span>
+                <div style="display: flex; gap: 10px;">
+                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12px; padding: 4px 12px;" onclick="clearLogTerminal()" data-tooltip="Click here to clear the live system diagnostic log window.">Clear Terminal</button>
+                </div>
             </div>
 
-            <div class="code-editor-pane">
-                <div class="code-editor-header">
-                    <span style="font-size: 12.5px; font-family: var(--font-mono); color: #94a3b8;">system_diagnostics.log</span>
-                </div>
-
-                <div class="code-editor-body" id="logTerminal" style="height: 380px; overflow-y: auto;">
-[SYSTEM] Initializing LangGraph Self-Correcting Engine...
-[CONFIG] Checkpointing mode: MemorySaver (Development)
-[HEALTH] FastAPI REST Router online on port 8000
-[HEALTH] Circuit breaker status: CLOSED (0 failures)
-[HEALTH] Fallback engine chain active
-[INFO] Ready to process code specifications.
-                </div>
+            <div style="background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 22px; font-family: var(--font-mono); font-size: 13.5px; color: #34d399; line-height: 1.75; height: 380px; overflow-y: auto;" id="logTerminal">
+                [SYSTEM LOG STACK INITIALIZED]<br/>
+                [INFO] FastAPI REST Router online at port 8000.<br/>
+                [INFO] LangGraph state graph checkpointer loaded: MemorySaver.<br/>
+                [INFO] Multi-agent execution pipeline ready for task specifications.<br/>
             </div>
         </div>
     </main>
@@ -93,26 +101,40 @@
                 document.getElementById('navbarContainer').innerHTML = await navbarRes.text();
                 setActiveNav('execution');
             }
-            fetchHealthMetrics();
+            checkHealthNow();
         });
 
-        async function fetchHealthMetrics() {
+        async function checkHealthNow() {
+            const logTerm = document.getElementById('logTerminal');
+            const now = new Date().toLocaleTimeString();
+
+            logTerm.innerHTML += `<span style="color: #fb923c;">[${now}] Polling API endpoint GET /health...</span><br/>`;
+
             try {
-                const res = await fetch('/health');
+                const res = await fetch(HEALTH_API_URL);
+                const data = await res.json();
+
                 if (res.ok) {
-                    const data = await res.json();
-                    document.getElementById('valHealth').textContent = data.status.toUpperCase();
-                    if (data.circuit_breaker) {
-                        document.getElementById('valCircuit').textContent = data.circuit_breaker.open ? 'OPEN' : 'CLOSED (OK)';
-                    }
-                    const terminal = document.getElementById('logTerminal');
-                    const timestamp = new Date().toISOString();
-                    terminal.textContent += `\n[${timestamp}] Telemetry update: Status ${data.status.toUpperCase()}`;
-                    terminal.scrollTop = terminal.scrollHeight;
+                    document.getElementById('healthStatusText').textContent = 'OPERATIONAL';
+                    document.getElementById('healthStatusText').style.color = 'var(--accent-emerald)';
+                    logTerm.innerHTML += `<span style="color: #34d399;">[${now}] HEALTH CHECK PASSED: ${JSON.stringify(data)}</span><br/>`;
+                } else {
+                    document.getElementById('healthStatusText').textContent = 'DEGRADED';
+                    document.getElementById('healthStatusText').style.color = 'var(--accent-amber)';
+                    logTerm.innerHTML += `<span style="color: #f87171;">[${now}] HEALTH CHECK WARNING: Status ${res.status}</span><br/>`;
                 }
-            } catch (e) {
-                console.warn('Failed to fetch telemetry:', e);
+            } catch (err) {
+                document.getElementById('healthStatusText').textContent = 'OFFLINE';
+                document.getElementById('healthStatusText').style.color = 'var(--accent-rose)';
+                logTerm.innerHTML += `<span style="color: #f87171;">[${now}] HEALTH CHECK ERROR: ${err.message}</span><br/>`;
             }
+
+            logTerm.scrollTop = logTerm.scrollHeight;
+        }
+
+        function clearLogTerminal() {
+            document.getElementById('logTerminal').innerHTML = '[SYSTEM LOG TERMINAL CLEARED]<br/>';
+            showToast('Log terminal cleared', 'info');
         }
     </script>
 </body>
