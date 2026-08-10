@@ -25,7 +25,7 @@
                 <p class="page-subtitle">Production health monitors, rate limit state, circuit breaker status, and real-time execution trace logs.</p>
             </div>
 
-            <button onclick="fetchHealthMetrics()" class="cyber-btn cyber-btn-secondary">
+            <button onclick="fetchHealthMetrics()" class="cyber-btn cyber-btn-secondary" data-tooltip="Refresh Telemetry: Polls backend health API and appends status log line.">
                 <span class="material-symbols-outlined">refresh</span>
                 Refresh Telemetry
             </button>
@@ -33,25 +33,25 @@
 
         <!-- Metric Cards -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-bottom: 36px;">
-            <div class="studio-card studio-card-hover">
+            <div class="studio-card studio-card-hover" data-tooltip="API Health Status: Operational state of the FastAPI backend router.">
                 <div style="font-size: 12px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">API Health Status</div>
                 <div style="font-size: 26px; font-weight: 700; color: var(--accent-emerald); margin-top: 10px;" id="valHealth">HEALTHY</div>
                 <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 6px;">FastAPI Router v3.0</div>
             </div>
 
-            <div class="studio-card studio-card-hover">
+            <div class="studio-card studio-card-hover" data-tooltip="Circuit Breaker Status: Tripping mechanism protecting upstream LLM services from cascading errors.">
                 <div style="font-size: 12px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">Circuit Breaker</div>
                 <div style="font-size: 26px; font-weight: 700; color: var(--accent-emerald); margin-top: 10px;" id="valCircuit">CLOSED (OK)</div>
                 <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 6px;">0 Failures Recorded</div>
             </div>
 
-            <div class="studio-card studio-card-hover">
+            <div class="studio-card studio-card-hover" data-tooltip="Rate Limiter: Sliding window rate limit guardrail preventing API abuse.">
                 <div style="font-size: 12px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">Rate Limiter</div>
                 <div style="font-size: 26px; font-weight: 700; color: var(--accent-terracotta); margin-top: 10px;">10 REQ / MIN</div>
                 <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 6px;">Sliding window algorithm</div>
             </div>
 
-            <div class="studio-card studio-card-hover">
+            <div class="studio-card studio-card-hover" data-tooltip="State Persistence: Checkpointing mode for thread state recovery (MemorySaver / RedisSaver).">
                 <div style="font-size: 12px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">State Persistence</div>
                 <div style="font-size: 26px; font-weight: 700; color: var(--accent-amber); margin-top: 10px;" id="valCheckpoint">IN-MEMORY</div>
                 <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 6px;">MemorySaver active</div>
@@ -59,7 +59,7 @@
         </div>
 
         <!-- Terminal Log Stream -->
-        <div class="studio-card">
+        <div class="studio-card" data-tooltip="Live Diagnostics Terminal Log: Real-time trace logs of system events, health checks, and execution flows.">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span class="material-symbols-outlined" style="color: var(--accent-terracotta);">terminal</span>
