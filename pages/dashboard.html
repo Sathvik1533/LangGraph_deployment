@@ -26,16 +26,16 @@
                 <p class="page-subtitle">Real-time telemetry, state graph execution metrics, and verification audit logs.</p>
             </div>
             
-            <a href="/generate" class="cyber-btn cyber-btn-primary">
+            <a href="/generate" class="cyber-btn cyber-btn-primary" data-tooltip="Open Code Workbench: Draft & execute Python, Java, or C++ code specifications.">
                 <span class="material-symbols-outlined">code_blocks</span>
                 Open Workbench
             </a>
         </header>
 
-        <!-- Metric Grid with Spacious Margins & High-Contrast Hierarchy -->
+        <!-- Metric Grid -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; margin-bottom: 36px;">
             
-            <div class="studio-card studio-card-hover">
+            <div class="studio-card studio-card-hover" data-tooltip="Total Executions: Number of multi-agent verification runs processed by the platform.">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                     <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Total Executions</span>
                     <span class="material-symbols-outlined" style="font-size: 22px; color: var(--accent-terracotta);">play_arrow</span>
@@ -47,7 +47,7 @@
                 </div>
             </div>
 
-            <div class="studio-card studio-card-hover">
+            <div class="studio-card studio-card-hover" data-tooltip="Pass Rate: Percentage of code generations that passed all assertion tests cleanly.">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                     <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Verification Pass Rate</span>
                     <span class="material-symbols-outlined" style="font-size: 22px; color: var(--accent-emerald);">check_circle</span>
@@ -56,7 +56,7 @@
                 <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 8px;">Verified by assertion tests</div>
             </div>
 
-            <div class="studio-card studio-card-hover">
+            <div class="studio-card studio-card-hover" data-tooltip="Self-Fix Ceiling: Max retries allowed before conditional router halts the loop.">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                     <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Self-Fix Ceiling</span>
                     <span class="material-symbols-outlined" style="font-size: 22px; color: var(--accent-amber);">autorenew</span>
@@ -65,7 +65,7 @@
                 <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 8px;">Conditional edge routing</div>
             </div>
 
-            <div class="studio-card studio-card-hover">
+            <div class="studio-card studio-card-hover" data-tooltip="Runtime Sandbox: Supported multi-language execution scope (Python, Java, C++).">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                     <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Runtime Sandbox</span>
                     <span class="material-symbols-outlined" style="font-size: 22px; color: var(--accent-indigo);">terminal</span>
@@ -88,7 +88,7 @@
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                    <a href="/generate?preset=fibonacci" class="studio-card studio-card-hover" style="text-decoration: none; padding: 20px; background: #ffffff;">
+                    <a href="/generate?preset=fibonacci" class="studio-card studio-card-hover" style="text-decoration: none; padding: 20px; background: #ffffff;" data-tooltip="Fibonacci Preset: Pre-fills task spec with Fibonacci sequence calculation & assertions.">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
                             <span class="material-symbols-outlined" style="color: var(--accent-terracotta); font-size: 22px;">functions</span>
                             <span style="font-weight: 700; color: var(--text-primary); font-size: 14.5px;">Fibonacci Generator</span>
@@ -96,7 +96,7 @@
                         <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.5;">Generates sequence & verifies with assertions.</p>
                     </a>
 
-                    <a href="/generate?preset=palindrome" class="studio-card studio-card-hover" style="text-decoration: none; padding: 20px; background: #ffffff;">
+                    <a href="/generate?preset=palindrome" class="studio-card studio-card-hover" style="text-decoration: none; padding: 20px; background: #ffffff;" data-tooltip="Palindrome Preset: Pre-fills string cleaner & palindrome assertion test.">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
                             <span class="material-symbols-outlined" style="color: var(--accent-emerald); font-size: 22px;">swap_horiz</span>
                             <span style="font-weight: 700; color: var(--text-primary); font-size: 14.5px;">Palindrome Validator</span>
@@ -104,7 +104,7 @@
                         <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.5;">String cleaner ignoring non-alphanumeric chars.</p>
                     </a>
 
-                    <a href="/generate?preset=divide" class="studio-card studio-card-hover" style="text-decoration: none; padding: 20px; background: #ffffff;">
+                    <a href="/generate?preset=divide" class="studio-card studio-card-hover" style="text-decoration: none; padding: 20px; background: #ffffff;" data-tooltip="Safe Division Preset: Pre-fills zero-division exception handling test.">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
                             <span class="material-symbols-outlined" style="color: var(--accent-amber); font-size: 22px;">shield</span>
                             <span style="font-weight: 700; color: var(--text-primary); font-size: 14.5px;">Safe Division</span>
@@ -112,7 +112,7 @@
                         <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.5;">Zero-division exception handling & test cases.</p>
                     </a>
 
-                    <a href="/generate?preset=stats" class="studio-card studio-card-hover" style="text-decoration: none; padding: 20px; background: #ffffff;">
+                    <a href="/generate?preset=stats" class="studio-card studio-card-hover" style="text-decoration: none; padding: 20px; background: #ffffff;" data-tooltip="Data Aggregator Preset: Pre-fills numeric array stats calculator.">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
                             <span class="material-symbols-outlined" style="color: var(--accent-indigo); font-size: 22px;">analytics</span>
                             <span style="font-weight: 700; color: var(--text-primary); font-size: 14.5px;">Data Aggregator</span>
@@ -135,17 +135,17 @@
 
                     <div style="background: var(--bg-inset); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 22px; text-align: center;">
                         <div style="display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 12.5px; font-family: var(--font-mono);">
-                            <span style="padding: 6px 12px; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--accent-terracotta); font-weight: 600;">Developer</span>
+                            <span style="padding: 6px 12px; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--accent-terracotta); font-weight: 600;" data-tooltip="Developer Agent Node: Generates source code based on task spec.">Developer</span>
                             <span class="material-symbols-outlined" style="font-size: 16px; color: var(--text-muted);">arrow_forward</span>
-                            <span style="padding: 6px 12px; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--accent-emerald); font-weight: 600;">Sandbox</span>
+                            <span style="padding: 6px 12px; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--accent-emerald); font-weight: 600;" data-tooltip="Sandbox Tester Node: Executes code and runs assertion suite.">Sandbox</span>
                             <span class="material-symbols-outlined" style="font-size: 16px; color: var(--text-muted);">arrow_forward</span>
-                            <span style="padding: 6px 12px; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--accent-amber); font-weight: 600;">Router</span>
+                            <span style="padding: 6px 12px; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--accent-amber); font-weight: 600;" data-tooltip="Conditional Router Node: Evaluates success and handles retries.">Router</span>
                         </div>
                     </div>
                 </div>
 
                 <div style="margin-top: 24px;">
-                    <a href="/workflow" class="cyber-btn cyber-btn-secondary" style="width: 100%;">
+                    <a href="/workflow" class="cyber-btn cyber-btn-secondary" style="width: 100%;" data-tooltip="Inspect State Canvas: Opens SVG node diagram and step simulator.">
                         <span class="material-symbols-outlined">account_tree</span>
                         Inspect Interactive State Canvas
                     </a>
@@ -161,7 +161,7 @@
                     <h2 style="font-size: 19px; font-weight: 700;">Recent Executions</h2>
                     <p style="font-size: 13.5px; color: var(--text-muted); margin-top: 4px;">Audit history of code specifications and automated verification results.</p>
                 </div>
-                <a href="/history" class="cyber-btn cyber-btn-secondary" style="font-size: 13px; padding: 7px 16px;">View All Audit Logs</a>
+                <a href="/history" class="cyber-btn cyber-btn-secondary" style="font-size: 13px; padding: 7px 16px;" data-tooltip="View All Audit Logs: Opens searchable past run table.">View All Audit Logs</a>
             </div>
 
             <div style="overflow-x: auto;">
@@ -212,7 +212,7 @@
                 `;
             } else {
                 tbody.innerHTML = history.slice(0, 5).map(run => `
-                    <tr style="border-bottom: 1px solid var(--border-subtle);">
+                    <tr style="border-bottom: 1px solid var(--border-subtle);" data-tooltip="Click Audit Log page to inspect complete source code and execution report.">
                         <td style="padding: 16px 18px; font-weight: 600; color: var(--text-primary);">${run.task}</td>
                         <td style="padding: 16px 18px;">
                             <span class="cyber-badge cyber-badge-indigo">${run.language.toUpperCase()}</span>
