@@ -1,4 +1,4 @@
-// Warm Executive Studio Code Engine Controller
+// Executive Studio Code Engine Controller
 
 let currentResponseData = null;
 
@@ -27,6 +27,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Hide inline alert on input
+    taskInput?.addEventListener('input', () => {
+        const alert = document.getElementById('taskInlineAlert');
+        if (alert) alert.style.display = 'none';
+    });
+
     // Bind Form Submission
     const generateBtn = document.getElementById('generateBtn');
     if (generateBtn) {
@@ -50,7 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('downloadCodeBtn')?.addEventListener('click', () => {
         if (currentResponseData && currentResponseData.code) {
-            const lang = document.getElementById('languageSelect').value || 'python';
+            const lang = document.getElementById('languageSelect')?.value || 'python';
             const ext = getFileExtension(lang);
             downloadFile(currentResponseData.code, `solution${ext}`);
         }
@@ -66,15 +72,22 @@ async function handleGenerate() {
     const codeDisplay = document.getElementById('codeDisplay');
     const reportDisplay = document.getElementById('reportDisplay');
     const pipelineStepper = document.getElementById('pipelineStepper');
+    const taskInlineAlert = document.getElementById('taskInlineAlert');
 
     const task = taskInput.value.trim();
     if (!task) {
-        showToast('Please enter a task specification', 'warning');
+        if (taskInlineAlert) {
+            taskInlineAlert.style.display = 'flex';
+            document.getElementById('taskInlineAlertText').textContent = 'Please enter a task specification or click a preset button above before executing.';
+        }
+        taskInput.focus();
         return;
     }
 
-    const language = languageSelect.value;
-    const maxIterations = parseInt(maxIterationsSelect.value) || 3;
+    if (taskInlineAlert) taskInlineAlert.style.display = 'none';
+
+    const language = languageSelect ? languageSelect.value : 'python';
+    const maxIterations = maxIterationsSelect ? (parseInt(maxIterationsSelect.value) || 3) : 3;
 
     // UI Loading State
     generateBtn.disabled = true;
