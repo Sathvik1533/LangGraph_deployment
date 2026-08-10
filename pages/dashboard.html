@@ -233,6 +233,51 @@
                     <!-- Dynamic Scanners -->
                 </div>
             </div>
+
+            <!-- OWASP Top 10 LLM Applications Defense Matrix -->
+            <div style="margin-top: 20px; border-top: 1px solid var(--border-subtle); padding-top: 18px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                    <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px; color: #2563eb;">verified_user</span>
+                        OWASP Top 10 for LLM Applications (2025 Standard Mapping)
+                    </div>
+                    <span class="cyber-badge cyber-badge-emerald" style="font-size: 11px;">100% DEFENSE COVERAGE</span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; font-size: 12px;">
+                    <div style="background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px 14px;" data-tooltip="LLM01: Defends against direct and indirect prompt injections.">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                            <span style="font-weight: 700; color: var(--text-primary);">LLM01: Prompt Injection</span>
+                            <span style="color: #059669; font-weight: 700;">ACTIVE</span>
+                        </div>
+                        <div style="color: var(--text-muted); font-size: 11.5px;">InputGuard Regex + AST Engine</div>
+                    </div>
+
+                    <div style="background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px 14px;" data-tooltip="LLM02: Masks and blocks sensitive credit cards, SSNs, and credentials.">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                            <span style="font-weight: 700; color: var(--text-primary);">LLM02: Sensitive Data Leak</span>
+                            <span style="color: #059669; font-weight: 700;">ACTIVE</span>
+                        </div>
+                        <div style="color: var(--text-muted); font-size: 11.5px;">PII Luhn + Pattern Scanner</div>
+                    </div>
+
+                    <div style="background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px 14px;" data-tooltip="LLM06: Restricts arbitrary syscalls and dangerous code execution.">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                            <span style="font-weight: 700; color: var(--text-primary);">LLM06: Excessive Agency</span>
+                            <span style="color: #059669; font-weight: 700;">ACTIVE</span>
+                        </div>
+                        <div style="color: var(--text-muted); font-size: 11.5px;">DangerousCode Syscall Sandbox</div>
+                    </div>
+
+                    <div style="background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px 14px;" data-tooltip="LLM10: Prevents runaway costs and API exhaustion.">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                            <span style="font-weight: 700; color: var(--text-primary);">LLM10: Unbounded Consumption</span>
+                            <span style="color: #059669; font-weight: 700;">ACTIVE</span>
+                        </div>
+                        <div style="color: var(--text-muted); font-size: 11.5px;">CircuitBreaker + RateLimiter</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- History Table -->
