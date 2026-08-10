@@ -1,4 +1,4 @@
-/* Airy & Spacious Engineering Studio Design System (Deep Motion & Spotlight Guidance) */
+/* Airy & Spacious Engineering Studio Design System (Deep Motion & Custom Web Dropdowns) */
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
@@ -225,6 +225,84 @@ h1, h2, h3, h4, h5, h6 {
     border-color: var(--border-medium);
     box-shadow: var(--shadow-md);
     transform: translateY(-3px);
+}
+
+/* Custom Web Dropdown (Replaces Native OS Dropdowns) */
+.custom-select-wrapper {
+    position: relative;
+    user-select: none;
+    width: 100%;
+}
+
+.custom-select-trigger {
+    width: 100%;
+    background: #f8fafc;
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 13px 16px;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.custom-select-trigger:hover {
+    background: #ffffff;
+    border-color: var(--border-medium);
+}
+
+.custom-select-wrapper.open .custom-select-trigger {
+    border-color: var(--accent-terracotta);
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
+}
+
+.custom-select-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 1px solid var(--border-medium);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.15);
+    padding: 6px;
+    z-index: 500;
+    animation: popIn 0.15s ease;
+}
+
+.custom-select-wrapper.open .custom-select-menu {
+    display: block;
+}
+
+.custom-select-option {
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+
+.custom-select-option:hover {
+    background: var(--accent-terracotta-bg);
+    color: var(--accent-terracotta);
+    font-weight: 600;
+}
+
+.custom-select-option.selected {
+    background: var(--bg-inset);
+    color: var(--text-primary);
+    font-weight: 700;
 }
 
 /* Buttons */
