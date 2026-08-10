@@ -555,13 +555,83 @@ def _make_user_friendly_error(exception: Exception) -> str:
     return f"❌ Error: {str(exception)[:100]}"
 
 
+def sanitize_professional_code(raw_code: str, language: str = "python") -> str:
+    """
+    Sanitizes LLM-generated code into clean, professional source code:
+    - Removes markdown code fences (```python, ```java, ```cpp, ```)
+    - Removes markdown title/hashtag headers (# Solution, ## Code, ### Implementation)
+    - Removes conversational introductions and conclusions
+    - Returns clean, indented, production-grade source code.
+    """
+    if not raw_code:
+        return ""
+    
+    text = raw_code.strip()
+    
+    # 1. Extract from code block if enclosed in ```
+    import re
+    fence_pattern = re.compile(r'```(?:python|java|cpp|c\+\+|c)?\s*\n(.*?)```', re.DOTALL | re.IGNORECASE)
+    match = fence_pattern.search(text)
+    if match:
+        text = match.group(1).strip()
+    else:
+        # Strip unmatched leading/trailing ```
+        text = re.sub(r'^```[a-zA-Z]*\n?', '', text)
+        text = re.sub(r'\n?```$', '', text).strip()
+    
+    # 2. Process line by line to strip markdown commentary headers & chat lines
+    lines = text.split('\n')
+    cleaned_lines = []
+    
+    # Common non-code preamble/postamble phrases
+    chat_phrases = [
+        "here is the", "here's the", "certainly", "sure,", "below is", 
+        "i have written", "hope this helps", "let me know", "feel free",
+        "explanation:", "how it works:", "usage example:"
+    ]
+    
+    in_code_body = False
+    language_lower = language.lower()
+    
+    for line in lines:
+        stripped = line.strip()
+        stripped_lower = stripped.lower()
+        
+        # Skip markdown hashtag titles like "# Solution", "## Python Code", "### Implementation"
+        if stripped.startswith('#') and any(keyword in stripped_lower for keyword in ['solution', 'code', 'implementation', 'program', 'example', 'output', 'task', 'step']):
+            # If it's a markdown header rather than a code comment
+            if stripped.startswith('##') or stripped.startswith('###') or stripped.startswith('####') or stripped.endswith(':'):
+                continue
+        
+        # Skip conversational introductory chat before actual code starts
+        if not in_code_body:
+            if any(phrase in stripped_lower for phrase in chat_phrases) and not any(kw in stripped for kw in ['def ', 'class ', '#include', 'import ', 'public ', 'int ']):
+                continue
+            if stripped.startswith('**') and stripped.endswith('**'):
+                continue
+        
+        # Check if code has started
+        if any(kw in line for kw in ['def ', 'class ', 'import ', 'from ', '#include', 'public ', 'private ', 'int ', 'void ', 'package ']):
+            in_code_body = True
+            
+        # Stop if trailing markdown explanation section begins
+        if in_code_body and (stripped.startswith('**Explanation') or stripped.startswith('### Explanation') or stripped.startswith('## Explanation')):
+            break
+            
+        cleaned_lines.append(line)
+    
+    result = '\n'.join(cleaned_lines).strip()
+    return result if result else raw_code.strip()
+
+
 def developer_node(state: CrewState) -> Dict[str, Any]:
     target_language = state.get("language", "python").lower()
     
     system_msg = SystemMessage(
         content=(
-            f"You are an expert {target_language.upper()} developer. Generate clean, working code for the user's task. "
-            f"Target language is strictly {target_language.upper()}. Do NOT return code in a different language."
+            f"You are an expert {target_language.upper()} developer. Generate clean, professional, compile-ready code for the user's task. "
+            f"Target language is strictly {target_language.upper()}. "
+            f"IMPORTANT: Return ONLY pure source code. Do NOT include markdown code fences, do NOT include markdown headings, and do NOT include conversational chat explanations."
         )
     )
     
@@ -570,7 +640,7 @@ def developer_node(state: CrewState) -> Dict[str, Any]:
     try:
         response = call_llm_with_retry(messages_to_send)
         code = _extract_text(response.content)
-        clean_code = code.replace("```python", "").replace("```java", "").replace("```cpp", "").replace("```c++", "").replace("```", "").strip()
+        clean_code = sanitize_professional_code(code, target_language)
         
         is_valid, error_msg = validate_code_output(clean_code, target_language)
         if not is_valid:
