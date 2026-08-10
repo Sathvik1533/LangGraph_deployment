@@ -20,34 +20,34 @@
             <div>
                 <h1 class="page-title">
                     <span class="material-symbols-outlined" style="color: var(--accent-terracotta);">history</span>
-                    Audit Logs & Execution History
+                    Code History & Saved Work
                 </h1>
-                <p class="page-subtitle">Review past code generation runs, inspect full source code, and view test verification reports.</p>
+                <p class="page-subtitle">Review your past code generation runs, copy code snippets, or view automated test results.</p>
             </div>
 
             <button class="cyber-btn cyber-btn-secondary" style="color: var(--accent-rose);" onclick="clearHistoryLog()" data-tooltip="Clear History: Deletes saved past code run logs from your local browser storage.">
                 <span class="material-symbols-outlined">delete_sweep</span>
-                Clear Audit History
+                Clear Saved History
             </button>
         </header>
 
         <!-- Filters Panel -->
         <div class="studio-card" style="margin-bottom: 28px;">
-            <div style="display: flex; gap: 16px; align-items: center;">
-                <div style="flex: 1; position: relative;">
+            <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 260px; position: relative;">
                     <span class="material-symbols-outlined" style="position: absolute; left: 14px; top: 12px; color: var(--text-muted); font-size: 20px;">search</span>
-                    <input id="searchInput" type="text" style="width: 100%; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px 14px 12px 44px; font-size: 14px; color: var(--text-primary); outline: none;" placeholder="Search task specifications or code keywords..." oninput="filterHistoryTable()" data-tooltip="Search Runs: Type any keyword (like 'prime' or 'fibonacci') to find past code runs."/>
+                    <input id="searchInput" type="text" style="width: 100%; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px 14px 12px 44px; font-size: 14px; color: var(--text-primary); outline: none;" placeholder="Search by keyword or task description..." oninput="filterHistoryTable()" data-tooltip="Search Runs: Type any keyword (like 'prime' or 'fibonacci') to find past code runs."/>
                 </div>
 
                 <!-- Custom Web Select Component (No Native OS Dropdown) -->
                 <div class="custom-select-wrapper" style="width: 220px;" data-tooltip="Filter Status: Filter past runs by Passed or Failed results.">
                     <input type="hidden" id="filterStatusSelect" value="all"/>
                     <div class="custom-select-trigger" onclick="toggleCustomSelect(this, event)">
-                        <span class="custom-select-value" id="filterStatusValue">All Execution Statuses</span>
+                        <span class="custom-select-value" id="filterStatusValue">All Results</span>
                         <span class="material-symbols-outlined" style="font-size: 18px; color: var(--text-muted);">expand_more</span>
                     </div>
                     <div class="custom-select-menu" style="z-index: 3000;">
-                        <div class="custom-select-option selected" data-value="all" onclick="selectFilterStatus(this, 'all', 'All Execution Statuses', event)">All Execution Statuses</div>
+                        <div class="custom-select-option selected" data-value="all" onclick="selectFilterStatus(this, 'all', 'All Results', event)">All Results</div>
                         <div class="custom-select-option" data-value="success" onclick="selectFilterStatus(this, 'success', 'Passed Only', event)">Passed Only</div>
                         <div class="custom-select-option" data-value="failed" onclick="selectFilterStatus(this, 'failed', 'Failed Only', event)">Failed Only</div>
                     </div>
@@ -61,11 +61,11 @@
                 <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
                     <thead>
                         <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
-                            <th style="padding: 14px 18px;">Task Specification</th>
+                            <th style="padding: 14px 18px;">What you asked for</th>
                             <th style="padding: 14px 18px;">Language</th>
-                            <th style="padding: 14px 18px;">Status</th>
-                            <th style="padding: 14px 18px;">Loops</th>
-                            <th style="padding: 14px 18px;">Timestamp</th>
+                            <th style="padding: 14px 18px;">Result</th>
+                            <th style="padding: 14px 18px;">Attempts</th>
+                            <th style="padding: 14px 18px;">When</th>
                             <th style="padding: 14px 18px; text-align: right;">Action</th>
                         </tr>
                     </thead>
@@ -91,12 +91,12 @@
             </div>
 
             <div style="margin-bottom: 20px;">
-                <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Generated Code Output</div>
+                <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Generated Code</div>
                 <pre id="modalCodeBody" style="background: #0f172a; color: #f8fafc; padding: 18px; border-radius: 10px; font-family: var(--font-mono); font-size: 13.5px; line-height: 1.6; white-space: pre-wrap; margin: 0; max-height: 250px; overflow-y: auto;"></pre>
             </div>
 
             <div>
-                <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Verification Report Log</div>
+                <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Test Verification Results</div>
                 <pre id="modalReportBody" style="background: #0f172a; color: #94a3b8; padding: 18px; border-radius: 10px; font-family: var(--font-mono); font-size: 13px; line-height: 1.6; white-space: pre-wrap; margin: 0; max-height: 200px; overflow-y: auto;"></pre>
             </div>
         </div>

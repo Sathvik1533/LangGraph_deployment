@@ -30,15 +30,15 @@
             <div>
                 <h1 class="page-title">
                     <span class="material-symbols-outlined" style="color: var(--accent-terracotta);">account_tree</span>
-                    State Graph Canvas & Dynamic Execution Simulator
+                    AI Pipeline & Visualizer
                 </h1>
-                <p class="page-subtitle">Visual representation of execution state nodes, conditional edge routing, and self-correction loops.</p>
+                <p class="page-subtitle">Watch how our AI developer, automated tester, and safety guard work together in real time.</p>
             </div>
 
-            <div style="display: flex; gap: 10px;">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                 <button id="simAutoBtn" class="cyber-btn cyber-btn-primary" onclick="toggleAutoPlay()" data-tooltip="Auto-Play Tour: Watch active nodes illuminate in real time step-by-step.">
                     <span class="material-symbols-outlined" id="simAutoIcon">play_circle</span>
-                    <span id="simAutoText">Auto-Play Tour</span>
+                    <span id="simAutoText">Auto-Play Pipeline</span>
                 </button>
                 <button id="simStepBtn" class="cyber-btn cyber-btn-secondary" onclick="stepSimulation()" data-tooltip="Step Forward: Step node-by-node through the graph workflow.">
                     <span class="material-symbols-outlined">skip_next</span>
@@ -46,7 +46,7 @@
                 </button>
                 <button class="cyber-btn cyber-btn-secondary" onclick="resetSimulation()" data-tooltip="Reset State: Reset graph simulation back to START node.">
                     <span class="material-symbols-outlined">restart_alt</span>
-                    Reset State
+                    Reset
                 </button>
             </div>
         </header>
@@ -54,7 +54,7 @@
         <!-- Dynamic Task Specification Bar -->
         <div class="studio-card" style="margin-bottom: 28px;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                <label style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.04em;">Dynamic Task Simulation Input</label>
+                <label style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.04em;">Simulate Any Task in the Pipeline</label>
                 <span class="cyber-badge cyber-badge-terracotta" id="canvasLangBadge">TARGET: PYTHON</span>
             </div>
 
