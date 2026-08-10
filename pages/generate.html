@@ -43,12 +43,12 @@
                         <span>Task Specification</span>
                         <span class="kbd-badge">Press ⌘ + Enter to execute</span>
                     </label>
-                    <textarea id="taskInput" rows="3" style="width: 100%; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px; color: var(--text-primary); font-family: var(--font-sans); font-size: 14.5px; line-height: 1.6; outline: none; resize: vertical;" placeholder="e.g. Write a function to calculate fibonacci numbers with self-validation assertions..."></textarea>
+                    <textarea id="taskInput" rows="3" style="width: 100%; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px; color: var(--text-primary); font-family: var(--font-sans); font-size: 14.5px; line-height: 1.6; outline: none; resize: vertical;" placeholder="e.g. Write a function to calculate fibonacci numbers with self-validation assertions..." data-tooltip="Task Specification: Describe what function, class, or algorithm you want the Developer agent to draft and validate."></textarea>
                 </div>
 
                 <div>
                     <label style="display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Target Language</label>
-                    <select id="languageSelect" style="width: 100%; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px; color: var(--text-primary); font-size: 14px; outline: none;">
+                    <select id="languageSelect" style="width: 100%; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px; color: var(--text-primary); font-size: 14px; outline: none;" data-tooltip="Target Language: Choose target syntax (Python 3.11, Java 17, or C++ 20).">
                         <option value="python" selected>Python 3.11</option>
                         <option value="java">Java 17</option>
                         <option value="cpp">C++ 20</option>
@@ -57,7 +57,7 @@
 
                 <div>
                     <label style="display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Self-Fix Ceiling</label>
-                    <select id="maxIterationsSelect" style="width: 100%; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px; color: var(--text-primary); font-size: 14px; outline: none;">
+                    <select id="maxIterationsSelect" style="width: 100%; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px; color: var(--text-primary); font-size: 14px; outline: none;" data-tooltip="Self-Fix Ceiling: Max retries allowed before the conditional router terminates the loop.">
                         <option value="3" selected>3 Loops (Default)</option>
                         <option value="5">5 Loops</option>
                         <option value="1">1 Loop (No Retry)</option>
@@ -68,12 +68,12 @@
 
             <div style="display: flex; align-items: center; justify-content: space-between;">
                 <div style="display: flex; gap: 8px;">
-                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="document.getElementById('taskInput').value='Write a function to calculate fibonacci numbers'">Fibonacci</button>
-                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="document.getElementById('taskInput').value='Create a function that checks if a string is a palindrome'">Palindrome</button>
-                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="document.getElementById('taskInput').value='Write a function to divide two numbers with proper error handling'">Safe Division</button>
+                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="document.getElementById('taskInput').value='Write a function to calculate fibonacci numbers'" data-tooltip="Pre-fill Fibonacci calculation prompt.">Fibonacci</button>
+                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="document.getElementById('taskInput').value='Create a function that checks if a string is a palindrome'" data-tooltip="Pre-fill Palindrome validator prompt.">Palindrome</button>
+                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="document.getElementById('taskInput').value='Write a function to divide two numbers with proper error handling'" data-tooltip="Pre-fill Safe division exception handling prompt.">Safe Division</button>
                 </div>
 
-                <button id="generateBtn" class="cyber-btn cyber-btn-primary">
+                <button id="generateBtn" class="cyber-btn cyber-btn-primary" data-tooltip="Execute & Verify: Triggers multi-agent code generation, sandbox testing, and assertion loops.">
                     <span class="material-symbols-outlined">code_blocks</span>
                     <span>Execute & Verify Specification</span>
                     <span class="kbd-badge" style="margin-left: 4px; background: #ffffff; color: #0f172a; border: none;">⌘↵</span>
@@ -86,16 +86,16 @@
         <!-- Workbench Dual IDE Window -->
         <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 28px;">
             
-            <div class="code-editor-pane">
+            <div class="code-editor-pane" data-tooltip="Solution Code Viewer: View line-numbered source code output generated by Developer agent.">
                 <div class="code-editor-header">
                     <span style="font-size: 12.5px; font-weight: 600; color: #fb923c; font-family: var(--font-mono);">solution_code.py</span>
 
                     <div style="display: flex; gap: 8px;">
-                        <button id="copyCodeBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 12px; background: #334155; color: #ffffff; border: none;">
+                        <button id="copyCodeBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 12px; background: #334155; color: #ffffff; border: none;" data-tooltip="Copy code to system clipboard.">
                             <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span>
                             Copy
                         </button>
-                        <button id="downloadCodeBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 12px; background: #334155; color: #ffffff; border: none;">
+                        <button id="downloadCodeBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 12px; background: #334155; color: #ffffff; border: none;" data-tooltip="Download source file to disk.">
                             <span class="material-symbols-outlined" style="font-size: 14px;">download</span>
                             Download
                         </button>
@@ -105,7 +105,7 @@
                 <div class="code-editor-body" id="codeDisplay"># Press 'Execute & Verify Specification' or ⌘ + Enter to initiate orchestration...</div>
             </div>
 
-            <div class="code-editor-pane">
+            <div class="code-editor-pane" data-tooltip="Verification Report Terminal: View test stdout/stderr, evaluation output, and assertion matrix.">
                 <div class="code-editor-header">
                     <span style="font-size: 12.5px; font-weight: 600; color: #94a3b8; font-family: var(--font-mono);">verification_report.log</span>
                     <span class="cyber-badge cyber-badge-terracotta" id="reportBadge">READY</span>
