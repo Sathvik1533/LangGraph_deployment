@@ -1,4 +1,4 @@
-// Executive Engineering Platform Controller & Autonomous Spotlight Tour Engine
+// Executive Engineering Platform Controller & Multi-Page Autonomous Tour Engine
 
 const API_URL = window.location.origin + '/invoke';
 const HEALTH_API_URL = window.location.origin + '/health';
@@ -182,91 +182,141 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// Autonomous Element Spotlight Tour Steps per Page
-const PAGE_SPOTLIGHT_STEPS = {
-    '/': [
-        {
-            selector: '.top-navbar',
-            title: '1. Floating Navigation Header',
-            desc: 'Seamlessly switch between Overview, Code Workbench, State Graph, Telemetry, and Audit Logs.',
-            nextText: 'Next: Command Center Stats →'
-        },
-        {
-            selector: '.studio-card-hover',
-            title: '2. Operational Telemetry Metrics',
-            desc: 'Real-time indicators tracking total multi-agent runs, assertion success rate, self-correction ceiling limits, and sandbox language support.',
-            nextText: 'Next: Task Presets →'
-        },
-        {
-            selector: '[data-tooltip*="Task Specification Presets"]',
-            title: '3. Task Specification Presets',
-            desc: 'Pre-configured algorithms (Fibonacci, Palindrome, Safe Division, Data Aggregator) ready for instant multi-agent execution.',
-            nextText: 'Next: Audit Table →'
-        }
-    ],
-    '/generate': [
-        {
-            selector: '#taskInput',
-            title: '1. Task Specification Input',
-            desc: 'Describe what algorithm or program you want the Developer agent to draft and validate.',
-            nextText: 'Next: Language Selector →'
-        },
-        {
-            selector: '#languageSelect',
-            title: '2. Multi-Language Target',
-            desc: 'Choose target programming language (Python 3.11, Java 17, or C++ 20).',
-            nextText: 'Next: Execute Button →'
-        },
-        {
-            selector: '#generateBtn',
-            title: '3. Execute & Verify Action',
-            desc: 'Triggers the Developer agent, Sandbox execution, and automated assertion checks.',
-            nextText: 'Next: Dual Code & Log Viewers →'
-        },
-        {
-            selector: '.code-editor-pane',
-            title: '4. Code & Log Workbench',
-            desc: 'View generated source code on the left and real-time execution stdout/assertion logs on the right.',
-            nextText: 'Finish Tour'
-        }
-    ],
-    '/workflow': [
-        {
-            selector: 'svg',
-            title: '1. State Graph Canvas',
-            desc: 'Visual state machine showing node transitions (START → Developer → Tester → Router → END).',
-            nextText: 'Next: Step Simulator →'
-        },
-        {
-            selector: '#simStepBtn',
-            title: '2. Step Simulator Controls',
-            desc: 'Click to advance execution node-by-node or toggle Auto-Play to stream state updates.',
-            nextText: 'Next: High-Legibility Inspector →'
-        },
-        {
-            selector: '#inspectorCard',
-            title: '3. High-Legibility State Inspector',
-            desc: 'Syntax-highlighted dark containers displaying exact CrewState inputs and reducer outputs.',
-            nextText: 'Finish Tour'
-        }
-    ]
-};
+// Autonomous Multi-Page Full Platform Tour Structure
+const FULL_PLATFORM_TOUR = [
+    {
+        path: '/',
+        pageName: 'Command Center',
+        nextUrl: '/generate?tour=true',
+        steps: [
+            {
+                selector: '.top-navbar',
+                title: '1/5 Overview: Navigation Header',
+                desc: 'Top pill bar connecting Command Center, Code Workbench, State Canvas, Telemetry, and Audit Logs.',
+                btnText: 'Next Element →'
+            },
+            {
+                selector: '.studio-card-hover',
+                title: '1/5 Overview: Live System Telemetry',
+                desc: 'Tracks total multi-agent verification runs, assertion pass rate, and sandbox support.',
+                btnText: 'Next Element →'
+            },
+            {
+                selector: '[data-tooltip*="Task Specification Presets"]',
+                title: '1/5 Overview: One-Click Presets',
+                desc: 'Fibonacci, Palindrome, Safe Division, and Data Aggregator task specs ready for instant execution.',
+                btnText: 'Proceed to Code Workbench →'
+            }
+        ]
+    },
+    {
+        path: '/generate',
+        pageName: 'Code Workbench',
+        nextUrl: '/workflow?tour=true',
+        steps: [
+            {
+                selector: '#taskInput',
+                title: '2/5 Workbench: Specification Input',
+                desc: 'Describe what algorithm or function you want the Developer agent to draft and validate.',
+                btnText: 'Next Element →'
+            },
+            {
+                selector: '#languageSelect',
+                title: '2/5 Workbench: Target Language',
+                desc: 'Select Python 3.11, Java 17, or C++ 20 target syntax.',
+                btnText: 'Next Element →'
+            },
+            {
+                selector: '#generateBtn',
+                title: '2/5 Workbench: Execute & Verify Action',
+                desc: 'Triggers Developer agent, sandbox testing, and assertion check loops.',
+                btnText: 'Next Element →'
+            },
+            {
+                selector: '.code-editor-pane',
+                title: '2/5 Workbench: Dual Code & Report Panels',
+                desc: 'View generated source code on the left and test stdout/assertion logs on the right.',
+                btnText: 'Proceed to State Graph →'
+            }
+        ]
+    },
+    {
+        path: '/workflow',
+        pageName: 'State Graph Canvas',
+        nextUrl: '/execution?tour=true',
+        steps: [
+            {
+                selector: 'svg',
+                title: '3/5 Canvas: Visual State Graph',
+                desc: 'Visual state machine animating node transitions (START → Developer → Tester → Router → END).',
+                btnText: 'Next Element →'
+            },
+            {
+                selector: '#simStepBtn',
+                title: '3/5 Canvas: Step Simulator',
+                desc: 'Advance execution node-by-node or toggle Auto-Play to stream state transitions.',
+                btnText: 'Next Element →'
+            },
+            {
+                selector: '#inspectorCard',
+                title: '3/5 Canvas: High-Legibility Inspector',
+                desc: 'Multi-line dark containers displaying exact CrewState inputs and updated reducer outputs.',
+                btnText: 'Proceed to Telemetry →'
+            }
+        ]
+    },
+    {
+        path: '/execution',
+        pageName: 'Telemetry & Logs',
+        nextUrl: '/history?tour=true',
+        steps: [
+            {
+                selector: '.studio-card',
+                title: '4/5 Telemetry: Health & Circuit Breaker',
+                desc: 'Monitors API circuit breaker thresholds, sliding-window rate limiters, and checkpointers.',
+                btnText: 'Proceed to Audit Logs →'
+            }
+        ]
+    },
+    {
+        path: '/history',
+        pageName: 'Audit Logs',
+        nextUrl: '/?tour=completed',
+        steps: [
+            {
+                selector: '.studio-card',
+                title: '5/5 Audit Log: Historical Run Inspector',
+                desc: 'Searchable history of past runs. Click any row to open the complete source code modal.',
+                btnText: 'Finish Full Platform Tour 🎉'
+            }
+        ]
+    }
+];
 
-let currentTourIndex = 0;
-let currentTourPageSteps = [];
+let currentTourPageIndex = 0;
+let currentTourStepIndex = 0;
 
 function autoAwakenSpotlightTour() {
     const currentPath = window.location.pathname;
-    const pageKey = Object.keys(PAGE_SPOTLIGHT_STEPS).find(p => p === currentPath) || '/';
-    currentTourPageSteps = PAGE_SPOTLIGHT_STEPS[pageKey] || PAGE_SPOTLIGHT_STEPS['/'];
+    const urlParams = new URLSearchParams(window.location.search);
+    const isTourActive = urlParams.get('tour') === 'true' || localStorage.getItem('active_full_tour') === 'true';
+
+    // Find current page tour index
+    currentTourPageIndex = FULL_PLATFORM_TOUR.findIndex(p => p.path === currentPath);
+    if (currentTourPageIndex === -1) currentTourPageIndex = 0;
+
+    if (!isTourActive && !urlParams.get('tour')) {
+        // If tour not actively running, set flag so first visit auto-starts
+        localStorage.setItem('active_full_tour', 'true');
+    }
 
     if (!document.getElementById('tourCalloutCard')) {
         const calloutHtml = `
             <div id="tourCalloutCard" class="tour-callout-card" style="display: none;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <span class="material-symbols-outlined" style="color: var(--accent-terracotta); font-size: 22px;">flag</span>
-                        <h3 style="font-size: 16px; font-weight: 700;" id="tourTitle">Feature Spotlight</h3>
+                        <span class="material-symbols-outlined" style="color: var(--accent-terracotta); font-size: 22px;">explore</span>
+                        <h3 style="font-size: 15px; font-weight: 700;" id="tourTitle">Platform Spotlight</h3>
                     </div>
                     <button onclick="closeSpotlightTour()" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer;">
                         <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
@@ -276,7 +326,7 @@ function autoAwakenSpotlightTour() {
                 <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 18px;" id="tourDesc"></p>
 
                 <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <span class="cyber-badge cyber-badge-terracotta" id="tourCounter">Step 1 of 3</span>
+                    <span class="cyber-badge cyber-badge-terracotta" id="tourCounter">Step 1</span>
                     <button class="cyber-btn cyber-btn-primary" style="font-size: 12.5px; padding: 6px 14px;" onclick="nextSpotlightStep()" id="tourNextBtn">Next Step →</button>
                 </div>
             </div>
@@ -284,19 +334,19 @@ function autoAwakenSpotlightTour() {
         document.body.insertAdjacentHTML('beforeend', calloutHtml);
     }
 
-    currentTourIndex = 0;
+    currentTourStepIndex = 0;
     renderSpotlightStep();
 }
 
 function renderSpotlightStep() {
-    if (!currentTourPageSteps || currentTourPageSteps.length === 0) return;
+    const pageTour = FULL_PLATFORM_TOUR[currentTourPageIndex];
+    if (!pageTour || !pageTour.steps) return;
 
-    // Clear existing highlights
     document.querySelectorAll('.element-highlighted').forEach(el => el.classList.remove('element-highlighted'));
 
-    const step = currentTourPageSteps[currentTourIndex];
+    const step = pageTour.steps[currentTourStepIndex];
     if (!step) {
-        closeSpotlightTour();
+        advanceToNextPageInTour();
         return;
     }
 
@@ -322,32 +372,50 @@ function renderSpotlightStep() {
 
         document.getElementById('tourTitle').textContent = step.title;
         document.getElementById('tourDesc').textContent = step.desc;
-        document.getElementById('tourCounter').textContent = `Step ${currentTourIndex + 1} of ${currentTourPageSteps.length}`;
-        document.getElementById('tourNextBtn').textContent = step.nextText;
+        document.getElementById('tourCounter').textContent = `${pageTour.pageName} (${currentTourStepIndex + 1}/${pageTour.steps.length})`;
+        document.getElementById('tourNextBtn').textContent = step.btnText;
     } else {
-        // Fallback positioning
         callout.style.display = 'block';
         callout.style.bottom = '28px';
         callout.style.left = '28px';
         callout.style.top = 'auto';
         document.getElementById('tourTitle').textContent = step.title;
         document.getElementById('tourDesc').textContent = step.desc;
-        document.getElementById('tourCounter').textContent = `Step ${currentTourIndex + 1} of ${currentTourPageSteps.length}`;
-        document.getElementById('tourNextBtn').textContent = step.nextText;
+        document.getElementById('tourCounter').textContent = `${pageTour.pageName} (${currentTourStepIndex + 1}/${pageTour.steps.length})`;
+        document.getElementById('tourNextBtn').textContent = step.btnText;
     }
 }
 
 function nextSpotlightStep() {
-    if (currentTourIndex < currentTourPageSteps.length - 1) {
-        currentTourIndex++;
+    const pageTour = FULL_PLATFORM_TOUR[currentTourPageIndex];
+    if (currentTourStepIndex < pageTour.steps.length - 1) {
+        currentTourStepIndex++;
         renderSpotlightStep();
     } else {
+        advanceToNextPageInTour();
+    }
+}
+
+function advanceToNextPageInTour() {
+    const pageTour = FULL_PLATFORM_TOUR[currentTourPageIndex];
+    if (pageTour && pageTour.nextUrl) {
+        if (pageTour.nextUrl.includes('completed')) {
+            localStorage.removeItem('active_full_tour');
+            closeSpotlightTour();
+            showToast('🎉 Full platform tour completed from 0 to 100%!', 'success');
+        } else {
+            showToast(`Navigating to ${FULL_PLATFORM_TOUR[currentTourPageIndex + 1]?.pageName || 'next page'}...`, 'info');
+            setTimeout(() => {
+                window.location.href = pageTour.nextUrl;
+            }, 500);
+        }
+    } else {
         closeSpotlightTour();
-        showToast('Autonomous spotlight tour completed!', 'success');
     }
 }
 
 function closeSpotlightTour() {
+    localStorage.removeItem('active_full_tour');
     document.querySelectorAll('.element-highlighted').forEach(el => el.classList.remove('element-highlighted'));
     const callout = document.getElementById('tourCalloutCard');
     if (callout) callout.style.display = 'none';
@@ -406,6 +474,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initCommandPalette();
     initHoverTooltips();
 
-    // Auto-Awaken Spotlight Tour after 800ms
+    // Auto-Awaken Multi-Page Tour after 800ms
     setTimeout(autoAwakenSpotlightTour, 800);
 });
