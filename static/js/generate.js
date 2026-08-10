@@ -38,12 +38,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     taskInput?.addEventListener('input', () => {
         const alert = document.getElementById('taskInlineAlert');
         if (alert) alert.style.display = 'none';
+        localStorage.setItem('langgraph_last_task', taskInput.value.trim());
     });
 
     // Language Change Listener to Update Tab Header Filename
     const languageSelect = document.getElementById('languageSelect');
     languageSelect?.addEventListener('change', () => {
         const lang = languageSelect.value || 'python';
+        localStorage.setItem('langgraph_last_lang', lang);
         const codeTabHeader = document.querySelector('.code-editor-header span');
         if (codeTabHeader) {
             codeTabHeader.textContent = LANG_FILENAME_MAP[lang.toLowerCase()] || 'solution_code.txt';
@@ -106,6 +108,10 @@ async function handleGenerate() {
 
     const language = languageSelect ? languageSelect.value : 'python';
     const maxIterations = maxIterationsSelect ? (parseInt(maxIterationsSelect.value) || 3) : 3;
+
+    // Save to localStorage so Canvas Simulator syncs automatically
+    localStorage.setItem('langgraph_last_task', task);
+    localStorage.setItem('langgraph_last_lang', language);
 
     // Update code tab filename
     if (codeTabHeader) {
