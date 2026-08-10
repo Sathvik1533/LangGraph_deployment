@@ -42,19 +42,37 @@ function clearRunHistory() {
     showToast('Audit log history cleared', 'info');
 }
 
-// Toast Notification
+// Toast Notification with Positive, Modern Visuals
 function showToast(message, type = 'info') {
-    const icons = {
-        info: 'info',
-        success: 'check_circle',
-        error: 'error',
-        warning: 'warning'
+    const config = {
+        info: { icon: 'auto_awesome', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
+        success: { icon: 'check_circle', color: '#059669', bg: '#ecfdf5', border: '#a7f3d0' },
+        error: { icon: 'error', color: '#dc2626', bg: '#fef2f2', border: '#fecaca' },
+        warning: { icon: 'warning', color: '#d97706', bg: '#fffbeb', border: '#fde68a' }
     };
+    
+    const cfg = config[type] || config.info;
     
     const toast = document.createElement('div');
     toast.className = 'toast';
+    toast.style.display = 'flex';
+    toast.style.alignItems = 'center';
+    toast.style.gap = '10px';
+    toast.style.padding = '12px 18px';
+    toast.style.borderRadius = '12px';
+    toast.style.background = '#0f172a';
+    toast.style.color = '#ffffff';
+    toast.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.2)';
+    toast.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+    toast.style.position = 'fixed';
+    toast.style.bottom = '24px';
+    toast.style.right = '24px';
+    toast.style.zIndex = '99999';
+    toast.style.transition = 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)';
+    toast.style.transform = 'translateY(0)';
+    
     toast.innerHTML = `
-        <span class="material-symbols-outlined" style="color: ${type === 'success' ? '#059669' : type === 'error' ? '#dc2626' : '#ea580c'}; font-size: 20px;">${icons[type]}</span>
+        <span class="material-symbols-outlined" style="color: ${cfg.color}; font-size: 20px;">${cfg.icon}</span>
         <span style="font-size: 13.5px; font-weight: 600;">${message}</span>
     `;
     
@@ -62,8 +80,8 @@ function showToast(message, type = 'info') {
     
     setTimeout(() => {
         toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.2s ease';
-        setTimeout(() => toast.remove(), 200);
+        toast.style.transform = 'translateY(10px)';
+        setTimeout(() => toast.remove(), 250);
     }, 2800);
 }
 
@@ -358,28 +376,21 @@ function markPageToured(path) {
     }
 }
 
-function autoAwakenSpotlightTour() {
+function autoAwakenSpotlightTour(forceLaunch = false) {
     const currentPath = window.location.pathname;
     const isCompleted = localStorage.getItem(TOUR_COMPLETED_KEY) === 'true';
     const isDismissed = sessionStorage.getItem('langgraph_tour_dismissed') === 'true';
-    const isTourInProgress = sessionStorage.getItem('langgraph_tour_in_progress') === 'true';
     const isManualSession = sessionStorage.getItem('langgraph_manual_tour_session') === 'true';
 
-    // IF TOUR WAS COMPLETED OR EXPLICITLY DISMISSED, DO NOT AUTO-TRIGGER AGAIN
-    if ((isCompleted || isDismissed) && !isManualSession) {
-        console.log(`💡 Tour completed or dismissed. Stopping auto-trigger on ${currentPath}.`);
+    // IF TOUR WAS COMPLETED OR EXPLICITLY DISMISSED, DO NOT AUTO-TRIGGER UNLESS MANUALLY REQUESTED
+    if (!forceLaunch && (isCompleted || isDismissed) && !isManualSession) {
         return;
     }
 
-    // IF THIS SPECIFIC PAGE WAS ALREADY TOURED IN THIS SESSION, DO NOT RE-TRIGGER
+    // IF THIS SPECIFIC PAGE WAS ALREADY TOURED IN THIS SESSION, DO NOT RE-TRIGGER UNLESS FORCED
     const touredPages = getTouredPages();
-    if (touredPages.includes(currentPath) && !isManualSession) {
-        console.log(`💡 Page ${currentPath} already toured. Skipping auto-trigger.`);
+    if (!forceLaunch && touredPages.includes(currentPath) && !isManualSession) {
         return;
-    }
-
-    if (!isTourInProgress && !isManualSession) {
-        sessionStorage.setItem('langgraph_tour_in_progress', 'true');
     }
 
     // Mark this page as toured
@@ -388,15 +399,21 @@ function autoAwakenSpotlightTour() {
     currentTourPageIndex = FULL_PLATFORM_TOUR.findIndex(p => p.path === currentPath);
     if (currentTourPageIndex === -1) currentTourPageIndex = 0;
 
+    ensureTourCalloutExists();
+    currentTourStepIndex = 0;
+    renderSpotlightStep();
+}
+
+function ensureTourCalloutExists() {
     if (!document.getElementById('tourCalloutCard')) {
         const calloutHtml = `
-            <div id="tourCalloutCard" class="tour-callout-card" style="display: none;">
+            <div id="tourCalloutCard" class="tour-callout-card" style="display: none; position: fixed; z-index: 99999; width: 380px; max-width: calc(100vw - 32px); background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 16px; padding: 22px; box-shadow: 0 20px 35px -5px rgba(0,0,0,0.25), 0 10px 15px -5px rgba(0,0,0,0.1);">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span class="material-symbols-outlined" style="color: var(--accent-terracotta); font-size: 22px;">explore</span>
-                        <h3 style="font-size: 15px; font-weight: 700;" id="tourTitle">Platform Tour Guide</h3>
+                        <h3 style="font-size: 15px; font-weight: 700; color: var(--text-primary);" id="tourTitle">Platform Tour Guide</h3>
                     </div>
-                    <button onclick="dismissTourPermanently()" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer;" title="Close & Stop Tour">
+                    <button onclick="dismissTourPermanently()" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 6px;" title="Close Tour">
                         <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
                     </button>
                 </div>
@@ -405,18 +422,16 @@ function autoAwakenSpotlightTour() {
 
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                     <span class="cyber-badge cyber-badge-terracotta" id="tourCounter">Step 1</span>
-                    <button class="cyber-btn cyber-btn-primary" style="font-size: 12.5px; padding: 6px 14px;" onclick="nextSpotlightStep()" id="tourNextBtn">Next Element →</button>
+                    <button class="cyber-btn cyber-btn-primary" style="font-size: 12.5px; padding: 7px 16px; border-radius: var(--radius-pill);" onclick="nextSpotlightStep()" id="tourNextBtn">Next →</button>
                 </div>
             </div>
         `;
         document.body.insertAdjacentHTML('beforeend', calloutHtml);
     }
-
-    currentTourStepIndex = 0;
-    renderSpotlightStep();
 }
 
 function renderSpotlightStep() {
+    ensureTourCalloutExists();
     const pageTour = FULL_PLATFORM_TOUR[currentTourPageIndex];
     if (!pageTour || !pageTour.steps) return;
 
@@ -435,57 +450,25 @@ function renderSpotlightStep() {
     const isLastStepOnPage = currentTourStepIndex === pageTour.steps.length - 1;
     const isLastPage = currentTourPageIndex === FULL_PLATFORM_TOUR.length - 1;
 
-    let buttonText = 'Next Element →';
+    let buttonText = 'Next →';
     if (isLastStepOnPage) {
         if (isLastPage) {
-            buttonText = 'Finish Platform Tour 🎉';
+            buttonText = 'Finish Tour 🎉';
         } else {
-            buttonText = `Proceed to ${FULL_PLATFORM_TOUR[currentTourPageIndex + 1]?.pageName || 'Next Page'} →`;
+            buttonText = `Next: ${FULL_PLATFORM_TOUR[currentTourPageIndex + 1]?.pageName || 'Next Page'} →`;
         }
     }
 
-    // STRICT USER REQUIREMENT CHECK FOR CODE WORKBENCH (#taskInput Step):
-    if (window.location.pathname === '/generate' && currentTourStepIndex === 0) {
-        const taskInput = document.getElementById('taskInput');
-        const hasText = taskInput && taskInput.value.trim() !== '';
-
-        if (!hasText) {
-            if (nextBtn) {
-                nextBtn.disabled = true;
-                nextBtn.style.opacity = '0.5';
-                nextBtn.style.cursor = 'not-allowed';
-                nextBtn.title = 'Please enter a task or click a preset button first';
-            }
-
-            if (taskInput && !taskInput.dataset.tourBound) {
-                taskInput.dataset.tourBound = 'true';
-                taskInput.addEventListener('input', () => {
-                    if (taskInput.value.trim() !== '') {
-                        if (nextBtn) {
-                            nextBtn.disabled = false;
-                            nextBtn.style.opacity = '1';
-                            nextBtn.style.cursor = 'pointer';
-                            nextBtn.title = '';
-                        }
-                    }
-                });
-            }
-        } else {
-            if (nextBtn) {
-                nextBtn.disabled = false;
-                nextBtn.style.opacity = '1';
-                nextBtn.style.cursor = 'pointer';
-                nextBtn.title = '';
-            }
-        }
-    } else {
-        if (nextBtn) {
-            nextBtn.disabled = false;
-            nextBtn.style.opacity = '1';
-            nextBtn.style.cursor = 'pointer';
-            nextBtn.title = '';
-        }
+    if (nextBtn) {
+        nextBtn.textContent = buttonText;
+        nextBtn.disabled = false;
+        nextBtn.style.opacity = '1';
+        nextBtn.style.cursor = 'pointer';
     }
+
+    document.getElementById('tourTitle').textContent = step.title;
+    document.getElementById('tourDesc').textContent = step.desc;
+    document.getElementById('tourCounter').textContent = `${pageTour.pageName} (${currentTourStepIndex + 1}/${pageTour.steps.length})`;
 
     if (targetEl) {
         targetEl.classList.add('element-highlighted');
@@ -509,38 +492,18 @@ function renderSpotlightStep() {
 
         callout.style.top = top + 'px';
         callout.style.left = left + 'px';
-
-        document.getElementById('tourTitle').textContent = step.title;
-        document.getElementById('tourDesc').textContent = step.desc;
-        document.getElementById('tourCounter').textContent = `${pageTour.pageName} (${currentTourStepIndex + 1}/${pageTour.steps.length})`;
-        if (nextBtn) nextBtn.textContent = buttonText;
+        callout.style.bottom = 'auto';
     } else {
         callout.style.display = 'block';
         callout.style.bottom = '28px';
         callout.style.left = '28px';
         callout.style.top = 'auto';
-        document.getElementById('tourTitle').textContent = step.title;
-        document.getElementById('tourDesc').textContent = step.desc;
-        document.getElementById('tourCounter').textContent = `${pageTour.pageName} (${currentTourStepIndex + 1}/${pageTour.steps.length})`;
-        if (nextBtn) nextBtn.textContent = buttonText;
     }
 }
 
 function nextSpotlightStep() {
     const pageTour = FULL_PLATFORM_TOUR[currentTourPageIndex];
-    
-    if (window.location.pathname === '/generate' && currentTourStepIndex === 0) {
-        const taskInput = document.getElementById('taskInput');
-        if (!taskInput || !taskInput.value.trim()) {
-            const inlineAlert = document.getElementById('taskInlineAlert');
-            if (inlineAlert) {
-                inlineAlert.style.display = 'flex';
-                document.getElementById('taskInlineAlertText').textContent = 'Please enter a task specification or click a quick preset button (Fibonacci, Palindrome, Safe Division) before proceeding.';
-            }
-            taskInput?.focus();
-            return;
-        }
-    }
+    if (!pageTour) return;
 
     if (currentTourStepIndex < pageTour.steps.length - 1) {
         currentTourStepIndex++;
@@ -556,14 +519,15 @@ function advanceToNextPageInTour() {
 
     if (isLastPage) {
         dismissTourPermanently();
-        showToast('🎉 Full platform tour completed from 0 to 100%!', 'success');
+        showToast('🎉 You completed the full platform tour!', 'success');
     } else if (pageTour && pageTour.nextUrl) {
         const nextTarget = FULL_PLATFORM_TOUR[currentTourPageIndex + 1];
         sessionStorage.setItem('langgraph_tour_in_progress', 'true');
+        sessionStorage.setItem('langgraph_manual_tour_session', 'true');
         showToast(`Proceeding to ${nextTarget?.pageName}...`, 'info');
         setTimeout(() => {
             window.location.href = pageTour.nextUrl;
-        }, 600);
+        }, 500);
     } else {
         dismissTourPermanently();
     }
@@ -575,7 +539,7 @@ function dismissTourPermanently() {
     sessionStorage.removeItem('langgraph_tour_in_progress');
     sessionStorage.removeItem('langgraph_manual_tour_session');
     closeSpotlightTour();
-    showToast('Tour completed/dismissed. Click "Platform Guide" anytime to re-run.', 'info');
+    showToast('Tour closed. Click "Guide" in navbar anytime to reopen!', 'info');
 }
 
 function closeSpotlightTour() {
@@ -584,17 +548,10 @@ function closeSpotlightTour() {
     if (callout) callout.style.display = 'none';
 }
 
-function startFullTourManually() {
-    localStorage.removeItem(TOUR_COMPLETED_KEY);
-    sessionStorage.removeItem('langgraph_tour_dismissed');
-    sessionStorage.removeItem('langgraph_toured_pages');
-    sessionStorage.setItem('langgraph_tour_in_progress', 'true');
-    sessionStorage.setItem('langgraph_manual_tour_session', 'true');
-    window.location.href = '/';
-}
-
 function openPlatformGuide() {
-    startFullTourManually();
+    sessionStorage.removeItem('langgraph_tour_dismissed');
+    sessionStorage.setItem('langgraph_manual_tour_session', 'true');
+    autoAwakenSpotlightTour(true);
 }
 
 // Global Hover Tooltip System (Smart Top-Positioned & Unobstructive)
