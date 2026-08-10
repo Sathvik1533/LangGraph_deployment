@@ -20,17 +20,17 @@
             <div>
                 <h1 class="page-title">
                     <span class="material-symbols-outlined" style="color: var(--accent-terracotta);">code_blocks</span>
-                    Code Workbench & Verification Studio
+                    Code Workbench
                 </h1>
-                <p class="page-subtitle">Describe what code you want to build. Our AI team will write the code and run automatic tests to ensure it works!</p>
+                <p class="page-subtitle">Describe what code you want to build. Our AI will write it and run tests automatically!</p>
             </div>
 
             <div id="pipelineStepper" style="display: none; align-items: center; gap: 8px;">
-                <span id="stepDeveloper" class="cyber-badge">1. Drafting...</span>
+                <span id="stepDeveloper" class="cyber-badge">1. Writing...</span>
                 <span class="material-symbols-outlined" style="font-size: 14px; color: var(--text-muted);">arrow_forward</span>
                 <span id="stepSandbox" class="cyber-badge">2. Testing...</span>
                 <span class="material-symbols-outlined" style="font-size: 14px; color: var(--text-muted);">arrow_forward</span>
-                <span id="stepRouter" class="cyber-badge">3. Route Guard</span>
+                <span id="stepRouter" class="cyber-badge">3. Checking</span>
             </div>
         </header>
 
@@ -40,8 +40,8 @@
                 
                 <div>
                     <label style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">
-                        <span>Task Specification</span>
-                        <span class="kbd-badge">Press ⌘ + Enter to execute</span>
+                        <span>What code do you want?</span>
+                        <span class="kbd-badge">Press ⌘ + Enter to run</span>
                     </label>
                     <textarea id="taskInput" rows="3" style="width: 100%; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px; color: var(--text-primary); font-family: var(--font-sans); font-size: 14.5px; line-height: 1.6; outline: none; resize: vertical;" placeholder="e.g. Write a function to check if a number is prime..." data-tooltip="Task Input: Type what program or function you want our AI team to create for you."></textarea>
                     
@@ -80,8 +80,8 @@
 
                 <!-- Custom Studio Web Dropdown: Self-Fix Ceiling -->
                 <div>
-                    <label style="display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Self-Fix Ceiling</label>
-                    <div class="custom-select-wrapper" id="ceilingSelectWrapper" data-tooltip="Self-Fix Limit: Choose how many times the AI can try automatically fixing its code if errors occur.">
+                    <label style="display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Auto-Fix Attempts</label>
+                    <div class="custom-select-wrapper" id="ceilingSelectWrapper" data-tooltip="Auto-Fix: How many times the AI can automatically retry if the code has errors.">
                         <input type="hidden" id="maxIterationsSelect" value="3"/>
                         <div class="custom-select-trigger" onclick="toggleCustomSelect(this, event)">
                             <span class="custom-select-value" id="ceilingSelectValue">3 Loops (Default)</span>
@@ -104,9 +104,9 @@
                     <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Write a function to divide two numbers with proper error handling')" data-tooltip="Quick Fill: Fills in a sample Safe Division task.">Safe Division</button>
                 </div>
 
-                <button id="generateBtn" class="cyber-btn cyber-btn-primary" data-tooltip="Run Task: Click here to start AI code generation and run automatic test checks.">
+                <button id="generateBtn" class="cyber-btn cyber-btn-primary" data-tooltip="Click to generate and test your code.">
                     <span class="material-symbols-outlined">code_blocks</span>
-                    <span>Execute & Verify Specification</span>
+                    <span>Generate Code</span>
                     <span class="kbd-badge" style="margin-left: 4px; background: #ffffff; color: #0f172a; border: none;">⌘↵</span>
                 </button>
             </div>
@@ -133,7 +133,7 @@
                     </div>
                 </div>
 
-                <div class="code-editor-body" id="codeDisplay">Press 'Execute & Verify Specification' or ⌘ + Enter to initiate orchestration...</div>
+                <div class="code-editor-body" id="codeDisplay">Click 'Generate Code' or press ⌘ + Enter to start...</div>
             </div>
 
             <div class="code-editor-pane" data-tooltip="Test Output Window: Shows the results of running your code in our test environment.">

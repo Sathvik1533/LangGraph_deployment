@@ -122,7 +122,7 @@ async function handleGenerate() {
     generateBtn.disabled = true;
     generateBtn.innerHTML = `
         <span class="material-symbols-outlined spin" style="font-size: 16px;">sync</span>
-        <span>Orchestrating Backend Graph...</span>
+        <span>Generating your code...</span>
     `;
 
     statusBanner.style.display = 'flex';
@@ -134,22 +134,22 @@ async function handleGenerate() {
             <div style="display: flex; align-items: center; gap: 12px;">
                 <span class="material-symbols-outlined spin" style="color: var(--accent-blue); font-size: 22px;">sync</span>
                 <div>
-                    <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">Backend State Machine Executing (${language.toUpperCase()})</div>
-                    <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Developer Node → Sandbox Verifier → Conditional Edge Router</div>
+                    <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">Creating your ${language.toUpperCase()} code...</div>
+                    <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Writing → Testing → Verifying</div>
                 </div>
             </div>
-            <span class="cyber-badge cyber-badge-blue">ACTIVE BACKEND GRAPH</span>
+            <span class="cyber-badge cyber-badge-blue">IN PROGRESS</span>
         </div>
     `;
 
     if (pipelineStepper) {
         pipelineStepper.style.display = 'flex';
         document.getElementById('stepDeveloper').className = 'cyber-badge cyber-badge-blue';
-        document.getElementById('stepDeveloper').textContent = '1. Developer Node';
+        document.getElementById('stepDeveloper').textContent = '1. Writing...';
         document.getElementById('stepSandbox').className = 'cyber-badge';
-        document.getElementById('stepSandbox').textContent = '2. Sandbox Verifier';
+        document.getElementById('stepSandbox').textContent = '2. Testing...';
         document.getElementById('stepRouter').className = 'cyber-badge';
-        document.getElementById('stepRouter').textContent = '3. Edge Router';
+        document.getElementById('stepRouter').textContent = '3. Checking';
     }
 
     try {
@@ -178,17 +178,17 @@ async function handleGenerate() {
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <span class="material-symbols-outlined" style="color: var(--accent-emerald); font-size: 24px;">check_circle</span>
                         <div>
-                            <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">${language.toUpperCase()} Verification Passed & State Saved</div>
-                            <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Completed in ${data.iterations} loop(s) • Thread: ${data.thread_id} • Checkpointer: MemorySaver</div>
+                            <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">${language.toUpperCase()} Code — All Tests Passed!</div>
+                            <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Completed in ${data.iterations} attempt(s) • Session: ${data.thread_id}</div>
                         </div>
                     </div>
-                    <span class="cyber-badge cyber-badge-emerald">VERIFICATION PASSED</span>
+                    <span class="cyber-badge cyber-badge-emerald">PASSED</span>
                 </div>
             `;
 
             if (pipelineStepper) {
                 document.getElementById('stepDeveloper').className = 'cyber-badge cyber-badge-emerald';
-                document.getElementById('stepDeveloper').textContent = '1. Drafted ✓';
+                document.getElementById('stepDeveloper').textContent = '1. Written ✓';
                 document.getElementById('stepSandbox').className = 'cyber-badge cyber-badge-emerald';
                 document.getElementById('stepSandbox').textContent = '2. Tested ✓';
                 document.getElementById('stepRouter').className = 'cyber-badge cyber-badge-emerald';
