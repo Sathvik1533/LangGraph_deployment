@@ -62,7 +62,7 @@
                 <input id="canvasTaskInput" type="text" value="Write a function to check if a number is prime" style="flex: 1; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px 18px; font-size: 14px; font-family: var(--font-sans); color: var(--text-primary); outline: none;" placeholder="Enter any custom coding task specification..." oninput="updateDynamicTaskSpec(this.value)"/>
                 
                 <!-- CUSTOM WEB DROPDOWN (NO NATIVE OS SELECT) -->
-                <div class="custom-select-wrapper" style="width: 170px;" id="canvasLangWrapper" data-tooltip="Choose Target Language: Switch language between Python, Java, or C++.">
+                <div class="custom-select-wrapper" style="width: 170px;" id="canvasLangWrapper">
                     <input type="hidden" id="canvasLangSelect" value="python"/>
                     <div class="custom-select-trigger" onclick="toggleCustomSelect(this, event)">
                         <span class="custom-select-value" id="canvasLangValue">Python 3.11</span>
