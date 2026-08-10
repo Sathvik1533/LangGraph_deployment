@@ -78,12 +78,16 @@ class DemoLLM:
         
         if isinstance(input_data, list):
             prompt_text = " ".join(getattr(m, "content", str(m)) for m in input_data)
-            # Find the user's actual HumanMessage
-            for m in reversed(input_data):
-                content = getattr(m, "content", str(m))
-                if not content.startswith("You are an expert"):
-                    user_task = content
+            for m in input_data:
+                if isinstance(m, HumanMessage) or getattr(m, "type", "") == "human":
+                    user_task = getattr(m, "content", str(m))
                     break
+            if not user_task:
+                for m in input_data:
+                    c = getattr(m, "content", str(m))
+                    if not c.startswith("You are an expert") and not c.startswith("✅") and not c.startswith("❌") and not c.startswith("⚠️"):
+                        user_task = c
+                        break
         else:
             prompt_text = str(input_data)
             user_task = prompt_text
