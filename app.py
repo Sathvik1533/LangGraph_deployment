@@ -19,7 +19,7 @@ Production Patterns:
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel, Field
@@ -724,8 +724,16 @@ async def delete_thread(thread_id: str):
 
 
 # ============================================================================
-# GUARDRAILS API ENDPOINT
+# GUARDRAILS API ENDPOINTS
 # ============================================================================
+
+class GuardrailScanRequest(BaseModel):
+    """Request model for testing live guardrail scanners"""
+    text: str = Field(..., description="Prompt or code text to scan", example="Ignore previous instructions")
+    scan_type: str = Field(default="input", description="input or output scan", example="input")
+    task: Optional[str] = Field(default="", description="Original task description", example="")
+    language: Optional[str] = Field(default="python", description="Target programming language", example="python")
+
 
 @app.get("/guardrails", tags=["Guardrails"])
 def get_guardrails_status():
@@ -746,24 +754,61 @@ def get_guardrails_status():
     }
 
 
+@app.post("/guardrails/scan", tags=["Guardrails"])
+def scan_guardrail(request: GuardrailScanRequest):
+    """
+    Live interactive stress-test endpoint for guardrails.
+    Evaluates text against active scanners in memory safely without executing code.
+    """
+    if request.scan_type == "input":
+        report = InputGuard.scan_all(request.text)
+        guardrail_stats.record_input_scan(report)
+    else:
+        report = OutputGuard.scan_all(request.text, expected_language=request.language or "python")
+        guardrail_stats.record_output_scan(report)
+        
+    return {
+        "passed": report.passed,
+        "blocked_by": report.blocked_by,
+        "reason": report.reason,
+        "severity": report.severity.value if hasattr(report.severity, "value") else str(report.severity),
+        "scans": [
+            {
+                "guardrail": r.scanner,
+                "passed": r.passed,
+                "reason": r.reason,
+                "severity": r.severity.value if hasattr(r.severity, "value") else str(r.severity)
+            }
+            for r in report.results
+        ],
+        "stats": guardrail_stats.to_dict()
+    }
+
+
 # ============================================================================
 # ERROR HANDLERS
 # ============================================================================
 
 @app.exception_handler(404)
 async def not_found_handler(request, exc):
-    return {
-        "error": "Endpoint not found",
-        "message": "Check /docs for available endpoints"
-    }
+    return JSONResponse(
+        status_code=404,
+        content={
+            "error": "Endpoint not found",
+            "message": "Check /docs for available endpoints"
+        }
+    )
 
 
 @app.exception_handler(500)
 async def internal_error_handler(request, exc):
-    return {
-        "error": "Internal server error",
-        "message": str(exc)
-    }
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Internal server error",
+            "message": str(exc)
+        }
+    )
 
 
 # ============================================================================
