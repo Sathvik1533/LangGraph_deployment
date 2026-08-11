@@ -146,7 +146,7 @@
                 <span id="scenarioDescriptionTag" style="font-size: 12px; color: var(--accent-terracotta); font-weight: 600; text-transform: none;">Scenario: Self-Healing Loop</span>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+            <div class="scenario-pills-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
                 <div class="scenario-pill active" id="pillScenarioSelfFix" onclick="switchScenario('self_fix')" data-tooltip="Self-Healing Loop: Developer creates code -> Tester catches failure -> Router sends feedback -> Developer fixes it in loop 2.">
                     <span class="material-symbols-outlined" style="color: #ea580c; font-size: 20px;">autorenew</span>
                     <div>
@@ -203,7 +203,7 @@
             </div>
 
             <div style="display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap;">
-                <input id="canvasTaskInput" type="text" style="flex: 1; min-width: 260px; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 10px 16px; font-size: 13.5px; font-family: var(--font-sans); color: var(--text-primary); outline: none;" value="Write a function to check if a number is prime" placeholder="Enter any coding task to update state machine pipeline..." oninput="updateCustomTask(this.value)"/>
+                <input id="canvasTaskInput" type="text" style="flex: 1; min-width: 260px; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 10px 16px; font-size: 13.5px; font-family: var(--font-sans); color: var(--text-primary); outline: none;" value="" placeholder="Enter any coding task (e.g. Create a linked list in Java)..." oninput="updateCustomTask(this.value)"/>
                 
                 <div class="custom-select-wrapper" style="width: 170px;">
                     <input type="hidden" id="canvasLangSelect" value="python"/>
@@ -249,8 +249,12 @@
             </div>
 
             <!-- SVG Graph Architecture with Animated Flow Data Orbs -->
-            <div style="padding: 10px; display: flex; align-items: center; justify-content: center; overflow-x: auto;">
-                <svg id="stateGraphSvg" width="960" height="240" viewBox="0 0 960 240" style="width: 100%; max-width: 960px;">
+            <div class="svg-scroll-hint">
+                <span class="material-symbols-outlined" style="font-size: 14px;">swipe</span>
+                Swipe horizontally to view full graph
+            </div>
+            <div class="svg-touch-wrapper" style="padding: 10px; display: flex; align-items: center; justify-content: center;">
+                <svg id="stateGraphSvg" width="960" height="240" viewBox="0 0 960 240" style="width: 100%; min-width: 720px; max-width: 960px;">
                     <defs>
                         <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
                             <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
@@ -404,7 +408,7 @@
         let currentScenario = 'self_fix';
         let currentStepIndex = 0;
         let playInterval = null;
-        let activeTask = "Write a function to check if a number is prime";
+        let activeTask = "";
         let activeLanguage = "python";
 
         function getActiveLanguage() {
@@ -1172,6 +1176,12 @@
         }
 
         function renderCurrentStep() {
+            // Guard: Don't render scenario steps if no task is specified
+            if (!activeTask || !activeTask.trim()) {
+                document.getElementById('simStepStatus').textContent = 'Enter a task and click LIVE or SIMULATION to begin';
+                document.getElementById('graphLoopBadge').textContent = 'READY';
+                return;
+            }
             const steps = getScenarioSteps(currentScenario, activeTask, activeLanguage);
             if (!steps || steps.length === 0) return;
             
@@ -1189,12 +1199,12 @@
             
             const statusText = document.getElementById('simStepStatus');
             if (statusText) {
-                statusText.textContent = `SIMULATION: ${step.title}`;
+                statusText.textContent = `Step ${currentStepIndex + 1} of ${totalSteps}: ${step.title}`;
             }
             
             const lockEl = document.getElementById('liveAgentLock');
             if (lockEl) {
-                lockEl.textContent = `MODE: SIMULATION (${step.node.toUpperCase()})`;
+                lockEl.textContent = `SIMULATION: ${step.node.toUpperCase()}`;
             }
             
             // 2. Highlight SVG Graph Nodes & Edges
@@ -1390,21 +1400,34 @@
             if (text) text.textContent = 'Syncing Task...';
 
             setTimeout(() => {
-                // 2. Persist to storage
-                localStorage.setItem('langgraph_last_task', activeTask);
-                localStorage.setItem('langgraph_last_lang', activeLanguage);
+                // 2. Persist to ALL storage locations (unified + legacy keys)
                 localStorage.setItem('ai_workflow_current_task', activeTask);
                 localStorage.setItem('ai_workflow_current_lang', activeLanguage);
+                localStorage.setItem('langgraph_last_task', activeTask);
+                localStorage.setItem('langgraph_last_lang', activeLanguage);
 
-                // 3. Update target badge
+                // 3. Update unified state (single source of truth)
+                setCurrentWorkflowRun({
+                    runId: 'run_' + Date.now(),
+                    task: activeTask,
+                    language: activeLanguage,
+                    status: 'IDLE',
+                    currentNode: 'START',
+                    generatedCode: null,
+                    testResult: null,
+                    iteration: 0,
+                    timestamp: new Date().toISOString()
+                });
+
+                // 4. Update target badge
                 document.getElementById('canvasLangBadge').textContent = `TARGET: ${activeLanguage.toUpperCase()}`;
 
-                // 4. Reset button
+                // 5. Reset button
                 if (btn) btn.disabled = false;
                 if (icon) icon.className = 'material-symbols-outlined';
                 if (text) text.textContent = 'UPDATE TASK';
 
-                // 5. Show TASK UPDATED badge
+                // 6. Show TASK UPDATED badge
                 if (badge) {
                     badge.style.display = 'inline-block';
                     setTimeout(() => {
@@ -1412,7 +1435,7 @@
                     }, 3500);
                 }
 
-                // 6. Reset current scenario with new task
+                // 7. Reset current scenario with new task
                 resetCurrentScenario();
                 showToast(`✅ TASK UPDATED: ${activeTask} (${activeLanguage.toUpperCase()})`, 'success');
             }, 300);
@@ -1458,52 +1481,53 @@
                 setActiveNav('workflow');
             }
 
-            // Sync saved task & language from storage
-            const savedTask = localStorage.getItem('langgraph_last_task') || localStorage.getItem('ai_workflow_current_task');
-            const savedLang = localStorage.getItem('langgraph_last_lang') || localStorage.getItem('ai_workflow_current_lang');
+            // ============================================================
+            // TASK SYNCHRONIZATION — Single Source of Truth
+            // Priority: 1) getCurrentWorkflowRun()  2) localStorage keys  3) empty
+            // ============================================================
+            const currentRun = getCurrentWorkflowRun();
+            const savedTask = localStorage.getItem('ai_workflow_current_task') || localStorage.getItem('langgraph_last_task');
+            const savedLang = localStorage.getItem('ai_workflow_current_lang') || localStorage.getItem('langgraph_last_lang');
 
-            if (savedTask && savedTask.trim()) {
+            // Pick the most recent source
+            if (currentRun && currentRun.task && currentRun.task.trim()) {
+                activeTask = currentRun.task.trim();
+                activeLanguage = (currentRun.language || 'python').toLowerCase();
+            } else if (savedTask && savedTask.trim()) {
                 activeTask = savedTask.trim();
-                const taskInput = document.getElementById('canvasTaskInput');
-                if (taskInput) taskInput.value = activeTask;
+                activeLanguage = (savedLang || 'python').toLowerCase();
             }
-            if (savedLang) {
-                activeLanguage = savedLang.toLowerCase();
-                const hidden = document.getElementById('canvasLangSelect');
-                const valSpan = document.getElementById('canvasLangValue');
-                if (hidden) hidden.value = activeLanguage;
-                if (valSpan) {
-                    const labelMap = { 'python': 'Python 3.11', 'java': 'Java 17', 'cpp': 'C++ 20' };
-                    valSpan.textContent = labelMap[activeLanguage] || activeLanguage.toUpperCase();
-                }
+            // If activeTask is still empty, leave it — the user must enter a task
+
+            // Populate UI fields
+            const taskInput = document.getElementById('canvasTaskInput');
+            if (taskInput && activeTask) taskInput.value = activeTask;
+
+            const hidden = document.getElementById('canvasLangSelect');
+            const valSpan = document.getElementById('canvasLangValue');
+            if (hidden) hidden.value = activeLanguage;
+            if (valSpan) {
+                const labelMap = { 'python': 'Python 3.11', 'java': 'Java 17', 'cpp': 'C++ 20' };
+                valSpan.textContent = labelMap[activeLanguage] || activeLanguage.toUpperCase();
             }
 
             document.getElementById('canvasLangBadge').textContent = `TARGET: ${activeLanguage.toUpperCase()}`;
 
-            // Check if there is an active run from Workspace (Single Source of Truth)
-            const currentRun = getCurrentWorkflowRun();
-            if (currentRun && (Date.now() - (currentRun.timestamp ? new Date(currentRun.timestamp).getTime() : 0) < 600000)) {
-                if (currentRun.task) {
-                    activeTask = currentRun.task;
-                    const taskInput = document.getElementById('canvasTaskInput');
-                    if (taskInput) taskInput.value = activeTask;
+            // ============================================================
+            // LIVE RUN STATE — If a recent run exists, reflect it
+            // ============================================================
+            if (currentRun && currentRun.generatedCode && (Date.now() - (currentRun.timestamp ? new Date(currentRun.timestamp).getTime() : 0) < 600000)) {
+                if (currentRun.generatedCode) {
+                    document.getElementById('activeCodeOutput').textContent = currentRun.generatedCode;
                 }
-                if (currentRun.language) {
-                    activeLanguage = currentRun.language.toLowerCase();
-                    document.getElementById('canvasLangBadge').textContent = `TARGET: ${activeLanguage.toUpperCase()}`;
-                }
-                
-                if (currentRun.code) {
-                    document.getElementById('activeCodeOutput').textContent = currentRun.code;
-                }
-                if (currentRun.report) {
-                    document.getElementById('streamLogOutput').textContent = `[LIVE RUN AUDIT]\nTask: ${currentRun.task}\nLanguage: ${currentRun.language}\nStatus: ${currentRun.status}\nIterations: ${currentRun.iterations || 1}\n\n[SANDBOX TEST REPORT]\n${currentRun.report}`;
+                if (currentRun.testResult) {
+                    document.getElementById('streamLogOutput').textContent = `[LIVE RUN]\nTask: ${currentRun.task}\nLanguage: ${currentRun.language}\nStatus: ${currentRun.status}\nIterations: ${currentRun.iteration || 1}\n\n[TEST REPORT]\n${currentRun.testResult}`;
                 }
                 document.getElementById('activeStateOutput').textContent = JSON.stringify(currentRun, null, 2);
                 
                 if (currentRun.status === 'SUCCESS') {
                     highlightLiveNode('END', 'success');
-                    document.getElementById('simStepStatus').textContent = `LIVE: Tests Passed (${currentRun.iterations || 1} attempt(s))`;
+                    document.getElementById('simStepStatus').textContent = `LIVE: Tests Passed (${currentRun.iteration || 1} attempt(s))`;
                     document.getElementById('graphLoopBadge').textContent = `RUN: COMPLETE ✓`;
                 } else if (currentRun.status === 'PAUSED_FOR_REVIEW') {
                     highlightLiveNode('ReviewGate', 'running');
@@ -1513,7 +1537,17 @@
                     renderCurrentStep();
                 }
             } else {
-                renderCurrentStep();
+                // No live run — show default simulation state
+                if (activeTask) {
+                    renderCurrentStep();
+                } else {
+                    // No task set at all — show a helpful initial state
+                    document.getElementById('simStepStatus').textContent = 'Enter a task and click LIVE or SIMULATION to begin';
+                    document.getElementById('graphLoopBadge').textContent = 'READY';
+                    document.getElementById('streamLogOutput').textContent = '// Waiting for task specification...\n// Enter a task above and click "LIVE: Execute API" for real backend execution\n// or "SIMULATION: Play" for a deterministic walkthrough.';
+                    document.getElementById('activeCodeOutput').textContent = '// No code generated yet. Start a workflow to see generated code here.';
+                    document.getElementById('activeStateOutput').textContent = JSON.stringify({ status: 'IDLE', task: null, language: activeLanguage }, null, 2);
+                }
             }
         });
 
