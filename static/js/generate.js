@@ -60,6 +60,60 @@ function generateArtifactFilename(task, language) {
     return `${formattedName}${ext}`;
 }
 
+function extractTaskIntent(rawTask) {
+    if (!rawTask) return "General Code Implementation";
+    let intent = rawTask.trim();
+    const patterns = [
+        /^write\s+(?:a|an)\s+(?:python|java|c\+\+|cpp|javascript|typescript|c)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which)\s+/i,
+        /^write\s+(?:a|an)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which)\s+/i,
+        /^create\s+(?:a|an)\s+(?:python|java|c\+\+|cpp|javascript|typescript|c)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i,
+        /^create\s+(?:a|an)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i,
+        /^implement\s+(?:a|an)\s+(?:python|java|c\+\+|cpp|javascript|typescript|c)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i,
+        /^implement\s+(?:a|an)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i,
+        /^build\s+(?:a|an)\s+(?:python|java|c\+\+|cpp|javascript|typescript|c)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i,
+        /^build\s+(?:a|an)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i
+    ];
+    for (const pat of patterns) {
+        if (pat.test(intent)) {
+            intent = intent.replace(pat, '');
+            break;
+        }
+    }
+    // Remove language suffixes
+    intent = intent.replace(/\s+(?:in|using|with)\s+(?:python|java|c\+\+|cpp|javascript|typescript|c)\b/gi, '');
+    intent = intent.trim();
+    if (intent) {
+        intent = intent.charAt(0).toUpperCase() + intent.slice(1);
+    }
+    return intent || "General Code Implementation";
+}
+
+function updateTaskIntentPreview() {
+    const taskInput = document.getElementById('taskInput');
+    const languageSelect = document.getElementById('languageSelect');
+    const taskIntentDisplay = document.getElementById('taskIntentDisplay');
+    const authoritativeLangDisplay = document.getElementById('authoritativeLangDisplay');
+
+    const task = taskInput ? taskInput.value.trim() : '';
+    const lang = languageSelect ? languageSelect.value.toLowerCase() : 'python';
+    const intent = extractTaskIntent(task);
+
+    if (taskIntentDisplay) {
+        taskIntentDisplay.textContent = intent;
+    }
+
+    if (authoritativeLangDisplay) {
+        const langMap = {
+            'python': { label: 'PYTHON 3.11', cls: 'cyber-badge-indigo' },
+            'java': { label: 'JAVA 17', cls: 'cyber-badge-terracotta' },
+            'cpp': { label: 'C++ 20', cls: 'cyber-badge-emerald' }
+        };
+        const info = langMap[lang] || { label: lang.toUpperCase(), cls: 'cyber-badge-indigo' };
+        authoritativeLangDisplay.textContent = info.label;
+        authoritativeLangDisplay.className = `cyber-badge ${info.cls}`;
+    }
+}
+
 function updateCodeEditorHeader() {
     const taskInput = document.getElementById('taskInput');
     const languageSelect = document.getElementById('languageSelect');
@@ -76,6 +130,7 @@ function updateCodeEditorHeader() {
     } else {
         codeTabHeader.textContent = generateArtifactFilename('', lang);
     }
+    updateTaskIntentPreview();
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -113,17 +168,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         localStorage.setItem('langgraph_last_task', taskInput.value.trim());
         localStorage.setItem('ai_workflow_current_task', taskInput.value.trim());
         updateCodeEditorHeader();
+        updateTaskIntentPreview();
     });
 
-    // Language Change Listener to Update Tab Header Filename
+    // Language Change Listener to Update Tab Header Filename & Intent Preview
     const languageSelect = document.getElementById('languageSelect');
     languageSelect?.addEventListener('change', () => {
         const lang = languageSelect.value || 'python';
         localStorage.setItem('langgraph_last_lang', lang);
+        localStorage.setItem('ai_workflow_current_lang', lang);
         updateCodeEditorHeader();
+        updateTaskIntentPreview();
     });
 
     updateCodeEditorHeader();
+    updateTaskIntentPreview();
 
     // Bind Form Submission
     const generateBtn = document.getElementById('generateBtn');
@@ -193,19 +252,9 @@ async function handleGenerate(overrideMode) {
 
     if (taskInlineAlert) taskInlineAlert.style.display = 'none';
 
-    let language = languageSelect ? languageSelect.value : 'python';
-    const taskLower = task.toLowerCase();
-    if (taskLower.includes('java') && !taskLower.includes('javascript')) {
-        language = 'java';
-        if (languageSelect) languageSelect.value = 'java';
-    } else if (taskLower.includes('python')) {
-        language = 'python';
-        if (languageSelect) languageSelect.value = 'python';
-    } else if (taskLower.includes('cpp') || taskLower.includes('c++')) {
-        language = 'cpp';
-        if (languageSelect) languageSelect.value = 'cpp';
-    }
-
+    // Target language is AUTHORITATIVE from the UI selector
+    const language = languageSelect ? languageSelect.value.toLowerCase() : 'python';
+    const taskIntent = extractTaskIntent(task);
     const maxIterations = maxIterationsSelect ? (parseInt(maxIterationsSelect.value) || 3) : 3;
     const hitlMode = hitlToggle ? hitlToggle.checked : false;
     const mode = (typeof overrideMode === 'string' && overrideMode) ? overrideMode : 'live';
@@ -216,6 +265,8 @@ async function handleGenerate(overrideMode) {
     // Save initial context to localStorage for passive reload restoration
     localStorage.setItem('langgraph_last_task', task);
     localStorage.setItem('ai_workflow_current_task', task);
+    localStorage.setItem('langgraph_task_intent', taskIntent);
+    localStorage.setItem('ai_workflow_task_intent', taskIntent);
     localStorage.setItem('langgraph_last_lang', language);
     localStorage.setItem('ai_workflow_current_lang', language);
 
@@ -223,7 +274,9 @@ async function handleGenerate(overrideMode) {
         setCurrentWorkflowRun({
             runId: runId,
             task: task,
+            task_intent: taskIntent,
             language: language,
+            target_language: language,
             mode: mode,
             status: 'RUNNING',
             currentNode: 'START',
@@ -240,10 +293,10 @@ async function handleGenerate(overrideMode) {
     if (typeof minimizeTourForExecution === 'function') {
         minimizeTourForExecution();
     }
-    showToast(`🚀 Launching ${mode.toUpperCase()} Workflow for task: "${task.substring(0, 30)}..."`, 'info');
+    showToast(`🚀 Launching ${mode.toUpperCase()} Workflow for intent: "${taskIntent}" in ${language.toUpperCase()}`, 'info');
 
-    // Immediate Redirection to Pipeline Visualizer
-    const targetUrl = `/workflow?run=${encodeURIComponent(runId)}&task=${encodeURIComponent(task)}&lang=${encodeURIComponent(language)}&max=${maxIterations}&hitl=${hitlMode}&mode=${mode}&autoRun=true`;
+    // Immediate Redirection to Pipeline Visualizer with authoritative target language & task intent
+    const targetUrl = `/workflow?run=${encodeURIComponent(runId)}&task=${encodeURIComponent(task)}&intent=${encodeURIComponent(taskIntent)}&lang=${encodeURIComponent(language)}&max=${maxIterations}&hitl=${hitlMode}&mode=${mode}&autoRun=true`;
     
     setTimeout(() => {
         window.location.href = targetUrl;

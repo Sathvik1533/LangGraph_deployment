@@ -85,6 +85,61 @@ class DemoAIMessage:
         self.content = content
 
 
+def extract_task_intent(raw_task: str) -> str:
+    """
+    Extracts and normalizes the abstract task intent from a raw user prompt,
+    decoupling the core programmatic goal/algorithm from any language-specific wording.
+    Examples:
+    - 'Write a Python function that reverses a string and create tests for it.' -> 'Reverse a string and create tests'
+    - 'Create a Java program to implement a linked list' -> 'Implement a linked list'
+    - 'Implement a stack in C++' -> 'Implement a stack'
+    - 'Write a Python function that validates email addresses' -> 'Validate email addresses'
+    """
+    if not raw_task or not raw_task.strip():
+        return "General programming task"
+    
+    intent = raw_task.strip()
+    
+    # 1. Remove leading boilerplates like 'Write a Python function that', 'Create a Java program to', etc.
+    patterns_to_strip = [
+        r'^(?:please\s+)?(?:write|create|build|implement|develop|generate|construct|code)\s+(?:a|an|the)?\s*(?:python|java|c\+\+|cpp|javascript|typescript|rust|go)?\s*(?:function|class|method|program|script|service|module|algorithm|code)?\s*(?:that|to|which|for)?\s*',
+        r'\s+in\s+(?:python|java|c\+\+|cpp|javascript|typescript|rust|go)(?:\s+3\.\d+)?\b',
+        r'\s+using\s+(?:python|java|c\+\+|cpp|javascript|typescript|rust|go)\b',
+        r'\b(?:python|java|c\+\+|cpp)\s+(?:function|program|class|script|code)\b',
+        r'\b(?:python|java|c\+\+|cpp)\b'
+    ]
+    
+    for pat in patterns_to_strip:
+        intent = re.sub(pat, ' ', intent, flags=re.IGNORECASE).strip()
+    
+    # Clean up extra punctuation/spaces
+    intent = re.sub(r'\s+', ' ', intent).strip(' .:;,')
+    
+    # Normalize common third-person action verbs to imperative/infinitive
+    verb_normalizations = {
+        r"^reverses\b": "Reverse",
+        r"^calculates\b": "Calculate",
+        r"^validates\b": "Validate",
+        r"^checks\b": "Check",
+        r"^implements\b": "Implement",
+        r"^creates\b": "Create",
+        r"^sorts\b": "Sort",
+        r"^finds\b": "Find",
+        r"^generates\b": "Generate",
+        r"^builds\b": "Build"
+    }
+    for v_pat, v_rep in verb_normalizations.items():
+        if re.search(v_pat, intent, re.IGNORECASE):
+            intent = re.sub(v_pat, v_rep, intent, flags=re.IGNORECASE)
+            break
+
+    # Capitalize the first letter
+    if intent:
+        intent = intent[0].upper() + intent[1:]
+    
+    return intent or "General Code Implementation"
+
+
 def generate_artifact_filename(task: str, language: str = "python") -> str:
     """
     Generates a clean, professional, task-derived source code filename.
@@ -94,6 +149,7 @@ def generate_artifact_filename(task: str, language: str = "python") -> str:
     - 'Binary Search Tree' -> 'BinarySearchTree.java'
     - 'Stack in C++' -> 'Stack.cpp'
     - 'Todo service in TypeScript' -> 'TodoService.ts'
+    - 'Reverse a string' (target: java) -> 'StringReverser.java'
     """
     lang = (language or "python").lower()
     ext_map = {
@@ -161,9 +217,12 @@ def generate_artifact_filename(task: str, language: str = "python") -> str:
 
 class DemoLLM:
     """
-    Dynamic Offline/Fallback LLM Engine.
-    Generates clean, professional, compilable source code in Python, Java, or C++
-    without markdown fences, headers, or conversational artifacts.
+    Dynamic Offline/Fallback LLM Engine with Target Language Authority.
+    Decouples task intent from target language:
+    - User prompt might say "Write a Python function that reverses a string."
+    - If target language is Java -> synthesizes Java implementation.
+    - If target language is C++ -> synthesizes C++ implementation.
+    - If target language is Python -> synthesizes Python implementation.
     """
     def invoke(self, input_data: Any) -> DemoAIMessage:
         prompt_text = ""
@@ -191,14 +250,24 @@ class DemoLLM:
         prompt_lower = prompt_text.lower()
         user_task_lower = user_task.lower()
         
-        # Detect language cleanly from system prompt or task
+        # 1. Authoritative Target Language Resolution
         lang = "python"
-        if "java" in prompt_lower or "java" in user_task_lower:
+        if "authoritative target language: java" in prompt_lower or "target programming language: java" in prompt_lower or "target language: java" in prompt_lower:
             lang = "java"
-        elif "c++" in prompt_lower or "cpp" in prompt_lower or "c++" in user_task_lower:
+        elif "authoritative target language: cpp" in prompt_lower or "authoritative target language: c++" in prompt_lower or "target programming language: cpp" in prompt_lower or "target programming language: c++" in prompt_lower or "target language: cpp" in prompt_lower or "target language: c++" in prompt_lower:
+            lang = "cpp"
+        elif "authoritative target language: python" in prompt_lower or "target programming language: python" in prompt_lower or "target language: python" in prompt_lower:
+            lang = "python"
+        elif "target language: java" in prompt_lower or "lang: java" in prompt_lower or "java 17" in prompt_lower:
+            lang = "java"
+        elif "target language: cpp" in prompt_lower or "lang: cpp" in prompt_lower or "c++ 20" in prompt_lower:
+            lang = "cpp"
+        elif "java" in prompt_lower and "python" not in prompt_lower:
+            lang = "java"
+        elif ("cpp" in prompt_lower or "c++" in prompt_lower) and "python" not in prompt_lower:
             lang = "cpp"
             
-        # Comprehensive Task Intent Classification
+        # 2. Extract Task Intent & Classification
         is_linked_list = any(k in user_task_lower for k in ["linked list", "linkedlist", "node", "singly linked", "doubly linked", "head.next"])
         is_email = any(k in user_task_lower for k in ["email", "validate email", "email address", "email validation"])
         is_stack = any(k in user_task_lower for k in ["stack", "lifo", "push and pop"]) and not is_linked_list
@@ -765,6 +834,27 @@ public class Stack {
     }
 }
 '''
+            elif is_reverse:
+                code = '''public class StringReverser {
+    /**
+     * Reverses a given string.
+     */
+    public static String reverseString(String text) {
+        if (text == null) {
+            throw new IllegalArgumentException("Input must not be null");
+        }
+        return new StringBuilder(text).reverse().toString();
+    }
+
+    public static void main(String[] args) {
+        String result = reverseString("hello");
+        if (!"olleh".equals(result)) {
+            throw new AssertionError("Expected 'olleh' but got: " + result);
+        }
+        System.out.println("StringReverser('hello') verified: " + result);
+    }
+}
+'''
             elif is_prime:
                 code = '''public class PrimeChecker {
     public static boolean isPrime(int n) {
@@ -799,6 +889,44 @@ public class Stack {
     }
 }
 '''
+            elif is_search:
+                code = '''public class BinarySearch {
+    public static int search(int[] array, int target) {
+        int left = 0, right = array.length - 1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            if (array[mid] == target) return mid;
+            if (array[mid] < target) left = mid + 1;
+            else right = mid - 1;
+        }
+        return -1;
+    }
+
+    public static void main(String[] args) {
+        int[] data = {10, 20, 30, 40, 50};
+        int idx = search(data, 30);
+        if (idx != 2) throw new AssertionError("Expected index 2");
+        System.out.println("BinarySearch verified successfully: " + idx);
+    }
+}
+'''
+            elif is_sort:
+                code = '''import java.util.Arrays;
+
+public class SortService {
+    public static int[] sort(int[] array) {
+        int[] copy = Arrays.copyOf(array, array.length);
+        Arrays.sort(copy);
+        return copy;
+    }
+
+    public static void main(String[] args) {
+        int[] sample = {64, 34, 25, 12, 22, 11, 90};
+        int[] sorted = sort(sample);
+        System.out.println("SortService verified: " + Arrays.toString(sorted));
+    }
+}
+'''
             else:
                 code = f'''public class {class_name_java} {{
     public static String execute(String taskSpec) {{
@@ -817,7 +945,25 @@ public class Stack {
         # C++ 20 IMPLEMENTATIONS
         # ====================================================================
         else:
-            if is_linked_list:
+            if is_reverse:
+                code = '''#include <iostream>
+#include <string>
+#include <algorithm>
+#include <cassert>
+
+std::string reverseString(std::string text) {
+    std::reverse(text.begin(), text.end());
+    return text;
+}
+
+int main() {
+    std::string result = reverseString("hello");
+    assert(result == "olleh");
+    std::cout << "reverseString('hello') verified: " << result << std::endl;
+    return 0;
+}
+'''
+            elif is_linked_list:
                 code = '''#include <iostream>
 
 struct Node {
@@ -912,6 +1058,118 @@ int main() {
     bool invalid = validateEmail("invalid.email");
     std::cout << "validateEmail('user@example.com'): " << (valid ? "true" : "false") << std::endl;
     std::cout << "validateEmail('invalid.email'): " << (invalid ? "true" : "false") << std::endl;
+    return 0;
+}
+'''
+            elif is_stack:
+                code = '''#include <iostream>
+#include <vector>
+#include <stdexcept>
+#include <cassert>
+
+class Stack {
+private:
+    std::vector<int> data;
+
+public:
+    void push(int val) {
+        data.push_back(val);
+    }
+
+    int pop() {
+        if (isEmpty()) throw std::out_of_range("Stack underflow");
+        int topVal = data.back();
+        data.pop_back();
+        return topVal;
+    }
+
+    int peek() const {
+        if (isEmpty()) throw std::out_of_range("Stack is empty");
+        return data.back();
+    }
+
+    bool isEmpty() const {
+        return data.empty();
+    }
+
+    size_t size() const {
+        return data.size();
+    }
+};
+
+int main() {
+    Stack s;
+    s.push(10);
+    s.push(20);
+    assert(s.peek() == 20);
+    assert(s.pop() == 20);
+    assert(s.size() == 1);
+    std::cout << "C++ Stack verified successfully!" << std::endl;
+    return 0;
+}
+'''
+            elif is_prime:
+                code = '''#include <iostream>
+#include <cassert>
+
+bool isPrime(int n) {
+    if (n <= 1) return false;
+    for (int i = 2; i * i <= n; ++i) {
+        if (n % i == 0) return false;
+    }
+    return true;
+}
+
+int main() {
+    assert(isPrime(29) == true);
+    assert(isPrime(15) == false);
+    std::cout << "C++ isPrime verified: 29 is prime." << std::endl;
+    return 0;
+}
+'''
+            elif is_fibo:
+                code = '''#include <iostream>
+#include <cassert>
+
+long long fibonacci(int n) {
+    if (n <= 0) return 0;
+    if (n == 1) return 1;
+    long long a = 0, b = 1;
+    for (int i = 2; i <= n; ++i) {
+        long long temp = a + b;
+        a = b;
+        b = temp;
+    }
+    return b;
+}
+
+int main() {
+    assert(fibonacci(7) == 13);
+    std::cout << "C++ fibonacci(7) verified: 13." << std::endl;
+    return 0;
+}
+'''
+            elif is_search:
+                code = '''#include <iostream>
+#include <vector>
+#include <cassert>
+
+int binarySearch(const std::vector<int>& arr, int target) {
+    int left = 0, right = static_cast<int>(arr.size()) - 1;
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+        if (arr[mid] == target) return mid;
+        if (arr[mid] < target) left = mid + 1;
+        else right = mid - 1;
+    }
+    return -1;
+}
+
+int main() {
+    std::vector<int> data = {10, 20, 30, 40, 50};
+    assert(binarySearch(data, 30) == 2);
+    assert(binarySearch(data, 99) == -1);
+    std::cout << "C++ binarySearch verified!" << std::endl;
     return 0;
 }
 '''
@@ -1088,7 +1346,7 @@ def validate_code_output(code: str, language: str = "python") -> tuple[bool, Opt
     return True, None
 
 
-class CrewState(TypedDict):
+class CrewState(TypedDict, total=False):
     messages: Annotated[List[BaseMessage], add]
     code: Optional[str]
     report: Optional[str]
@@ -1096,6 +1354,15 @@ class CrewState(TypedDict):
     iterations: int
     max_iterations: int
     language: Optional[str]
+    task_intent: Optional[str]
+    task_specification: Optional[str]
+    target_language: Optional[str]
+    filename: Optional[str]
+    hitl_enabled: Optional[bool]
+    human_action: Optional[str]
+    human_feedback: Optional[str]
+    human_edited_code: Optional[str]
+    human_review_status: Optional[str]
 
 
 @tool
@@ -1230,19 +1497,24 @@ def sanitize_professional_code(raw_code: str, language: str = "python") -> str:
 
 
 def developer_node(state: CrewState) -> Dict[str, Any]:
-    target_language = state.get("language", "python").lower()
-    task = state["messages"][0].content
+    target_language = (state.get("target_language") or state.get("language") or "python").lower()
+    raw_task = state["messages"][0].content if state.get("messages") else state.get("task_specification", "")
+    task_intent = state.get("task_intent") or extract_task_intent(raw_task)
+    filename = generate_artifact_filename(task_intent or raw_task, target_language)
     
     # Malicious injection check
     dangerous_keywords = ["import os; os.system", "rm -rf", "eval(", "exec("]
-    if any(keyword in task for keyword in dangerous_keywords):
-        logger.warning(f"⚠️ Dangerous input detected: {task[:50]}")
+    if any(keyword in raw_task for keyword in dangerous_keywords):
+        logger.warning(f"⚠️ Dangerous input detected: {raw_task[:50]}")
         return {
             "code": "// SECURITY ALERT: Input contains potentially dangerous code",
             "messages": [AIMessage(content="⚠️ Security check failed: dangerous code pattern detected.")],
             "iterations": state.get("iterations", 0) + 1,
             "execution_success": False,
-            "report": "### SECURITY ALERT\nInput contains unsafe operations."
+            "report": "### SECURITY ALERT\nInput contains unsafe operations.",
+            "task_intent": task_intent,
+            "target_language": target_language,
+            "filename": filename
         }
     
     retry_context = ""
@@ -1251,14 +1523,16 @@ def developer_node(state: CrewState) -> Dict[str, Any]:
     
     prompt = (
         f"You are an expert software engineer.\n"
-        f"Task: {task}\n"
-        f"Target Programming Language: {target_language.upper()}\n"
+        f"TASK INTENT: {task_intent}\n"
+        f"USER SPECIFICATION: {raw_task}\n"
+        f"AUTHORITATIVE TARGET LANGUAGE: {target_language.upper()}\n"
         f"{retry_context}\n"
         f"CRITICAL INSTRUCTIONS:\n"
-        f"1. Generate ONLY valid, clean, compilable, production-ready {target_language.upper()} code.\n"
-        f"2. DO NOT wrap the code in Markdown code block fences (no ```).\n"
-        f"3. DO NOT include markdown headers (# Solution) or conversational explanations.\n"
-        f"4. Return ONLY the source code artifact.\n"
+        f"1. Generate ONLY valid, clean, compilable, production-ready {target_language.upper()} code implementing the task intent '{task_intent}'.\n"
+        f"2. The AUTHORITATIVE TARGET LANGUAGE ({target_language.upper()}) is authoritative over any conflicting language mentioned in the user prompt.\n"
+        f"3. DO NOT wrap the code in Markdown code block fences (no ```).\n"
+        f"4. DO NOT include markdown headers (# Solution) or conversational explanations.\n"
+        f"5. Return ONLY the pure source code artifact.\n"
     )
     
     try:
@@ -1280,7 +1554,10 @@ def developer_node(state: CrewState) -> Dict[str, Any]:
                     "messages": [AIMessage(content=f"🛡️ Output Guardrail: {output_report.reason}")],
                     "iterations": state.get("iterations", 0) + 1,
                     "execution_success": False,
-                    "report": f"### 🛡️ Output Guardrail Alert\n{output_report.reason}\n\nBlocked by: {output_report.blocked_by}\nSeverity: {output_report.severity.value}"
+                    "report": f"### 🛡️ Output Guardrail Alert\n{output_report.reason}\n\nBlocked by: {output_report.blocked_by}\nSeverity: {output_report.severity.value}",
+                    "task_intent": task_intent,
+                    "target_language": target_language,
+                    "filename": filename
                 }
         else:
             is_valid, error_msg = validate_code_output(clean_code, target_language)
@@ -1291,13 +1568,19 @@ def developer_node(state: CrewState) -> Dict[str, Any]:
                     "messages": [AIMessage(content=f"⚠️ Validation warning: {error_msg}")],
                     "iterations": state.get("iterations", 0) + 1,
                     "report": f"### VALIDATION WARNING\n{error_msg}",
-                    "execution_success": False
+                    "execution_success": False,
+                    "task_intent": task_intent,
+                    "target_language": target_language,
+                    "filename": filename
                 }
         
         return {
             "code": clean_code,
             "messages": [AIMessage(content=f"✅ Generated {target_language.upper()} code (iteration {state.get('iterations', 0) + 1})")],
-            "iterations": state.get("iterations", 0) + 1
+            "iterations": state.get("iterations", 0) + 1,
+            "task_intent": task_intent,
+            "target_language": target_language,
+            "filename": filename
         }
         
     except Exception as e:
@@ -1307,7 +1590,10 @@ def developer_node(state: CrewState) -> Dict[str, Any]:
             "messages": [AIMessage(content=f"❌ Developer agent error: {user_friendly_error}")],
             "iterations": state.get("iterations", 0) + 1,
             "execution_success": False,
-            "report": f"### ERROR\n{user_friendly_error}"
+            "report": f"### ERROR\n{user_friendly_error}",
+            "task_intent": task_intent,
+            "target_language": target_language,
+            "filename": filename
         }
 
 
@@ -1509,4 +1795,4 @@ def get_agent():
 
 
 agent = get_agent()
-__all__ = ["agent", "CrewState", "get_agent"]
+__all__ = ["agent", "CrewState", "get_agent", "extract_task_intent", "generate_artifact_filename"]

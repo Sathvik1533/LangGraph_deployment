@@ -238,12 +238,24 @@ def clear_history_records():
     return {"status": "cleared"}
 
 
+from agent import (
+    agent,
+    CrewState,
+    get_llm_instance,
+    _circuit_breaker_open,
+    _circuit_breaker_failures,
+    CIRCUIT_BREAKER_THRESHOLD,
+    validate_code_output,
+    generate_artifact_filename,
+    extract_task_intent
+)
+
 # ============================================================================
 # REQUEST/RESPONSE MODELS
 # ============================================================================
 
 class TaskRequest(BaseModel):
-    """Request model for code generation tasks"""
+    """Request model for code generation tasks with task intent & language decoupling"""
     task: str = Field(
         ...,
         description="Description of the code to generate",
@@ -259,6 +271,14 @@ class TaskRequest(BaseModel):
         default="python",
         description="Programming language for code generation (python, java, cpp)",
         example="python"
+    )
+    target_language: Optional[str] = Field(
+        default=None,
+        description="Authoritative target programming language overriding raw task text"
+    )
+    task_intent: Optional[str] = Field(
+        default=None,
+        description="Normalized task intent decoupled from language phrasing"
     )
     hitl_mode: Optional[bool] = Field(
         default=False,
@@ -283,10 +303,12 @@ class HITLActionRequest(BaseModel):
     edited_code: Optional[str] = Field(None, description="Modified code by human if action is 'edit'")
     feedback: Optional[str] = Field(None, description="Review feedback if action is 'reject'")
     language: Optional[str] = Field("python", description="Target programming language")
+    target_language: Optional[str] = Field(None, description="Authoritative target programming language")
+    task_intent: Optional[str] = Field(None, description="Normalized task intent")
 
 
 class AgentResponse(BaseModel):
-    """Response model with full execution details"""
+    """Response model with full execution details and task intent telemetry"""
     success: bool = Field(description="Whether the agent workflow completed successfully")
     code: Optional[str] = Field(None, description="Generated clean source code")
     filename: Optional[str] = Field(None, description="Dynamic clean source code artifact filename")
@@ -297,6 +319,8 @@ class AgentResponse(BaseModel):
     thread_id: Optional[str] = Field(None, description="Thread ID used for this conversation")
     checkpointed: bool = Field(False, description="Whether state was saved to checkpoint (Redis)")
     hitl_status: Optional[str] = Field(None, description="Human-in-the-Loop gate status")
+    task_intent: Optional[str] = Field(None, description="Normalized task intent")
+    target_language: Optional[str] = Field(None, description="Authoritative target language")
 
 
 # In-memory storage for active Human-in-the-Loop review sessions
@@ -552,7 +576,12 @@ async def invoke_agent(request: TaskRequest, req: Request):
         thread_id = request.thread_id or f"thread_{uuid.uuid4().hex[:12]}"
         thread_name = request.thread_name or f"Task: {request.task[:30]}..."
         
-        logger.info(f"🧵 Thread ID: {thread_id}")
+        raw_task = request.task
+        target_lang = (request.target_language or request.language or "python").lower()
+        task_intent = request.task_intent or extract_task_intent(raw_task)
+        artifact_filename = generate_artifact_filename(task_intent or raw_task, target_lang)
+
+        logger.info(f"🧵 Thread ID: {thread_id} | Intent: '{task_intent}' | Target Lang: {target_lang.upper()} | Artifact: {artifact_filename}")
         if request.thread_id:
             logger.info(f"📂 Resuming existing thread: {thread_name}")
         else:
@@ -560,13 +589,17 @@ async def invoke_agent(request: TaskRequest, req: Request):
         
         # Prepare initial state
         initial_state: CrewState = {
-            "messages": [HumanMessage(content=request.task)],
+            "messages": [HumanMessage(content=raw_task)],
+            "task_specification": raw_task,
+            "task_intent": task_intent,
+            "language": target_lang,
+            "target_language": target_lang,
             "code": None,
+            "filename": artifact_filename,
             "report": None,
             "execution_success": False,
             "iterations": 0,
             "max_iterations": request.max_iterations,
-            "language": request.language or "python",
             "hitl_enabled": request.hitl_mode
         }
         
@@ -581,9 +614,6 @@ async def invoke_agent(request: TaskRequest, req: Request):
         # Check if Redis checkpointing is available
         redis_url = os.getenv("REDIS_URL", "").strip()
         checkpointed = bool(redis_url) or request.hitl_mode
-        
-        # Calculate dynamic, professional filename
-        artifact_filename = generate_artifact_filename(request.task, request.language or "python")
 
         # ====================================================================
         # HUMAN-IN-THE-LOOP (HITL) GATE INTERCEPTION
@@ -599,8 +629,10 @@ async def invoke_agent(request: TaskRequest, req: Request):
             # Save session state awaiting human decision
             hitl_sessions[thread_id] = {
                 "thread_id": thread_id,
-                "task": request.task,
-                "language": request.language or "python",
+                "task": raw_task,
+                "task_intent": task_intent,
+                "language": target_lang,
+                "target_language": target_lang,
                 "code": draft_code,
                 "filename": artifact_filename,
                 "max_iterations": request.max_iterations,
@@ -625,7 +657,9 @@ async def invoke_agent(request: TaskRequest, req: Request):
                 error=None,
                 thread_id=thread_id,
                 checkpointed=True,
-                hitl_status="awaiting_human_review"
+                hitl_status="awaiting_human_review",
+                task_intent=task_intent,
+                target_language=target_lang
             )
 
         if checkpointed:
@@ -644,7 +678,7 @@ async def invoke_agent(request: TaskRequest, req: Request):
         # LLM OUTPUT GUARDRAILS (Production Pattern — Inspired by Guardrails AI)
         output_code = result.get("code", "")
         if output_code and not output_code.startswith("// ERROR:") and not output_code.startswith("// GUARDRAIL"):
-            output_report = OutputGuard.scan_all(output_code, request.language or "python")
+            output_report = OutputGuard.scan_all(output_code, target_lang)
             guardrail_stats.record_output_scan(output_report)
             if not output_report.passed:
                 logger.warning(f"🔒 Output guardrail blocked: {output_report.blocked_by}")
@@ -658,7 +692,9 @@ async def invoke_agent(request: TaskRequest, req: Request):
                     error=output_report.reason,
                     thread_id=thread_id,
                     checkpointed=checkpointed,
-                    hitl_status="bypassed"
+                    hitl_status="bypassed",
+                    task_intent=task_intent,
+                    target_language=target_lang
                 )
         
         # Check if we got valid results
@@ -676,7 +712,9 @@ async def invoke_agent(request: TaskRequest, req: Request):
             error=None if result.get("execution_success") else "Code generated but tests failed",
             thread_id=thread_id,
             checkpointed=checkpointed,
-            hitl_status="bypassed"
+            hitl_status="bypassed",
+            task_intent=task_intent,
+            target_language=target_lang
         )
         
     except HTTPException:
@@ -701,7 +739,9 @@ async def invoke_agent(request: TaskRequest, req: Request):
                 execution_success=False,
                 iterations=result.get("iterations", 0),
                 error=user_friendly_error,
-                hitl_status="error"
+                hitl_status="error",
+                task_intent=request.task_intent,
+                target_language=request.target_language or request.language
             )
         
         # Complete failure - return user-friendly error
@@ -728,15 +768,18 @@ async def handle_hitl_action(req_body: HITLActionRequest):
     from agent import tester_node, developer_node
     
     session = hitl_sessions.get(req_body.thread_id)
-    target_lang = req_body.language or (session.get("language") if session else "python")
+    target_lang = (req_body.target_language or req_body.language or (session.get("target_language") if session else (session.get("language") if session else "python"))).lower()
     task_desc = session.get("task", "Code Generation") if session else "Code Generation"
-    artifact_filename = generate_artifact_filename(task_desc, target_lang)
+    task_intent_val = req_body.task_intent or (session.get("task_intent") if session else extract_task_intent(task_desc))
+    artifact_filename = generate_artifact_filename(task_intent_val or task_desc, target_lang)
     
     if not session and req_body.action != "abort":
         session = {
             "thread_id": req_body.thread_id,
             "task": task_desc,
+            "task_intent": task_intent_val,
             "language": target_lang,
+            "target_language": target_lang,
             "code": req_body.edited_code or "",
             "filename": artifact_filename,
             "iterations": 1,
@@ -758,7 +801,9 @@ async def handle_hitl_action(req_body: HITLActionRequest):
             iterations=session.get("iterations", 1) if session else 1,
             error="Aborted by human reviewer",
             thread_id=req_body.thread_id,
-            hitl_status="aborted"
+            hitl_status="aborted",
+            task_intent=task_intent_val,
+            target_language=target_lang
         )
         
     elif action == "reject":
@@ -772,12 +817,15 @@ async def handle_hitl_action(req_body: HITLActionRequest):
                 AIMessage(content=f"Previous Code:\n{session.get('code', '')}"),
                 HumanMessage(content=f"Human Reviewer Feedback: {feedback_text}")
             ],
+            "task_specification": session.get("task", "Code Generation"),
+            "task_intent": task_intent_val,
             "code": session.get("code", ""),
             "report": f"HUMAN REVIEW FEEDBACK:\n{feedback_text}",
             "execution_success": False,
             "iterations": session.get("iterations", 1),
             "max_iterations": session.get("max_iterations", 3),
-            "language": target_lang
+            "language": target_lang,
+            "target_language": target_lang
         }
         
         new_dev_result = developer_node(state_for_dev)
@@ -794,7 +842,9 @@ async def handle_hitl_action(req_body: HITLActionRequest):
             execution_success=False,
             iterations=session["iterations"],
             thread_id=req_body.thread_id,
-            hitl_status="awaiting_human_review"
+            hitl_status="awaiting_human_review",
+            task_intent=task_intent_val,
+            target_language=target_lang
         )
         
     elif action in ["approve", "edit"]:
@@ -810,12 +860,15 @@ async def handle_hitl_action(req_body: HITLActionRequest):
         # Step 2: Feed into Sandbox Tester
         state_for_test: CrewState = {
             "messages": [HumanMessage(content=session.get("task", "Code Generation"))],
+            "task_specification": session.get("task", "Code Generation"),
+            "task_intent": task_intent_val,
             "code": active_code,
             "report": None,
             "execution_success": False,
             "iterations": session.get("iterations", 1),
             "max_iterations": session.get("max_iterations", 3),
-            "language": target_lang
+            "language": target_lang,
+            "target_language": target_lang
         }
         
         test_result = tester_node(state_for_test)
@@ -826,12 +879,15 @@ async def handle_hitl_action(req_body: HITLActionRequest):
         if not is_success and state_for_test["iterations"] < state_for_test["max_iterations"]:
             state_for_dev_heal: CrewState = {
                 "messages": [HumanMessage(content=session.get("task", "Code Generation"))],
+                "task_specification": session.get("task", "Code Generation"),
+                "task_intent": task_intent_val,
                 "code": active_code,
                 "report": test_result.get("report", ""),
                 "execution_success": False,
                 "iterations": state_for_test["iterations"],
                 "max_iterations": state_for_test["max_iterations"],
-                "language": target_lang
+                "language": target_lang,
+                "target_language": target_lang
             }
             heal_dev = developer_node(state_for_dev_heal)
             final_code = heal_dev.get("code", active_code)
@@ -853,7 +909,9 @@ async def handle_hitl_action(req_body: HITLActionRequest):
             error=None if is_success else "Tests failed after review approval",
             thread_id=req_body.thread_id,
             checkpointed=True,
-            hitl_status="approved" if action == "approve" else "edited"
+            hitl_status="approved" if action == "approve" else "edited",
+            task_intent=task_intent_val,
+            target_language=target_lang
         )
 
 
@@ -891,6 +949,8 @@ async def stream_workflow_events(
     request: Optional[TaskRequest] = None,
     task: Optional[str] = Query(None),
     language: Optional[str] = Query("python"),
+    target_language: Optional[str] = Query(None),
+    task_intent: Optional[str] = Query(None),
     max_iterations: Optional[int] = Query(3),
     hitl_mode: Optional[bool] = Query(False),
     thread_id: Optional[str] = Query(None),
@@ -898,18 +958,23 @@ async def stream_workflow_events(
 ):
     """
     Stream live execution events from the LangGraph multi-agent workflow
-    using Server-Sent Events (SSE).
+    using Server-Sent Events (SSE) with task intent normalization and target language authority.
     """
     from agent import validate_task_input, developer_node, tester_node
     
     # Extract request parameters
     task_text = (request.task if request else (task or "")).strip()
-    lang = (request.language if request and request.language else (language or "python")).lower()
+    target_lang = (request.target_language if request and request.target_language else (request.language if request and request.language else (target_language if target_language else (language or "python")))).lower()
+    task_intent_val = (request.task_intent if request and request.task_intent else (task_intent or extract_task_intent(task_text)))
+    artifact_filename = generate_artifact_filename(task_intent_val or task_text, target_lang)
+
     max_it = request.max_iterations if request and request.max_iterations else (max_iterations or 3)
     hitl = request.hitl_mode if request else (hitl_mode or False)
     tid = request.thread_id if request and request.thread_id else (thread_id or f"thread_{uuid.uuid4().hex[:12]}")
     mode_val = (mode or "live").lower()
     is_simulation = mode_val == "simulation" or "sim_" in tid
+    lang_labels = {"python": "Python 3.11", "java": "Java 17", "cpp": "C++ 20"}
+    target_lang_label = lang_labels.get(target_lang, target_lang.upper())
 
     async def event_generator():
         timestamp = time.strftime("%H:%M:%S")
@@ -932,16 +997,20 @@ async def stream_workflow_events(
         # 2. Start Event
         state: CrewState = {
             "messages": [HumanMessage(content=task_text)],
+            "task_specification": task_text,
+            "task_intent": task_intent_val,
+            "language": target_lang,
+            "target_language": target_lang,
             "code": None,
+            "filename": artifact_filename,
             "report": None,
             "execution_success": False,
             "iterations": 0,
             "max_iterations": max_it,
-            "language": lang,
             "hitl_enabled": hitl
         }
         
-        yield f"data: {json.dumps({'event': 'start', 'node': 'START', 'status': 'active', 'timestamp': timestamp, 'iteration': 0, 'thread_id': tid, 'message': f'Workflow initialized ({mode_val.upper()}). Target language: {lang.upper()}', 'state': {'task': task_text, 'language': lang, 'max_iterations': max_it, 'mode': mode_val}})}\n\n"
+        yield f"data: {json.dumps({'event': 'start', 'node': 'START', 'status': 'active', 'timestamp': timestamp, 'iteration': 0, 'thread_id': tid, 'task_intent': task_intent_val, 'target_language': target_lang, 'target_language_label': target_lang_label, 'filename': artifact_filename, 'message': f'Workflow initialized ({mode_val.upper()}). Intent: {task_intent_val} | Target: {target_lang_label}', 'state': {'task': task_text, 'task_intent': task_intent_val, 'language': target_lang, 'target_language': target_lang, 'filename': artifact_filename, 'max_iterations': max_it, 'mode': mode_val}})}\n\n"
         await asyncio.sleep(0.3)
         
         # 3. Input Guardrails
@@ -961,7 +1030,10 @@ async def stream_workflow_events(
                 "id": tid,
                 "thread_id": tid,
                 "task": task_text,
-                "language": lang,
+                "task_intent": task_intent_val,
+                "language": target_lang,
+                "target_language": target_lang,
+                "filename": artifact_filename,
                 "mode": mode_val,
                 "success": False,
                 "iterations": 0,
@@ -975,7 +1047,7 @@ async def stream_workflow_events(
         await asyncio.sleep(0.3)
         
         # 4. Developer Node (Iteration 1)
-        yield f"data: {json.dumps({'event': 'node_start', 'node': 'developer', 'status': 'running', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 1, 'message': f'Developer Agent drafting initial solution in {lang.upper()}...'})}\n\n"
+        yield f"data: {json.dumps({'event': 'node_start', 'node': 'developer', 'status': 'running', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 1, 'message': f'Developer Agent synthesizing {target_lang_label} artifact for intent: {task_intent_val}...'})}\n\n"
         
         loop = asyncio.get_event_loop()
         dev_res = await loop.run_in_executor(None, developer_node, state)
@@ -983,7 +1055,7 @@ async def stream_workflow_events(
         state["code"] = draft_code
         state["iterations"] = 1
         
-        yield f"data: {json.dumps({'event': 'node_complete', 'node': 'developer', 'status': 'success', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 1, 'code': draft_code, 'message': f'Developer Agent synthesized {lang.upper()} candidate code.', 'state': {'code': draft_code, 'iterations': 1, 'language': lang}})}\n\n"
+        yield f"data: {json.dumps({'event': 'node_complete', 'node': 'developer', 'status': 'success', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 1, 'code': draft_code, 'filename': artifact_filename, 'task_intent': task_intent_val, 'target_language': target_lang, 'message': f'Developer Agent synthesized {artifact_filename} ({target_lang_label}).', 'state': {'code': draft_code, 'filename': artifact_filename, 'iterations': 1, 'language': target_lang, 'task_intent': task_intent_val}})}\n\n"
         await asyncio.sleep(0.3)
         
         # 5. Human-in-the-Loop Review Gate
@@ -991,15 +1063,18 @@ async def stream_workflow_events(
             hitl_sessions[tid] = {
                 "thread_id": tid,
                 "task": task_text,
-                "language": lang,
+                "task_intent": task_intent_val,
+                "language": target_lang,
+                "target_language": target_lang,
                 "code": draft_code,
+                "filename": artifact_filename,
                 "max_iterations": max_it,
                 "iterations": 1,
                 "status": "awaiting_human_review",
                 "created_at": time.time()
             }
             hitl_stats["total_interventions"] += 1
-            yield f"data: {json.dumps({'event': 'human_review_required', 'node': 'human_review', 'status': 'waiting_for_human', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 1, 'thread_id': tid, 'code': draft_code, 'message': 'Paused at Human Review Gate. Awaiting human inspection/approval.', 'state': {'code': draft_code, 'status': 'awaiting_human_review', 'thread_id': tid}})}\n\n"
+            yield f"data: {json.dumps({'event': 'human_review_required', 'node': 'human_review', 'status': 'waiting_for_human', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 1, 'thread_id': tid, 'code': draft_code, 'filename': artifact_filename, 'task_intent': task_intent_val, 'target_language': target_lang, 'message': 'Paused at Human Review Gate. Awaiting human sign-off.', 'state': {'code': draft_code, 'filename': artifact_filename, 'status': 'awaiting_human_review', 'thread_id': tid, 'task_intent': task_intent_val, 'target_language': target_lang}})}\n\n"
             return
             
         yield f"data: {json.dumps({'event': 'node_complete', 'node': 'human_review', 'status': 'bypassed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 1, 'message': 'Human Review Gate bypassed (Automated Mode).'})}\n\n"
@@ -1008,7 +1083,7 @@ async def stream_workflow_events(
         # 6. Tester & Self-Healing Feedback Loop
         current_it = 1
         while current_it <= max_it:
-            yield f"data: {json.dumps({'event': 'node_start', 'node': 'tester', 'status': 'running', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'message': f'Sandbox Tester evaluating assertions in isolated sandbox (Attempt {current_it}/{max_it})...'})}\n\n"
+            yield f"data: {json.dumps({'event': 'node_start', 'node': 'tester', 'status': 'running', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'message': f'Sandbox Tester evaluating {target_lang_label} assertions in isolated sandbox (Attempt {current_it}/{max_it})...'})}\n\n"
             
             if is_simulation and current_it == 1:
                 # Controlled failure injection for Attempt 1 in Simulation Mode
@@ -1016,10 +1091,10 @@ async def stream_workflow_events(
                     "execution_success": False,
                     "report": (
                         f"[SANDBOX ASSERTION FAILURE]\n"
-                        f"AssertionError: Test scenario 2 failed for {lang.upper()} artifact.\n"
+                        f"AssertionError: Test scenario 2 failed for {target_lang.upper()} artifact.\n"
                         f"Expected element traversal matching target spec, but encountered pointer boundary disconnect.\n\n"
                         f"[TRACEBACK LOG]\n"
-                        f"File '{generate_artifact_filename(task_text, lang)}', line 42:\n"
+                        f"File '{artifact_filename}', line 42:\n"
                         f"    curr.next = curr.next.next; // Missing null boundary check on deletion\n"
                         f"[STATUS] Rejection by Tester Agent. Self-healing loop triggered."
                     )
@@ -1032,18 +1107,21 @@ async def stream_workflow_events(
             state["iterations"] = current_it
             
             if state["execution_success"]:
-                yield f"data: {json.dumps({'event': 'test_passed', 'node': 'tester', 'status': 'success', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'code': state['code'], 'report': state['report'], 'message': f'All sandbox assertions verified cleanly in Attempt {current_it}!', 'state': {'code': state['code'], 'report': state['report'], 'execution_success': True, 'iterations': current_it}})}\n\n"
+                yield f"data: {json.dumps({'event': 'test_passed', 'node': 'tester', 'status': 'success', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'code': state['code'], 'filename': artifact_filename, 'report': state['report'], 'message': f'All sandbox assertions verified cleanly for {target_lang_label} in Attempt {current_it}!', 'state': {'code': state['code'], 'filename': artifact_filename, 'report': state['report'], 'execution_success': True, 'iterations': current_it, 'target_language': target_lang}})}\n\n"
                 await asyncio.sleep(0.3)
                 yield f"data: {json.dumps({'event': 'router_decision', 'node': 'router', 'decision': 'END', 'status': 'success', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'message': 'Router: execution_success = True ➔ Routing to END'})}\n\n"
                 await asyncio.sleep(0.3)
-                yield f"data: {json.dumps({'event': 'workflow_complete', 'node': 'END', 'status': 'completed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'thread_id': tid, 'code': state['code'], 'report': state['report'], 'execution_success': True, 'message': f'Workflow completed successfully in {current_it} loop(s).', 'state': {'code': state['code'], 'report': state['report'], 'execution_success': True, 'iterations': current_it, 'language': lang}})}\n\n"
+                yield f"data: {json.dumps({'event': 'workflow_complete', 'node': 'END', 'status': 'completed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'thread_id': tid, 'code': state['code'], 'filename': artifact_filename, 'task_intent': task_intent_val, 'target_language': target_lang, 'report': state['report'], 'execution_success': True, 'message': f'Workflow completed successfully in {current_it} loop(s).', 'state': {'code': state['code'], 'filename': artifact_filename, 'report': state['report'], 'execution_success': True, 'iterations': current_it, 'language': target_lang, 'target_language': target_lang, 'task_intent': task_intent_val}})}\n\n"
                 
                 # Auto-save run record to disk
                 save_run_to_disk({
                     "id": tid,
                     "thread_id": tid,
                     "task": task_text,
-                    "language": lang,
+                    "task_intent": task_intent_val,
+                    "language": target_lang,
+                    "target_language": target_lang,
+                    "filename": artifact_filename,
                     "mode": mode_val,
                     "success": True,
                     "iterations": current_it,
@@ -1053,7 +1131,7 @@ async def stream_workflow_events(
                 })
                 break
             else:
-                yield f"data: {json.dumps({'event': 'test_failed', 'node': 'tester', 'status': 'failed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'code': state['code'], 'report': state['report'], 'message': f'Sandbox assertions failed in Attempt {current_it}. Error traceback captured.', 'state': {'code': state['code'], 'report': state['report'], 'execution_success': False, 'iterations': current_it}})}\n\n"
+                yield f"data: {json.dumps({'event': 'test_failed', 'node': 'tester', 'status': 'failed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'code': state['code'], 'filename': artifact_filename, 'report': state['report'], 'message': f'Sandbox assertions failed in Attempt {current_it}. Error traceback captured.', 'state': {'code': state['code'], 'filename': artifact_filename, 'report': state['report'], 'execution_success': False, 'iterations': current_it, 'target_language': target_lang}})}\n\n"
                 await asyncio.sleep(0.3)
                 
                 if current_it < max_it:
@@ -1063,23 +1141,26 @@ async def stream_workflow_events(
                     current_it += 1
                     state["iterations"] = current_it
                     
-                    yield f"data: {json.dumps({'event': 'node_start', 'node': 'developer', 'status': 'retrying', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'message': f'Developer Agent analyzing failure traceback and synthesizing corrected code (Attempt {current_it}/{max_it})...'})}\n\n"
+                    yield f"data: {json.dumps({'event': 'node_start', 'node': 'developer', 'status': 'retrying', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'message': f'Developer Agent analyzing failure traceback and synthesizing corrected {target_lang_label} code (Attempt {current_it}/{max_it})...'})}\n\n"
                     heal_res = await loop.run_in_executor(None, developer_node, state)
                     state["code"] = heal_res.get("code", state["code"])
                     
-                    yield f"data: {json.dumps({'event': 'node_complete', 'node': 'developer', 'status': 'success', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'code': state['code'], 'message': f'Developer Agent produced self-healed code draft for Attempt {current_it}.', 'state': {'code': state['code'], 'iterations': current_it, 'language': lang}})}\n\n"
+                    yield f"data: {json.dumps({'event': 'node_complete', 'node': 'developer', 'status': 'success', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'code': state['code'], 'filename': artifact_filename, 'message': f'Developer Agent produced self-healed code draft for Attempt {current_it}.', 'state': {'code': state['code'], 'filename': artifact_filename, 'iterations': current_it, 'language': target_lang, 'task_intent': task_intent_val}})}\n\n"
                     await asyncio.sleep(0.3)
                 else:
                     yield f"data: {json.dumps({'event': 'max_retries_reached', 'node': 'router', 'decision': 'END', 'status': 'failed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'message': f'Router: Max retry ceiling ({max_it}) reached. Halting execution loop.'})}\n\n"
                     await asyncio.sleep(0.3)
-                    yield f"data: {json.dumps({'event': 'workflow_complete', 'node': 'END', 'status': 'failed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'thread_id': tid, 'code': state['code'], 'report': state['report'], 'execution_success': False, 'message': f'Workflow completed with test failures after {current_it} attempts.', 'state': {'code': state['code'], 'report': state['report'], 'execution_success': False, 'iterations': current_it, 'language': lang}})}\n\n"
+                    yield f"data: {json.dumps({'event': 'workflow_complete', 'node': 'END', 'status': 'failed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'thread_id': tid, 'code': state['code'], 'filename': artifact_filename, 'task_intent': task_intent_val, 'target_language': target_lang, 'report': state['report'], 'execution_success': False, 'message': f'Workflow completed with test failures after {current_it} attempts.', 'state': {'code': state['code'], 'filename': artifact_filename, 'report': state['report'], 'execution_success': False, 'iterations': current_it, 'language': target_lang, 'target_language': target_lang, 'task_intent': task_intent_val}})}\n\n"
                     
                     # Auto-save run record to disk
                     save_run_to_disk({
                         "id": tid,
                         "thread_id": tid,
                         "task": task_text,
-                        "language": lang,
+                        "task_intent": task_intent_val,
+                        "language": target_lang,
+                        "target_language": target_lang,
+                        "filename": artifact_filename,
                         "mode": mode_val,
                         "success": False,
                         "iterations": current_it,

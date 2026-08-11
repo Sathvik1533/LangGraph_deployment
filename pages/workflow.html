@@ -243,18 +243,29 @@
             </div>
         </div>
 
-        <!-- Current Task Context Banner (Exact User Specification) -->
-        <div id="pipelineTaskContextBanner" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #ffffff; border-radius: var(--radius-md); padding: 14px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; border: 1px solid #334155; box-shadow: var(--shadow-sm);">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <span class="material-symbols-outlined" style="color: #38bdf8; font-size: 24px;">terminal</span>
-                <div>
-                    <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">EXECUTING USER TASK SPECIFICATION:</div>
-                    <div style="font-size: 14.5px; font-weight: 700; color: #38bdf8;" id="activeTaskDisplayTitle">"Write a function to check if a number is prime"</div>
+        <!-- Current Task Context Banner (Task Intent & Authoritative Target Language) -->
+        <div id="pipelineTaskContextBanner" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #ffffff; border-radius: var(--radius-md); padding: 14px 20px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; border: 1px solid #334155; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="material-symbols-outlined" style="color: #38bdf8; font-size: 22px;">terminal</span>
+                    <span style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">USER TASK SPECIFICATION:</span>
+                    <span style="font-size: 13.5px; font-weight: 600; color: #cbd5e1;" id="activeTaskDisplayTitle">"Write a Python function that reverses a string and create tests for it."</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="cyber-badge cyber-badge-terracotta" id="activeRunIdBadge">ID: run_1786449000_a1b2</span>
                 </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <span class="cyber-badge cyber-badge-indigo" id="activeTaskLangBadge">JAVA 17</span>
-                <span class="cyber-badge cyber-badge-terracotta" id="activeRunIdBadge">ID: run_1786449000_a1b2</span>
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span class="material-symbols-outlined" style="color: #818cf8; font-size: 18px;">psychology</span>
+                    <span style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">TASK INTENT:</span>
+                    <span style="font-size: 13.5px; font-weight: 700; color: #38bdf8;" id="activeTaskIntentDisplay">Reverse a string and create tests</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">TARGET LANGUAGE:</span>
+                    <span class="cyber-badge cyber-badge-indigo" id="activeTaskLangBadge">PYTHON 3.11</span>
+                    <span class="cyber-badge cyber-badge-emerald" id="activeArtifactBadge">StringReverser.py</span>
+                </div>
             </div>
         </div>
 
@@ -1541,16 +1552,36 @@
             applyCustomTask();
         }
 
+        function extractTaskIntent(rawTask) {
+            if (!rawTask) return "General Code Implementation";
+            let intent = rawTask.trim();
+            const patterns = [
+                /^write\s+(?:a|an)\s+(?:python|java|c\+\+|cpp|javascript|typescript|c)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which)\s+/i,
+                /^write\s+(?:a|an)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which)\s+/i,
+                /^create\s+(?:a|an)\s+(?:python|java|c\+\+|cpp|javascript|typescript|c)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i,
+                /^create\s+(?:a|an)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i,
+                /^implement\s+(?:a|an)\s+(?:python|java|c\+\+|cpp|javascript|typescript|c)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i,
+                /^implement\s+(?:a|an)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i,
+                /^build\s+(?:a|an)\s+(?:python|java|c\+\+|cpp|javascript|typescript|c)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i,
+                /^build\s+(?:a|an)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i
+            ];
+            for (const pat of patterns) {
+                if (pat.test(intent)) {
+                    intent = intent.replace(pat, '');
+                    break;
+                }
+            }
+            intent = intent.replace(/\s+(?:in|using|with)\s+(?:python|java|c\+\+|cpp|javascript|typescript|c)\b/gi, '');
+            intent = intent.trim();
+            if (intent) {
+                intent = intent.charAt(0).toUpperCase() + intent.slice(1);
+            }
+            return intent || "General Code Implementation";
+        }
+
         function getActiveLanguage() {
             const hidden = document.getElementById('canvasLangSelect');
             if (hidden && hidden.value) return hidden.value.toLowerCase();
-            
-            if (activeTask) {
-                const tLower = activeTask.toLowerCase();
-                if (tLower.includes('java') && !tLower.includes('javascript')) return 'java';
-                if (tLower.includes('python')) return 'python';
-                if (tLower.includes('cpp') || tLower.includes('c++')) return 'cpp';
-            }
             return activeLanguage || 'python';
         }
 
@@ -1570,6 +1601,7 @@
             const queryRunId = urlParams.get('run');
             const queryTask = urlParams.get('task');
             const queryLang = urlParams.get('lang');
+            const queryIntent = urlParams.get('intent');
             const queryMode = urlParams.get('mode') || 'live';
             const autoRun = urlParams.get('autoRun') === 'true';
             const hitlModeParam = urlParams.get('hitl') === 'true';
@@ -1578,46 +1610,48 @@
             const savedTask = localStorage.getItem('ai_workflow_current_task') || localStorage.getItem('langgraph_last_task');
             const savedLang = localStorage.getItem('ai_workflow_current_lang') || localStorage.getItem('langgraph_last_lang');
 
-            // Pick authoritative task
+            // Pick authoritative task specification
             if (queryTask && queryTask.trim()) {
                 activeTask = queryTask.trim();
             } else if (currentRun && currentRun.task && currentRun.task.trim()) {
                 activeTask = currentRun.task.trim();
             } else if (savedTask && savedTask.trim()) {
                 activeTask = savedTask.trim();
+            } else {
+                activeTask = "Write a Python function that reverses a string and create tests for it.";
             }
 
-            // Pick authoritative language with zero task/language mismatch
+            // Pick authoritative target language (Authoritative from selector / query)
             if (queryLang && queryLang.trim()) {
                 activeLanguage = queryLang.trim().toLowerCase();
-            } else if (activeTask) {
-                const tLower = activeTask.toLowerCase();
-                if (tLower.includes('java') && !tLower.includes('javascript')) {
-                    activeLanguage = 'java';
-                } else if (tLower.includes('python')) {
-                    activeLanguage = 'python';
-                } else if (tLower.includes('cpp') || tLower.includes('c++')) {
-                    activeLanguage = 'cpp';
-                } else if (currentRun && currentRun.language) {
-                    activeLanguage = currentRun.language.toLowerCase();
-                } else if (savedLang) {
-                    activeLanguage = savedLang.toLowerCase();
-                } else {
-                    activeLanguage = 'python';
-                }
+            } else if (currentRun && (currentRun.target_language || currentRun.language)) {
+                activeLanguage = (currentRun.target_language || currentRun.language).toLowerCase();
+            } else if (savedLang && savedLang.trim()) {
+                activeLanguage = savedLang.trim().toLowerCase();
             } else {
-                activeLanguage = (savedLang || 'python').toLowerCase();
+                activeLanguage = 'python';
             }
 
+            const taskIntent = queryIntent || extractTaskIntent(activeTask);
+            const artifactFilename = generateArtifactFilename(taskIntent || activeTask, activeLanguage);
             const activeRunId = queryRunId || (currentRun ? currentRun.runId : ('run_' + Date.now()));
 
             // Update Task Context Banner
             const titleEl = document.getElementById('activeTaskDisplayTitle');
+            const intentEl = document.getElementById('activeTaskIntentDisplay');
             const langBadge = document.getElementById('activeTaskLangBadge');
+            const artifactBadge = document.getElementById('activeArtifactBadge');
             const runIdBadge = document.getElementById('activeRunIdBadge');
 
-            if (titleEl) titleEl.textContent = activeTask ? `"${activeTask}"` : '"No task specified — enter a task to begin"';
-            if (langBadge) langBadge.textContent = activeLanguage.toUpperCase();
+            const labelMap = { 'python': 'PYTHON 3.11', 'java': 'JAVA 17', 'cpp': 'C++ 20' };
+
+            if (titleEl) titleEl.textContent = activeTask ? `"${activeTask}"` : '"No task specified"';
+            if (intentEl) intentEl.textContent = taskIntent;
+            if (langBadge) {
+                langBadge.textContent = labelMap[activeLanguage] || activeLanguage.toUpperCase();
+                langBadge.className = `cyber-badge ${activeLanguage === 'python' ? 'cyber-badge-indigo' : (activeLanguage === 'java' ? 'cyber-badge-terracotta' : 'cyber-badge-emerald')}`;
+            }
+            if (artifactBadge) artifactBadge.textContent = artifactFilename;
             if (runIdBadge) runIdBadge.textContent = `ID: ${activeRunId.substring(0, 18)}`;
 
             // Populate input field & custom language dropdown
@@ -1628,13 +1662,12 @@
             const valSpan = document.getElementById('canvasLangValue');
             if (hidden) hidden.value = activeLanguage;
             if (valSpan) {
-                const labelMap = { 'python': 'Python 3.11', 'java': 'Java 17', 'cpp': 'C++ 20' };
                 valSpan.textContent = labelMap[activeLanguage] || activeLanguage.toUpperCase();
             }
 
             // Update Telemetry Ribbon
             setElemText('telemetryModeBadge', `MODE: ${queryMode.toUpperCase()}`);
-            setElemText('canvasLangBadge', `TARGET: ${activeLanguage.toUpperCase()}`);
+            setElemText('canvasLangBadge', `TARGET: ${labelMap[activeLanguage] || activeLanguage.toUpperCase()}`);
 
             // Auto-scroll ONCE if autoRun is active
             if (autoRun) {
@@ -1726,6 +1759,8 @@
         function launchNewRunFromPipeline(mode) {
             const inputTask = (document.getElementById('canvasTaskInput')?.value || activeTask || '').trim();
             const inputLang = getActiveLanguage();
+            const taskIntent = extractTaskIntent(inputTask);
+            const artifactFilename = generateArtifactFilename(taskIntent || inputTask, inputLang);
 
             if (!inputTask) {
                 showToast('Please enter a task specification before executing', 'warning');
@@ -1747,7 +1782,9 @@
             setCurrentWorkflowRun({
                 runId: runId,
                 task: activeTask,
+                task_intent: taskIntent,
                 language: activeLanguage,
+                target_language: activeLanguage,
                 mode: mode,
                 status: 'RUNNING',
                 currentNode: 'START',
@@ -1759,15 +1796,18 @@
             });
 
             // Update URL parameters
-            const newUrl = `/workflow?run=${encodeURIComponent(runId)}&task=${encodeURIComponent(activeTask)}&lang=${encodeURIComponent(activeLanguage)}&mode=${mode}&autoRun=true`;
+            const newUrl = `/workflow?run=${encodeURIComponent(runId)}&task=${encodeURIComponent(activeTask)}&intent=${encodeURIComponent(taskIntent)}&lang=${encodeURIComponent(activeLanguage)}&mode=${mode}&autoRun=true`;
             window.history.pushState({}, '', newUrl);
 
             // Update Banner & Telemetry Context Badges
             setElemText('activeTaskDisplayTitle', `"${activeTask}"`);
-            setElemText('activeTaskLangBadge', activeLanguage.toUpperCase());
+            setElemText('activeTaskIntentDisplay', taskIntent);
+            const labelMap = { 'python': 'PYTHON 3.11', 'java': 'JAVA 17', 'cpp': 'C++ 20' };
+            setElemText('activeTaskLangBadge', labelMap[activeLanguage] || activeLanguage.toUpperCase());
+            setElemText('activeArtifactBadge', artifactFilename);
             setElemText('activeRunIdBadge', `ID: ${runId.substring(0, 18)}`);
             setElemText('telemetryModeBadge', `MODE: ${mode.toUpperCase()}`);
-            setElemText('canvasLangBadge', `TARGET: ${activeLanguage.toUpperCase()}`);
+            setElemText('canvasLangBadge', `TARGET: ${labelMap[activeLanguage] || activeLanguage.toUpperCase()}`);
 
             resetGraphVisuals();
 
@@ -1790,10 +1830,13 @@
             const origHtml = btn ? btn.innerHTML : '';
 
             const inputTask = (overrideTask || document.getElementById('canvasTaskInput')?.value || activeTask).trim();
-            const lang = overrideLang || activeLanguage || 'python';
+            const lang = (overrideLang || activeLanguage || 'python').toLowerCase();
+            const taskIntent = extractTaskIntent(inputTask);
+            const artifactFilename = generateArtifactFilename(taskIntent || inputTask, lang);
             const hitlMode = overrideHitl || (currentScenario === 'hitl_gate');
             const runId = overrideRunId || `run_${Date.now()}`;
             const modeVal = overrideMode || 'live';
+            const labelMap = { 'python': 'PYTHON 3.11', 'java': 'JAVA 17', 'cpp': 'C++ 20' };
 
             if (!inputTask) {
                 showToast('Please enter a task specification first', 'warning');
@@ -1831,18 +1874,20 @@
             setElemText('telemetryIterationBadge', 'ITERATION: 1 / 3');
 
             setElemText('activeTaskDisplayTitle', `"${inputTask}"`);
-            setElemText('activeTaskLangBadge', lang.toUpperCase());
+            setElemText('activeTaskIntentDisplay', taskIntent);
+            setElemText('activeTaskLangBadge', labelMap[lang] || lang.toUpperCase());
+            setElemText('activeArtifactBadge', artifactFilename);
             setElemText('activeRunIdBadge', `ID: ${runId.substring(0, 18)}`);
 
-            setElemText('simStepStatus', `LIVE: Initializing workflow for task: "${inputTask.substring(0, 35)}..."`);
-            setElemText('streamLogOutput', `[${new Date().toLocaleTimeString()}] 🚀 Initiating SSE Event Stream (${modeVal.toUpperCase()})...\n[${new Date().toLocaleTimeString()}] 📋 Run ID: ${runId} | Task: "${inputTask}" | Language: ${lang.toUpperCase()}\n`);
+            setElemText('simStepStatus', `LIVE: Synthesizing ${labelMap[lang] || lang.toUpperCase()} for intent: "${taskIntent.substring(0, 35)}..."`);
+            setElemText('streamLogOutput', `[${new Date().toLocaleTimeString()}] 🚀 Initiating SSE Event Stream (${modeVal.toUpperCase()})...\n[${new Date().toLocaleTimeString()}] 📋 Run ID: ${runId}\n[${new Date().toLocaleTimeString()}] 🎯 Task Intent: "${taskIntent}" | Authoritative Target: ${labelMap[lang] || lang.toUpperCase()} | Artifact: ${artifactFilename}\n`);
             setElemText('activeCodeOutput', '// Awaiting live generation from Developer Agent...');
-            setElemText('activeStateOutput', JSON.stringify({ runId, task: inputTask, language: lang, mode: modeVal, status: 'RUNNING' }, null, 2));
+            setElemText('activeStateOutput', JSON.stringify({ runId, task: inputTask, task_intent: taskIntent, language: lang, target_language: lang, filename: artifactFilename, mode: modeVal, status: 'RUNNING' }, null, 2));
             
-            showToast(`🚀 ${modeVal.toUpperCase()} execution started (ID: ${runId.substring(0, 10)})`, 'info');
+            showToast(`🚀 ${modeVal.toUpperCase()} execution started for ${labelMap[lang] || lang.toUpperCase()}`, 'info');
 
             try {
-                const streamUrl = `/stream?task=${encodeURIComponent(inputTask)}&language=${encodeURIComponent(lang)}&max_iterations=3&hitl_mode=${hitlMode}&thread_id=${encodeURIComponent(runId)}&mode=${encodeURIComponent(modeVal)}`;
+                const streamUrl = `/stream?task=${encodeURIComponent(inputTask)}&target_language=${encodeURIComponent(lang)}&task_intent=${encodeURIComponent(taskIntent)}&language=${encodeURIComponent(lang)}&max_iterations=3&hitl_mode=${hitlMode}&thread_id=${encodeURIComponent(runId)}&mode=${encodeURIComponent(modeVal)}`;
                 
                 if (liveEventSource) {
                     liveEventSource.close();
@@ -1909,7 +1954,15 @@
                 logBox.scrollTop = logBox.scrollHeight;
             }
 
-            // 4. Update Active Code (Clean source code only)
+            // 4. Update Active Code (Clean source code only) & Dynamic Artifact Badge
+            if (data.task_intent) {
+                setElemText('activeTaskIntentDisplay', data.task_intent);
+            }
+            if (data.filename) {
+                setElemText('activeArtifactBadge', data.filename);
+                const codeFilenameLabel = document.getElementById('workflowCodeFilename');
+                if (codeFilenameLabel) codeFilenameLabel.textContent = `SOURCE ARTIFACT: ${data.filename}`;
+            }
             if (data.code) {
                 const cleanCode = data.code.replace(/^```[a-zA-Z]*\n?/gm, '').replace(/```$/gm, '').trim();
                 setElemText('activeCodeOutput', cleanCode);
