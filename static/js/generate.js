@@ -108,6 +108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const alert = document.getElementById('taskInlineAlert');
         if (alert) alert.style.display = 'none';
         localStorage.setItem('langgraph_last_task', taskInput.value.trim());
+        localStorage.setItem('ai_workflow_current_task', taskInput.value.trim());
         updateCodeEditorHeader();
     });
 
@@ -152,7 +153,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('downloadCodeBtn')?.addEventListener('click', () => {
         if (currentResponseData && currentResponseData.code) {
-            const task = document.getElementById('taskInput')?.value || 'Task';
+            const task = document.getElementById('taskInput')?.value || '';
             const lang = document.getElementById('languageSelect')?.value || 'python';
             const filename = currentResponseData.filename || generateArtifactFilename(task, lang);
             const cleanCode = currentResponseData.code
@@ -202,6 +203,7 @@ async function handleGenerate() {
 
     // Save to localStorage so Canvas Simulator syncs automatically
     localStorage.setItem('langgraph_last_task', task);
+    localStorage.setItem('ai_workflow_current_task', task);
     localStorage.setItem('langgraph_last_lang', language);
 
     // Update code tab filename
@@ -430,7 +432,7 @@ async function submitHitlAction(action) {
         } else {
             // Approved or Edited -> Tests Ran!
             if (hitlReviewModal) hitlReviewModal.style.display = 'none';
-            renderSuccessfulExecution(data, language, taskInput ? taskInput.value : 'Task');
+            renderSuccessfulExecution(data, language, taskInput ? taskInput.value : '');
         }
 
     } catch (err) {
@@ -505,11 +507,25 @@ function renderSuccessfulExecution(data, language, task) {
     reportDisplay.style.color = '#94a3b8';
     reportDisplay.textContent = data.report || 'No detailed report output generated.';
     
+    if (typeof setCurrentWorkflowRun === 'function') {
+        setCurrentWorkflowRun({
+            runId: data.thread_id || ('run_' + Date.now()),
+            task: task,
+            language: language,
+            status: (data.execution_success || data.success) ? 'SUCCESS' : 'FAILED',
+            currentNode: 'END',
+            generatedCode: data.code || '',
+            testResult: data.report || '',
+            iteration: data.iterations || 1,
+            timestamp: new Date().toISOString()
+        });
+    }
+
     // Save run to local history
     saveRunToHistory({
         task: task,
         language: language,
-        success: data.execution_success,
+        success: data.execution_success || data.success,
         iterations: data.iterations,
         code: data.code,
         report: data.report,
@@ -623,7 +639,7 @@ async function handleConvert(targetLang) {
 
     try {
         const payload = { task, language: targetLang, max_iterations: maxIterations };
-        const response = await fetch(API_URL, {
+        const response = await fetch('/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)

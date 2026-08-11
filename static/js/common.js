@@ -490,7 +490,7 @@ const FULL_PLATFORM_TOUR = [
             },
             {
                 selector: '.workbench-output-grid',
-                title: 'Step 5: Verified Results & Code Conversion',
+                title: 'Step 4: Verified Results & Code Conversion',
                 desc: 'View actual verified source code and test outputs with 1-click clipboard copy, file download, and dynamic translation into Python, Java, or C++.'
             }
         ]
@@ -502,7 +502,7 @@ const FULL_PLATFORM_TOUR = [
         steps: [
             {
                 selector: '#stateGraphSvg, svg',
-                title: 'Step 4: Execution Details & State Machine Visualizer',
+                title: 'Step 5: Execution Details & State Machine Visualizer',
                 desc: 'Watch real-time state channel updates, animated token orbs, sandbox assertion evaluations, and the traceback feedback loop that powers agentic self-healing.'
             }
         ]
@@ -562,13 +562,19 @@ function autoAwakenSpotlightTour(forceLaunch = false) {
     if (currentTourPageIndex === -1) {
         if (currentPath.includes('generate')) currentTourPageIndex = 1;
         else if (currentPath.includes('workflow')) currentTourPageIndex = 2;
-        else if (currentPath.includes('execution')) currentTourPageIndex = 3;
-        else if (currentPath.includes('history')) currentTourPageIndex = 4;
+        else if (currentPath.includes('history')) currentTourPageIndex = 3;
         else currentTourPageIndex = 0;
     }
 
     ensureTourCalloutExists();
     currentTourStepIndex = 0;
+    
+    const resumeStep = sessionStorage.getItem('ai_workflow_tour_resume_step');
+    if (resumeStep !== null) {
+        currentTourStepIndex = parseInt(resumeStep, 10);
+        sessionStorage.removeItem('ai_workflow_tour_resume_step');
+    }
+
     renderSpotlightStep();
 }
 
@@ -648,7 +654,19 @@ function renderSpotlightStep() {
 
     document.getElementById('tourTitle').textContent = step.title;
     document.getElementById('tourDesc').textContent = step.desc;
-    document.getElementById('tourCounter').textContent = `${pageTour.pageName} (${currentTourStepIndex + 1}/${pageTour.steps.length})`;
+    
+    let globalStepIndex = 0;
+    let totalSteps = 0;
+    for (let i = 0; i < FULL_PLATFORM_TOUR.length; i++) {
+        totalSteps += FULL_PLATFORM_TOUR[i].steps.length;
+        if (i < currentTourPageIndex) {
+            globalStepIndex += FULL_PLATFORM_TOUR[i].steps.length;
+        } else if (i === currentTourPageIndex) {
+            globalStepIndex += currentTourStepIndex + 1;
+        }
+    }
+    
+    document.getElementById('tourCounter').textContent = `Step ${globalStepIndex} / ${totalSteps}`;
 
     if (targetEl) {
         targetEl.classList.add('element-highlighted');
@@ -688,6 +706,7 @@ function prevSpotlightStep() {
     } else if (currentTourPageIndex > 0) {
         const prevTarget = FULL_PLATFORM_TOUR[currentTourPageIndex - 1];
         sessionStorage.setItem('ai_workflow_manual_tour_session', 'true');
+        sessionStorage.setItem('ai_workflow_tour_resume_step', prevTarget.steps.length - 1);
         showToast(`Returning to ${prevTarget.pageName}...`, 'info');
         window.location.href = prevTarget.path;
     }
