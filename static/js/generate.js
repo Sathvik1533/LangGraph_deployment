@@ -190,7 +190,19 @@ async function handleGenerate(overrideMode) {
 
     if (taskInlineAlert) taskInlineAlert.style.display = 'none';
 
-    const language = languageSelect ? languageSelect.value : 'python';
+    let language = languageSelect ? languageSelect.value : 'python';
+    const taskLower = task.toLowerCase();
+    if (taskLower.includes('java') && !taskLower.includes('javascript')) {
+        language = 'java';
+        if (languageSelect) languageSelect.value = 'java';
+    } else if (taskLower.includes('python')) {
+        language = 'python';
+        if (languageSelect) languageSelect.value = 'python';
+    } else if (taskLower.includes('cpp') || taskLower.includes('c++')) {
+        language = 'cpp';
+        if (languageSelect) languageSelect.value = 'cpp';
+    }
+
     const maxIterations = maxIterationsSelect ? (parseInt(maxIterationsSelect.value) || 3) : 3;
     const hitlMode = hitlToggle ? hitlToggle.checked : false;
     const mode = (typeof overrideMode === 'string' && overrideMode) ? overrideMode : 'live';

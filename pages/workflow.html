@@ -1515,6 +1515,19 @@
             applyCustomTask();
         }
 
+        function getActiveLanguage() {
+            const hidden = document.getElementById('canvasLangSelect');
+            if (hidden && hidden.value) return hidden.value.toLowerCase();
+            
+            if (activeTask) {
+                const tLower = activeTask.toLowerCase();
+                if (tLower.includes('java') && !tLower.includes('javascript')) return 'java';
+                if (tLower.includes('python')) return 'python';
+                if (tLower.includes('cpp') || tLower.includes('c++')) return 'cpp';
+            }
+            return activeLanguage || 'python';
+        }
+
         let isExecutionPaused = false;
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -1539,7 +1552,7 @@
             const savedTask = localStorage.getItem('ai_workflow_current_task') || localStorage.getItem('langgraph_last_task');
             const savedLang = localStorage.getItem('ai_workflow_current_lang') || localStorage.getItem('langgraph_last_lang');
 
-            // Pick authoritative task & language
+            // Pick authoritative task
             if (queryTask && queryTask.trim()) {
                 activeTask = queryTask.trim();
             } else if (currentRun && currentRun.task && currentRun.task.trim()) {
@@ -1548,12 +1561,26 @@
                 activeTask = savedTask.trim();
             }
 
-            if (queryLang) {
-                activeLanguage = queryLang.toLowerCase();
-            } else if (currentRun && currentRun.language) {
-                activeLanguage = currentRun.language.toLowerCase();
-            } else if (savedLang) {
-                activeLanguage = savedLang.toLowerCase();
+            // Pick authoritative language with zero task/language mismatch
+            if (queryLang && queryLang.trim()) {
+                activeLanguage = queryLang.trim().toLowerCase();
+            } else if (activeTask) {
+                const tLower = activeTask.toLowerCase();
+                if (tLower.includes('java') && !tLower.includes('javascript')) {
+                    activeLanguage = 'java';
+                } else if (tLower.includes('python')) {
+                    activeLanguage = 'python';
+                } else if (tLower.includes('cpp') || tLower.includes('c++')) {
+                    activeLanguage = 'cpp';
+                } else if (currentRun && currentRun.language) {
+                    activeLanguage = currentRun.language.toLowerCase();
+                } else if (savedLang) {
+                    activeLanguage = savedLang.toLowerCase();
+                } else {
+                    activeLanguage = 'python';
+                }
+            } else {
+                activeLanguage = (savedLang || 'python').toLowerCase();
             }
 
             const activeRunId = queryRunId || (currentRun ? currentRun.runId : ('run_' + Date.now()));
@@ -1567,7 +1594,7 @@
             if (langBadge) langBadge.textContent = activeLanguage.toUpperCase();
             if (runIdBadge) runIdBadge.textContent = `ID: ${activeRunId.substring(0, 18)}`;
 
-            // Populate input field
+            // Populate input field & custom language dropdown
             const taskInput = document.getElementById('canvasTaskInput');
             if (taskInput && activeTask) taskInput.value = activeTask;
 
