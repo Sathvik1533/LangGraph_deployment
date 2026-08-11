@@ -193,7 +193,7 @@ async function handleGenerate(overrideMode) {
     const language = languageSelect ? languageSelect.value : 'python';
     const maxIterations = maxIterationsSelect ? (parseInt(maxIterationsSelect.value) || 3) : 3;
     const hitlMode = hitlToggle ? hitlToggle.checked : false;
-    const mode = overrideMode || 'live';
+    const mode = (typeof overrideMode === 'string' && overrideMode) ? overrideMode : 'live';
 
     // Generate authoritative run_id (thread ID)
     const runId = (mode === 'simulation' ? 'sim_' : 'run_') + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
@@ -233,138 +233,6 @@ async function handleGenerate(overrideMode) {
     setTimeout(() => {
         window.location.href = targetUrl;
     }, 250);
-}
-
-    statusBanner.style.display = 'flex';
-    statusBanner.className = 'studio-card';
-    statusBanner.style.borderColor = 'var(--accent-blue)';
-    statusBanner.style.background = 'var(--accent-blue-bg)';
-    statusBanner.innerHTML = `
-        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <span class="material-symbols-outlined spin" style="color: var(--accent-blue); font-size: 22px;">sync</span>
-                <div>
-                    <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">${hitlMode ? 'Developer Agent Drafting Code (Human Gate Enabled)...' : 'Developer Agent generating ' + language.toUpperCase() + ' solution...'}</div>
-                    <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">${hitlMode ? 'Will pause for human sign-off before testing' : 'Developer Agent ➔ Sandbox Tester ➔ Verification'}</div>
-                </div>
-            </div>
-            <span class="cyber-badge cyber-badge-blue">${hitlMode ? 'REVIEW GATE' : 'IN PROGRESS'}</span>
-        </div>
-    `;
-
-    if (pipelineStepper) {
-        pipelineStepper.style.display = 'flex';
-        document.getElementById('stepDeveloper').className = 'cyber-badge cyber-badge-blue';
-        document.getElementById('stepDeveloper').textContent = '1. Developer...';
-        document.getElementById('stepSandbox').className = 'cyber-badge';
-        document.getElementById('stepSandbox').textContent = hitlMode ? '2. Review Gate' : '2. Tester...';
-        document.getElementById('stepRouter').className = 'cyber-badge';
-        document.getElementById('stepRouter').textContent = '3. Result';
-    }
-
-    try {
-        const payload = {
-            task: task,
-            language: language,
-            max_iterations: maxIterations,
-            hitl_mode: hitlMode
-        };
-
-        const response = await fetch('/generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        const data = await response.json();
-        currentResponseData = data;
-        activeHitlThreadId = data.thread_id;
-
-        if (response.ok && data.hitl_status === 'awaiting_human_review') {
-            // Paused at Human Review Gate
-            if (stageDevBadge) {
-                stageDevBadge.className = 'cyber-badge cyber-badge-emerald';
-                stageDevBadge.textContent = '1. Developer ✓';
-            }
-            if (stageTestBadge) {
-                stageTestBadge.className = 'cyber-badge cyber-badge-indigo';
-                stageTestBadge.textContent = '2. Review Gate ⏸';
-            }
-            if (stageStatusTag) {
-                stageStatusTag.className = 'cyber-badge cyber-badge-indigo';
-                stageStatusTag.textContent = 'PAUSED FOR REVIEW';
-            }
-
-            statusBanner.style.borderColor = 'rgba(99, 102, 241, 0.5)';
-            statusBanner.style.background = 'rgba(99, 102, 241, 0.08)';
-            statusBanner.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <span class="material-symbols-outlined" style="color: var(--accent-indigo); font-size: 24px;">pause_circle</span>
-                        <div>
-                            <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">⏸️ Paused at Human Review Gate</div>
-                            <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Inspect, edit, or approve the drafted code below before sandbox testing.</div>
-                        </div>
-                    </div>
-                    <span class="cyber-badge cyber-badge-indigo">SIGN-OFF REQUIRED</span>
-                </div>
-            `;
-
-            if (pipelineStepper) {
-                document.getElementById('stepDeveloper').className = 'cyber-badge cyber-badge-emerald';
-                document.getElementById('stepDeveloper').textContent = '1. Written ✓';
-                document.getElementById('stepSandbox').className = 'cyber-badge cyber-badge-indigo';
-                document.getElementById('stepSandbox').textContent = '2. Review Gate ⏸';
-                document.getElementById('stepRouter').className = 'cyber-badge';
-                document.getElementById('stepRouter').textContent = '3. Pending';
-            }
-
-            codeDisplay.style.fontStyle = 'normal';
-            codeDisplay.style.color = '#f8fafc';
-            codeDisplay.textContent = data.code;
-
-            reportDisplay.style.fontStyle = 'normal';
-            reportDisplay.textContent = data.report || 'Awaiting human sign-off before running sandbox tests.';
-
-            // Show Interactive Review Modal
-            if (hitlReviewModal) {
-                hitlReviewModal.style.display = 'block';
-                const codeArea = document.getElementById('hitlEditableCode');
-                if (codeArea) codeArea.value = data.code || '';
-                hitlReviewModal.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
-
-            // Update Single Source of Truth
-            setCurrentWorkflowRun({
-                runId: data.thread_id || ('run_' + Date.now()),
-                task: task,
-                language: language,
-                status: 'PAUSED_FOR_REVIEW',
-                currentNode: 'ReviewGate',
-                generatedCode: data.code || '',
-                testResult: data.report || 'Awaiting human review approval before sandbox testing.',
-                iteration: data.iterations || 1,
-                humanReviewStatus: 'awaiting_human_review',
-                thread_id: data.thread_id
-            });
-
-            showToast('⏸️ Code drafted! Sign-off required at Human Review Gate.', 'info');
-
-        } else if (response.ok && data.code) {
-            // Standard Execution Complete
-            renderSuccessfulExecution(data, language, task);
-        } else {
-            renderFailedExecution(data);
-        }
-    } catch (err) {
-        renderFailedExecution({ error: err.message });
-    } finally {
-        generateBtn.disabled = false;
-        generateBtn.innerHTML = `
-            <span class="material-symbols-outlined">rocket_launch</span>
-            <span>Run Workflow</span>
-        `;
-    }
 }
 
 async function submitHitlAction(action) {
