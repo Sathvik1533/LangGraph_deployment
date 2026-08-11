@@ -10,8 +10,7 @@ const PLATFORM_PAGES = [
     { id: 'dashboard', path: '/', name: 'Overview' },
     { id: 'generator', path: '/generate', name: 'Workspace' },
     { id: 'workflow', path: '/workflow', name: 'Pipeline' },
-    { id: 'execution', path: '/execution', name: 'Health' },
-    { id: 'history', path: '/history', name: 'History' }
+    { id: 'history', path: '/history', name: 'Runs' }
 ];
 
 // Initialize Page Flow Stepper & Previous/Next Navigation
@@ -21,8 +20,7 @@ function initPageFlowStepper() {
     if (currentIndex === -1) {
         if (currentPath.includes('generate')) currentIndex = 1;
         else if (currentPath.includes('workflow')) currentIndex = 2;
-        else if (currentPath.includes('execution')) currentIndex = 3;
-        else if (currentPath.includes('history')) currentIndex = 4;
+        else if (currentPath.includes('history')) currentIndex = 3;
         else currentIndex = 0;
     }
 
@@ -35,7 +33,7 @@ function initPageFlowStepper() {
         if (currentIndex === 0) {
             prevBtn.classList.add('disabled');
             prevBtn.disabled = true;
-            if (prevLabel) prevLabel.textContent = 'Start of Tour';
+            if (prevLabel) prevLabel.textContent = 'Start';
         } else {
             prevBtn.classList.remove('disabled');
             prevBtn.disabled = false;
@@ -46,7 +44,7 @@ function initPageFlowStepper() {
         if (currentIndex === PLATFORM_PAGES.length - 1) {
             nextBtn.classList.add('disabled');
             nextBtn.disabled = true;
-            if (nextLabel) nextLabel.textContent = 'End of Tour';
+            if (nextLabel) nextLabel.textContent = 'End';
         } else {
             nextBtn.classList.remove('disabled');
             nextBtn.disabled = false;
@@ -71,8 +69,7 @@ function navigatePageStep(direction) {
     if (currentIndex === -1) {
         if (currentPath.includes('generate')) currentIndex = 1;
         else if (currentPath.includes('workflow')) currentIndex = 2;
-        else if (currentPath.includes('execution')) currentIndex = 3;
-        else if (currentPath.includes('history')) currentIndex = 4;
+        else if (currentPath.includes('history')) currentIndex = 3;
         else currentIndex = 0;
     }
 
@@ -363,7 +360,7 @@ function closeWorkshopOriginModal() {
 }
 
 // ==========================================================================
-// COMPREHENSIVE SPOTLIGHT TOUR ENGINE (ENTIRE PLATFORM & KEY ELEMENTS)
+// 6-STEP GUIDED PRODUCT TOUR (OVERVIEW ➔ WORKSPACE ➔ PIPELINE ➔ RESULT ➔ UNDER THE HOOD)
 // ==========================================================================
 const FULL_PLATFORM_TOUR = [
     {
@@ -373,38 +370,8 @@ const FULL_PLATFORM_TOUR = [
         steps: [
             {
                 selector: '.top-navbar',
-                title: '👋 Welcome to AI Workflow Studio!',
-                desc: 'AI Workflow Studio turns complex programming prompts into a visual, coordinated multi-agent workflow.'
-            },
-            {
-                selector: '#pageFlowBarContainer',
-                title: '🧭 Step Navigation & Page Flow Stepper',
-                desc: 'Use these Prev/Next arrows and breadcrumb pills at any time to travel smoothly between all pages of the product.'
-            },
-            {
-                selector: '[data-tooltip*="Total Runs"]',
-                title: '📊 Agent Verification Telemetry',
-                desc: 'Tracks real-time metrics on completed coding runs, 100% test pass rates, auto-fix self-healing attempts, and supported languages.'
-            },
-            {
-                selector: '#liveGuardrailsLabCard, [data-tooltip*="Test Prompt Injection"]',
-                title: '🛡️ Live Guardrails Stress-Test & Resilience Lab',
-                desc: 'Click these live attack triggers to test Prompt Injection, Dangerous Code, and PII filters against our 7-layer defense shield safely in memory.'
-            },
-            {
-                selector: '.studio-card:has([data-tooltip*="LLM01"])',
-                title: '🔒 OWASP Top 10 for LLM Applications (2025 Standard)',
-                desc: 'Complete enterprise defense coverage mapping against Prompt Injection (LLM01), Sensitive Data Leaks (LLM02), and Excessive Agency (LLM06).'
-            },
-            {
-                selector: '.studio-card:has(.cyber-badge-indigo)',
-                title: '👤 Human-in-the-Loop Governance Hub',
-                desc: 'Gives human engineers control to pause the agentic pipeline after code drafting to review, edit in-place, or approve before sandbox testing.'
-            },
-            {
-                selector: '#dashboardHistoryBody, table',
-                title: '📋 Verified Artifacts & History Log',
-                desc: 'Your recent coding tasks appear here with instant copy, download, and test report inspection.'
+                title: 'Step 1: Welcome to AI Workflow Studio',
+                desc: 'AI Workflow Studio coordinates specialized AI agents (Developer, Reviewer Gate, and Sandbox Tester) through a reliable LangGraph state machine with automatic self-healing loops.'
             }
         ]
     },
@@ -415,109 +382,42 @@ const FULL_PLATFORM_TOUR = [
         steps: [
             {
                 selector: '#taskInput',
-                title: '✍️ Task Specification Input',
-                desc: 'Describe what you want the AI agents to accomplish (e.g. "Build a Python function to validate email addresses and create tests").'
+                title: 'Step 2: Workspace & Task Specification',
+                desc: 'Enter any coding task, choose your target programming language (Python, Java, C++), and optionally enable the Human Review Gate for live sign-off before testing.'
             },
             {
-                selector: '.preset-btn',
-                title: '⚡ Quick-Fill Presets',
-                desc: 'Click any quick preset button to instantly load tested programming problems into the workspace.'
+                selector: '#workflowStageBanner',
+                title: 'Step 3: Workflow Execution Lifecycle',
+                desc: 'Click "Run Workflow" to launch the pipeline: Developer Agent drafts code ➔ Sandbox Tester executes assertions ➔ Self-Healing Loop fixes failures ➔ Verified Result is produced.'
             },
             {
-                selector: '#langSelectWrapper',
-                title: '🌐 Multi-Language Engine',
-                desc: 'Generate clean, verified production source code in Python 3.11, Java 17, or C++ 20.'
-            },
-            {
-                selector: '#hitlModeToggleWrapper',
-                title: '👤 Human Review Gate Toggle',
-                desc: 'Turn on Human-in-the-Loop mode to inspect and edit the generated code in-place before automated sandbox verification begins.'
-            },
-            {
-                selector: '#generateBtn',
-                title: '🚀 Run Workflow Button',
-                desc: 'Launches the collaborative multi-agent workflow: Developer drafts ➔ Reviewer inspects ➔ Tester validates.'
-            },
-            {
-                selector: '.code-editor-pane:first-child',
-                title: '📄 Production Source Code Pane',
-                desc: 'Displays the final verified source code with language conversion buttons, 1-click copy, and file download.'
-            },
-            {
-                selector: '.code-editor-pane:last-child',
-                title: '🧪 Test Results & Assertion Output',
-                desc: 'Real-time sandbox execution report showing passed assertions, execution timing, and diagnostic reports.'
+                selector: '.workbench-output-grid',
+                title: 'Step 5: Verified Results & Code Conversion',
+                desc: 'View actual verified source code and test outputs with 1-click clipboard copy, file download, and dynamic translation into Python, Java, or C++.'
             }
         ]
     },
     {
         path: '/workflow',
         pageName: 'Pipeline',
-        nextUrl: '/execution',
-        steps: [
-            {
-                selector: '.scenario-pill',
-                title: '🔀 5 Flow Scenarios with Rich Hover Glow',
-                desc: 'Hover and click across the 5 flow scenarios (Self-Healing Loop, 1-Shot Clean Pass, Guardrail Block, Max Attempts Limit, and Human-in-the-Loop Gate).'
-            },
-            {
-                selector: '#canvasTaskInput',
-                title: '⚡ Dynamic Task Synchronizer',
-                desc: 'Type any task or select any language to dynamically synchronize the state machine visualizer.'
-            },
-            {
-                selector: '#workflowSvg, svg',
-                title: '🗺️ Dynamic State Machine Graph',
-                desc: 'Visualizes real-time LangGraph transitions with traveling laser orbs, node state pulses, and quadratic bezier edge loops.'
-            },
-            {
-                selector: '#simPlayBtn, #liveApiRunBtn',
-                title: '▶️ Playback & Live API Execution',
-                desc: 'Click "Execute Live API" to run live on the backend, or click "Play Simulation" with adjustable 1x, 2x, 0.5x speeds and sound FX!'
-            },
-            {
-                selector: '#inspectorCard',
-                title: '🔍 Live State Inspector',
-                desc: 'Inspect the shared memory payload and agent state transitions at each exact step of the pipeline.'
-            }
-        ]
-    },
-    {
-        path: '/execution',
-        pageName: 'Health',
         nextUrl: '/history',
         steps: [
             {
-                selector: '[data-tooltip*="System Status"]',
-                title: '🟢 System Health & Uptime',
-                desc: 'Real-time telemetry showing server uptime, active workers, and FastAPI backend status.'
-            },
-            {
-                selector: '[data-tooltip*="Safety Guard"]',
-                title: '🛡️ Circuit Breaker & Safety Telemetry',
-                desc: 'Automatic protection against cascading failures and runaway execution loops.'
-            },
-            {
-                selector: '#logTerminal',
-                title: '📜 Live Diagnostic Log Stream',
-                desc: 'Real-time telemetry streaming all agent state transitions, guardrail scans, and sandbox executions.'
+                selector: '#stateGraphSvg, svg',
+                title: 'Step 4: Execution Details & State Machine Visualizer',
+                desc: 'Watch real-time state channel updates, animated token orbs, sandbox assertion evaluations, and the traceback feedback loop that powers agentic self-healing.'
             }
         ]
     },
     {
         path: '/history',
-        pageName: 'History',
+        pageName: 'Runs',
         nextUrl: '/',
         steps: [
             {
-                selector: '#searchInput',
-                title: '🔎 Audit Log Search & Filter',
-                desc: 'Search past executions by keyword or filter by Passed/Failed status.'
-            },
-            {
-                selector: 'table',
-                title: '📁 Saved Artifact History',
-                desc: 'Inspect full source code, test assertions, and iterations for all past tasks.'
+                selector: 'table, #historyTableBody',
+                title: 'Step 6: Runs History & Under the Hood',
+                desc: 'Review complete audit trails of all past runs with thread IDs and test outputs. Click "Under the Hood" in the navbar anytime to explore how LangGraph powers this architecture.'
             }
         ]
     }

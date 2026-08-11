@@ -162,37 +162,55 @@
             </div>
         </div>
 
-        <div id="statusBanner" style="display: none; margin-bottom: 28px;"></div>
+        <div id="statusBanner" style="display: none; margin-bottom: 24px;"></div>
+
+        <!-- Workflow Lifecycle Stage Banner -->
+        <div id="workflowStageBanner" class="studio-card" style="margin-bottom: 24px; padding: 14px 20px; background: #f8fafc; border: 1px solid var(--border-subtle);">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined" style="color: var(--text-muted); font-size: 18px;">linear_scale</span>
+                    <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Workflow Stages:</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; flex-wrap: wrap;">
+                    <span id="stageDevBadge" class="cyber-badge" style="background: #ffffff; color: var(--text-muted); border: 1px solid var(--border-subtle);">1. Developer</span>
+                    <span style="color: var(--text-muted);">➔</span>
+                    <span id="stageTestBadge" class="cyber-badge" style="background: #ffffff; color: var(--text-muted); border: 1px solid var(--border-subtle);">2. Reviewer / Tester</span>
+                    <span style="color: var(--text-muted);">➔</span>
+                    <span id="stageResultBadge" class="cyber-badge" style="background: #ffffff; color: var(--text-muted); border: 1px solid var(--border-subtle);">3. Validated Result</span>
+                </div>
+                <span class="cyber-badge cyber-badge-indigo" id="stageStatusTag">READY TO RUN</span>
+            </div>
+        </div>
 
         <!-- Workbench Dual IDE Window -->
         <div class="workbench-output-grid">
             
-            <div class="code-editor-pane" data-tooltip="Generated Code Window: Shows the completed source code written by our Developer AI.">
+            <div class="code-editor-pane" data-tooltip="Source Code Pane: Verified code produced by the Developer Agent.">
                 <div class="code-editor-header">
-                    <span style="font-size: 12.5px; font-weight: 600; color: #fb923c; font-family: var(--font-mono);">solution_code.py</span>
+                    <span id="codeEditorHeaderLabel" style="font-size: 12.5px; font-weight: 600; color: #fb923c; font-family: var(--font-mono);">Source Code</span>
 
-                    <div style="display: flex; gap: 8px;">
-                        <button id="copyCodeBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 12px; background: #334155; color: #ffffff; border: none;" data-tooltip="Copy Code: Copies the generated code to your clipboard.">
+                    <div style="display: flex; gap: 8px;" id="codeActionBtns">
+                        <button id="copyCodeBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 12px; background: #334155; color: #ffffff; border: none;" data-tooltip="Copy Code: Copy the generated code to your clipboard.">
                             <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span>
                             Copy
                         </button>
-                        <button id="downloadCodeBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 12px; background: #334155; color: #ffffff; border: none;" data-tooltip="Download File: Saves the code file directly to your computer.">
+                        <button id="downloadCodeBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 12px; background: #334155; color: #ffffff; border: none;" data-tooltip="Download File: Save source code file locally.">
                             <span class="material-symbols-outlined" style="font-size: 14px;">download</span>
                             Download
                         </button>
                     </div>
                 </div>
 
-                <div class="code-editor-body" id="codeDisplay">Click 'Generate Code' or press ⌘ + Enter to start...</div>
+                <div class="code-editor-body" id="codeDisplay" style="color: #94a3b8; font-style: italic;">Waiting for workflow...</div>
             </div>
 
-            <div class="code-editor-pane" data-tooltip="Test Output Window: Shows the results of running your code in our test environment.">
+            <div class="code-editor-pane" data-tooltip="Test Output Pane: Sandbox assertions and execution results.">
                 <div class="code-editor-header">
-                    <span style="font-size: 12.5px; font-weight: 600; color: #94a3b8; font-family: var(--font-mono);">verification_report.log</span>
-                    <span class="cyber-badge cyber-badge-terracotta" id="reportBadge">READY</span>
+                    <span style="font-size: 12.5px; font-weight: 600; color: #94a3b8; font-family: var(--font-mono);">Test Output & Assertions</span>
+                    <span class="cyber-badge cyber-badge-terracotta" id="reportBadge">PENDING</span>
                 </div>
 
-                <div class="code-editor-body" id="reportDisplay" style="color: #94a3b8;">Test execution output, captured stdout/stderr, and assertion evaluations will appear here.</div>
+                <div class="code-editor-body" id="reportDisplay" style="color: #94a3b8; font-style: italic;">Waiting for test results...</div>
             </div>
 
         </div>

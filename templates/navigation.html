@@ -1,4 +1,4 @@
-<!-- Floating Airy Top Navbar with Proactive Platform Guide Trigger -->
+<!-- Floating Airy Top Navbar -->
 <nav class="top-navbar">
     <a href="/" class="nav-brand">
         <div class="brand-icon">
@@ -11,47 +11,37 @@
     </a>
 
     <div class="nav-links">
-        <a href="/" class="nav-link-item" data-page="dashboard" data-tooltip="Overview: Platform dashboard, agent stats, and guardrails stress lab.">
+        <a href="/" class="nav-link-item" data-page="dashboard" data-tooltip="Overview: Platform dashboard, agent workflow, and security scanners.">
             <span class="material-symbols-outlined">dashboard</span>
             <span>Overview</span>
         </a>
 
-        <a href="/generate" class="nav-link-item" data-page="generator" data-tooltip="Workspace: Collaborative coding workbench with human-in-the-loop review.">
+        <a href="/generate" class="nav-link-item" data-page="generator" data-tooltip="Workspace: Run tasks through the collaborative multi-agent workflow.">
             <span class="material-symbols-outlined">code_blocks</span>
             <span>Workspace</span>
         </a>
 
-        <a href="/workflow" class="nav-link-item" data-page="workflow" data-tooltip="Pipeline: Interactive state machine visualizer with live routing & feedback.">
+        <a href="/workflow" class="nav-link-item" data-page="workflow" data-tooltip="How It Works: Interactive state machine pipeline visualizer.">
             <span class="material-symbols-outlined">account_tree</span>
             <span>Pipeline</span>
         </a>
 
-        <a href="/execution" class="nav-link-item" data-page="execution" data-tooltip="Health: Real-time telemetry, circuit breaker metrics, and diagnostic logs.">
-            <span class="material-symbols-outlined">analytics</span>
-            <span>Health</span>
-        </a>
-
-        <a href="/history" class="nav-link-item" data-page="history" data-tooltip="History: Complete audit log of past runs and test assertions.">
+        <a href="/history" class="nav-link-item" data-page="history" data-tooltip="Runs: Audit log of past workflow executions and generated artifacts.">
             <span class="material-symbols-outlined">history</span>
-            <span>History</span>
+            <span>Runs</span>
         </a>
     </div>
 
     <div style="display: flex; align-items: center; gap: 8px;">
         <!-- Workshop Origin / Under the Hood button -->
-        <button class="cyber-btn cyber-btn-secondary desktop-only" onclick="openWorkshopOriginModal()" style="font-size: 12px; padding: 6px 12px; border-radius: var(--radius-pill); background: #f8fafc;" data-tooltip="Under the Hood: How this project evolved from a LangGraph workshop to a product.">
+        <button class="cyber-btn cyber-btn-secondary desktop-only" onclick="openWorkshopOriginModal()" style="font-size: 12px; padding: 6px 12px; border-radius: var(--radius-pill); background: #f8fafc;" data-tooltip="Under the Hood: How this project evolved from a LangGraph workshop.">
             <span class="material-symbols-outlined" style="font-size: 16px; color: var(--accent-terracotta);">info</span>
-            <span>Workshop Origin</span>
+            <span>Under the Hood</span>
         </button>
 
-        <button class="cyber-btn cyber-btn-primary desktop-only" onclick="openPlatformGuide()" style="font-size: 12px; padding: 6px 12px; border-radius: var(--radius-pill);" data-tooltip="Interactive Tour: Step-by-step walkthrough of AI Workflow Studio.">
+        <button class="cyber-btn cyber-btn-primary desktop-only" onclick="openPlatformGuide()" style="font-size: 12px; padding: 6px 12px; border-radius: var(--radius-pill);" data-tooltip="Guided Tour: Step-by-step walkthrough of AI Workflow Studio.">
             <span class="material-symbols-outlined" style="font-size: 16px;">explore</span>
             <span>Tour</span>
-        </button>
-
-        <button class="cyber-btn cyber-btn-secondary desktop-only" onclick="openCommandPalette()" style="font-size: 12px; padding: 6px 12px; border-radius: var(--radius-pill);" data-tooltip="Quick Search (⌘K): Search pages, presets, and actions.">
-            <span class="material-symbols-outlined" style="font-size: 16px; color: var(--text-muted);">search</span>
-            <span>Search</span>
         </button>
 
         <!-- Mobile Hamburger Toggle -->
@@ -64,18 +54,18 @@
 <!-- Sub-Navigation Stepper & Forward/Backward Arrows Helper -->
 <div class="page-flow-bar-container" id="pageFlowBarContainer">
     <div class="page-flow-bar">
-        <button class="flow-nav-btn flow-nav-prev" onclick="navigatePageStep(-1)" id="pageFlowPrevBtn" data-tooltip="Go to Previous Page in Workflow">
+        <button class="flow-nav-btn flow-nav-prev" onclick="navigatePageStep(-1)" id="pageFlowPrevBtn" data-tooltip="Go to Previous Step">
             <span class="material-symbols-outlined" style="font-size: 18px;">arrow_back</span>
             <span class="flow-btn-label" id="pageFlowPrevLabel">Previous</span>
         </button>
 
         <div class="flow-stepper-track">
-            <a href="/" class="flow-step-node" data-flow="dashboard" data-tooltip="Step 1: Platform Overview & System Health">
+            <a href="/" class="flow-step-node" data-flow="dashboard" data-tooltip="Step 1: Platform Overview & System Capabilities">
                 <span class="flow-step-num">1</span>
                 <span class="flow-step-text">Overview</span>
             </a>
             <span class="flow-step-divider">➔</span>
-            <a href="/generate" class="flow-step-node" data-flow="generator" data-tooltip="Step 2: Workspace & Human-in-the-Loop">
+            <a href="/generate" class="flow-step-node" data-flow="generator" data-tooltip="Step 2: Workspace & Task Execution">
                 <span class="flow-step-num">2</span>
                 <span class="flow-step-text">Workspace</span>
             </a>
@@ -85,18 +75,13 @@
                 <span class="flow-step-text">Pipeline</span>
             </a>
             <span class="flow-step-divider">➔</span>
-            <a href="/execution" class="flow-step-node" data-flow="execution" data-tooltip="Step 4: Real-time Telemetry & Logs">
+            <a href="/history" class="flow-step-node" data-flow="history" data-tooltip="Step 4: Past Runs & Execution History">
                 <span class="flow-step-num">4</span>
-                <span class="flow-step-text">Health</span>
-            </a>
-            <span class="flow-step-divider">➔</span>
-            <a href="/history" class="flow-step-node" data-flow="history" data-tooltip="Step 5: Audit Logs & Verified Artifacts">
-                <span class="flow-step-num">5</span>
-                <span class="flow-step-text">History</span>
+                <span class="flow-step-text">Runs</span>
             </a>
         </div>
 
-        <button class="flow-nav-btn flow-nav-next" onclick="navigatePageStep(1)" id="pageFlowNextBtn" data-tooltip="Go to Next Page in Workflow">
+        <button class="flow-nav-btn flow-nav-next" onclick="navigatePageStep(1)" id="pageFlowNextBtn" data-tooltip="Go to Next Step">
             <span class="flow-btn-label" id="pageFlowNextLabel">Next</span>
             <span class="material-symbols-outlined" style="font-size: 18px;">arrow_forward</span>
         </button>
@@ -131,11 +116,8 @@
             <a href="/workflow" class="mobile-nav-link" data-page="workflow">
                 <span class="material-symbols-outlined">account_tree</span> Pipeline
             </a>
-            <a href="/execution" class="mobile-nav-link" data-page="execution">
-                <span class="material-symbols-outlined">analytics</span> Health
-            </a>
             <a href="/history" class="mobile-nav-link" data-page="history">
-                <span class="material-symbols-outlined">history</span> History
+                <span class="material-symbols-outlined">history</span> Runs
             </a>
         </nav>
         <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
@@ -143,14 +125,12 @@
                 <span class="material-symbols-outlined" style="font-size: 16px;">explore</span> Launch Tour
             </button>
             <button class="cyber-btn cyber-btn-secondary" onclick="openWorkshopOriginModal(); toggleMobileNav();" style="width: 100%; justify-content: center;">
-                <span class="material-symbols-outlined" style="font-size: 16px; color: var(--accent-terracotta);">info</span> Workshop Origin
-            </button>
-            <button class="cyber-btn cyber-btn-secondary" onclick="openCommandPalette(); toggleMobileNav();" style="width: 100%; justify-content: center;">
-                <span class="material-symbols-outlined" style="font-size: 16px;">search</span> Search...
+                <span class="material-symbols-outlined" style="font-size: 16px; color: var(--accent-terracotta);">info</span> Under the Hood
             </button>
         </div>
     </div>
 </div>
+
 
 <script>
 function toggleMobileNav() {

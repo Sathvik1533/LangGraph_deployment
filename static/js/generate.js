@@ -128,8 +128,31 @@ async function handleGenerate() {
     generateBtn.disabled = true;
     generateBtn.innerHTML = `
         <span class="material-symbols-outlined spin" style="font-size: 16px;">sync</span>
-        <span>${hitlMode ? 'Drafting code for review...' : 'Generating your code...'}</span>
+        <span>${hitlMode ? 'Drafting for Review...' : 'Running Workflow...'}</span>
     `;
+
+    // Update Workflow Stages Banner
+    const stageDevBadge = document.getElementById('stageDevBadge');
+    const stageTestBadge = document.getElementById('stageTestBadge');
+    const stageResultBadge = document.getElementById('stageResultBadge');
+    const stageStatusTag = document.getElementById('stageStatusTag');
+
+    if (stageDevBadge) {
+        stageDevBadge.className = 'cyber-badge cyber-badge-terracotta';
+        stageDevBadge.textContent = '1. Developer (Drafting...)';
+    }
+    if (stageTestBadge) {
+        stageTestBadge.className = 'cyber-badge';
+        stageTestBadge.textContent = hitlMode ? '2. Review Gate' : '2. Tester';
+    }
+    if (stageResultBadge) {
+        stageResultBadge.className = 'cyber-badge';
+        stageResultBadge.textContent = '3. Result';
+    }
+    if (stageStatusTag) {
+        stageStatusTag.className = 'cyber-badge cyber-badge-indigo';
+        stageStatusTag.textContent = 'EXECUTING';
+    }
 
     statusBanner.style.display = 'flex';
     statusBanner.className = 'studio-card';
@@ -140,22 +163,22 @@ async function handleGenerate() {
             <div style="display: flex; align-items: center; gap: 12px;">
                 <span class="material-symbols-outlined spin" style="color: var(--accent-blue); font-size: 22px;">sync</span>
                 <div>
-                    <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">${hitlMode ? 'AI Drafting Code (Human Gate Active)...' : 'Creating your ' + language.toUpperCase() + ' code...'}</div>
-                    <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">${hitlMode ? 'Developer Agent drafting initial source code' : 'Writing → Testing → Verifying'}</div>
+                    <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">${hitlMode ? 'Developer Agent Drafting Code (Human Gate Enabled)...' : 'Developer Agent generating ' + language.toUpperCase() + ' solution...'}</div>
+                    <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">${hitlMode ? 'Will pause for human sign-off before testing' : 'Developer Agent ➔ Sandbox Tester ➔ Verification'}</div>
                 </div>
             </div>
-            <span class="cyber-badge cyber-badge-blue">${hitlMode ? 'HITL ACTIVE' : 'IN PROGRESS'}</span>
+            <span class="cyber-badge cyber-badge-blue">${hitlMode ? 'REVIEW GATE' : 'IN PROGRESS'}</span>
         </div>
     `;
 
     if (pipelineStepper) {
         pipelineStepper.style.display = 'flex';
         document.getElementById('stepDeveloper').className = 'cyber-badge cyber-badge-blue';
-        document.getElementById('stepDeveloper').textContent = '1. Writing...';
+        document.getElementById('stepDeveloper').textContent = '1. Developer...';
         document.getElementById('stepSandbox').className = 'cyber-badge';
-        document.getElementById('stepSandbox').textContent = hitlMode ? '2. Human Gate' : '2. Testing...';
+        document.getElementById('stepSandbox').textContent = hitlMode ? '2. Review Gate' : '2. Tester...';
         document.getElementById('stepRouter').className = 'cyber-badge';
-        document.getElementById('stepRouter').textContent = '3. Checking';
+        document.getElementById('stepRouter').textContent = '3. Result';
     }
 
     try {
@@ -178,6 +201,19 @@ async function handleGenerate() {
 
         if (response.ok && data.hitl_status === 'awaiting_human_review') {
             // Paused at Human Review Gate
+            if (stageDevBadge) {
+                stageDevBadge.className = 'cyber-badge cyber-badge-emerald';
+                stageDevBadge.textContent = '1. Developer ✓';
+            }
+            if (stageTestBadge) {
+                stageTestBadge.className = 'cyber-badge cyber-badge-indigo';
+                stageTestBadge.textContent = '2. Review Gate ⏸';
+            }
+            if (stageStatusTag) {
+                stageStatusTag.className = 'cyber-badge cyber-badge-indigo';
+                stageStatusTag.textContent = 'PAUSED FOR REVIEW';
+            }
+
             statusBanner.style.borderColor = 'rgba(99, 102, 241, 0.5)';
             statusBanner.style.background = 'rgba(99, 102, 241, 0.08)';
             statusBanner.innerHTML = `
@@ -197,12 +233,16 @@ async function handleGenerate() {
                 document.getElementById('stepDeveloper').className = 'cyber-badge cyber-badge-emerald';
                 document.getElementById('stepDeveloper').textContent = '1. Written ✓';
                 document.getElementById('stepSandbox').className = 'cyber-badge cyber-badge-indigo';
-                document.getElementById('stepSandbox').textContent = '2. Human Gate ⏸';
+                document.getElementById('stepSandbox').textContent = '2. Review Gate ⏸';
                 document.getElementById('stepRouter').className = 'cyber-badge';
-                document.getElementById('stepRouter').textContent = '3. Sandbox Pending';
+                document.getElementById('stepRouter').textContent = '3. Pending';
             }
 
+            codeDisplay.style.fontStyle = 'normal';
+            codeDisplay.style.color = '#f8fafc';
             codeDisplay.textContent = data.code;
+
+            reportDisplay.style.fontStyle = 'normal';
             reportDisplay.textContent = data.report || 'Awaiting human sign-off before running sandbox tests.';
 
             // Show Interactive Review Modal
@@ -216,7 +256,7 @@ async function handleGenerate() {
             showToast('⏸️ Code drafted! Sign-off required at Human Review Gate.', 'info');
 
         } else if (response.ok && data.code) {
-            // Standard Instant Success
+            // Standard Execution Complete
             renderSuccessfulExecution(data, language, task);
         } else {
             renderFailedExecution(data);
@@ -226,8 +266,8 @@ async function handleGenerate() {
     } finally {
         generateBtn.disabled = false;
         generateBtn.innerHTML = `
-            <span class="material-symbols-outlined">code_blocks</span>
-            <span>Generate Code</span>
+            <span class="material-symbols-outlined">rocket_launch</span>
+            <span>Run Workflow</span>
         `;
     }
 }
@@ -306,6 +346,34 @@ function renderSuccessfulExecution(data, language, task) {
     const codeDisplay = document.getElementById('codeDisplay');
     const reportDisplay = document.getElementById('reportDisplay');
     const pipelineStepper = document.getElementById('pipelineStepper');
+    const reportBadge = document.getElementById('reportBadge');
+
+    const stageDevBadge = document.getElementById('stageDevBadge');
+    const stageTestBadge = document.getElementById('stageTestBadge');
+    const stageResultBadge = document.getElementById('stageResultBadge');
+    const stageStatusTag = document.getElementById('stageStatusTag');
+
+    if (stageDevBadge) {
+        stageDevBadge.className = 'cyber-badge cyber-badge-emerald';
+        stageDevBadge.textContent = '1. Developer ✓';
+    }
+    if (stageTestBadge) {
+        stageTestBadge.className = 'cyber-badge cyber-badge-emerald';
+        stageTestBadge.textContent = '2. Tester ✓';
+    }
+    if (stageResultBadge) {
+        stageResultBadge.className = 'cyber-badge cyber-badge-emerald';
+        stageResultBadge.textContent = '3. Validated ✓';
+    }
+    if (stageStatusTag) {
+        stageStatusTag.className = 'cyber-badge cyber-badge-emerald';
+        stageStatusTag.textContent = 'COMPLETE';
+    }
+
+    if (reportBadge) {
+        reportBadge.className = 'cyber-badge cyber-badge-emerald';
+        reportBadge.textContent = 'PASSED';
+    }
 
     statusBanner.className = 'studio-card';
     statusBanner.style.borderColor = 'rgba(5, 150, 105, 0.4)';
@@ -316,7 +384,7 @@ function renderSuccessfulExecution(data, language, task) {
                 <span class="material-symbols-outlined" style="color: var(--accent-emerald); font-size: 24px;">check_circle</span>
                 <div>
                     <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">${language.toUpperCase()} Code — All Tests Passed!</div>
-                    <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Completed in ${data.iterations} attempt(s) • Session: ${data.thread_id}</div>
+                    <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Completed in ${data.iterations} attempt(s) • Session: ${data.thread_id || 'active'}</div>
                 </div>
             </div>
             <span class="cyber-badge cyber-badge-emerald">PASSED</span>
@@ -332,7 +400,12 @@ function renderSuccessfulExecution(data, language, task) {
         document.getElementById('stepRouter').textContent = '3. Approved ✓';
     }
 
+    codeDisplay.style.fontStyle = 'normal';
+    codeDisplay.style.color = '#f8fafc';
     codeDisplay.textContent = data.code;
+
+    reportDisplay.style.fontStyle = 'normal';
+    reportDisplay.style.color = '#94a3b8';
     reportDisplay.textContent = data.report || 'No detailed report output generated.';
     
     // Save run to local history
@@ -355,6 +428,17 @@ function renderFailedExecution(data) {
     const codeDisplay = document.getElementById('codeDisplay');
     const reportDisplay = document.getElementById('reportDisplay');
     const pipelineStepper = document.getElementById('pipelineStepper');
+    const reportBadge = document.getElementById('reportBadge');
+
+    const stageStatusTag = document.getElementById('stageStatusTag');
+    if (stageStatusTag) {
+        stageStatusTag.className = 'cyber-badge cyber-badge-rose';
+        stageStatusTag.textContent = 'HALTED / ALERT';
+    }
+    if (reportBadge) {
+        reportBadge.className = 'cyber-badge cyber-badge-rose';
+        reportBadge.textContent = 'FAILED';
+    }
 
     statusBanner.className = 'studio-card';
     statusBanner.style.borderColor = 'rgba(220, 38, 38, 0.4)';
@@ -369,8 +453,15 @@ function renderFailedExecution(data) {
         </div>
     `;
     if (pipelineStepper) pipelineStepper.style.display = 'none';
-    if (data.code) codeDisplay.textContent = data.code;
-    if (data.report) reportDisplay.textContent = data.report;
+    if (data.code) {
+        codeDisplay.style.fontStyle = 'normal';
+        codeDisplay.style.color = '#f8fafc';
+        codeDisplay.textContent = data.code;
+    }
+    if (data.report) {
+        reportDisplay.style.fontStyle = 'normal';
+        reportDisplay.textContent = data.report;
+    }
 }
 
 // Show conversion bar and hide the button for the current language

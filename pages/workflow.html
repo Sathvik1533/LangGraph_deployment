@@ -101,13 +101,13 @@
 
             <!-- Playback & Speed Controls -->
             <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-                <button id="liveApiRunBtn" class="cyber-btn cyber-btn-primary" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); border-color: #059669;" onclick="runLiveBackendWorkflow()" data-tooltip="Execute on Live Backend: Sends this task to the live FastAPI /generate endpoint and visualizes the actual execution!">
+                <button id="liveApiRunBtn" class="cyber-btn cyber-btn-primary" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); border-color: #059669;" onclick="runLiveBackendWorkflow()" data-tooltip="LIVE API: Sends task to backend /generate endpoint and animates actual execution results.">
                     <span class="material-symbols-outlined" style="font-size: 18px;">bolt</span>
-                    <span>Execute Live API</span>
+                    <span>LIVE: Execute API</span>
                 </button>
-                <button id="simPlayBtn" class="cyber-btn cyber-btn-primary" onclick="togglePlaySimulation()" data-tooltip="Run Live: Stream the execution from START to END in real time.">
+                <button id="simPlayBtn" class="cyber-btn cyber-btn-primary" onclick="togglePlaySimulation()" data-tooltip="SIMULATION: Play animated state machine demonstration with step-by-step telemetry.">
                     <span class="material-symbols-outlined" id="simPlayIcon">play_circle</span>
-                    <span id="simPlayText">Play Simulation</span>
+                    <span id="simPlayText">SIMULATION: Play</span>
                 </button>
                 
                 <!-- Speed Selector -->
@@ -119,7 +119,7 @@
                 </div>
 
                 <!-- Sound FX Toggle -->
-                <button id="soundToggleBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="toggleSoundFX()" data-tooltip="Toggle Audio Feedback: Play subtle synth feedback chimes on state transitions.">
+                <button id="soundToggleBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="toggleSoundFX()" data-tooltip="Toggle Audio Feedback: Play subtle audio chimes on state transitions.">
                     <span class="material-symbols-outlined" id="soundIcon" style="font-size: 16px;">volume_up</span>
                     <span id="soundText">Sound ON</span>
                 </button>
@@ -147,7 +147,7 @@
             </div>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
-                <div class="scenario-pill active" id="pillScenarioSelfFix" onclick="switchScenario('self_fix')" data-tooltip="Self-Healing Loop: Developer creates code with bug -> Tester catches failure -> Router sends feedback -> Developer fixes it in loop 2.">
+                <div class="scenario-pill active" id="pillScenarioSelfFix" onclick="switchScenario('self_fix')" data-tooltip="Self-Healing Loop: Developer creates code -> Tester catches failure -> Router sends feedback -> Developer fixes it in loop 2.">
                     <span class="material-symbols-outlined" style="color: #ea580c; font-size: 20px;">autorenew</span>
                     <div>
                         <div style="font-weight: 700;">🔄 Self-Healing Loop</div>
@@ -215,9 +215,9 @@
                     </div>
                 </div>
 
-                <button class="cyber-btn cyber-btn-primary" onclick="applyCustomTask()" data-tooltip="Update Pipeline: Re-calculate all steps, logs, and state objects for this task.">
+                <button class="cyber-btn cyber-btn-primary" onclick="applyCustomTask()" data-tooltip="Update Task: Re-calculate all steps, logs, and state objects for this task.">
                     <span class="material-symbols-outlined" style="font-size: 18px;">refresh</span>
-                    <span>Update Pipeline</span>
+                    <span>Update Task</span>
                 </button>
             </div>
 
@@ -275,7 +275,7 @@
 
                     <!-- Conditional Feedback Loop (Back from Router to Developer) -->
                     <path id="edgeFeedbackLoop" d="M 755 100 Q 520 10 275 100" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#arrow-red)"/>
-                    <text id="loopLabel" x="520" y="42" text-anchor="middle" fill="#dc2626" font-size="11.5" font-weight="700" opacity="0.9">Feedback Loop (Traceback)</text>
+                    <text id="loopLabel" x="520" y="42" text-anchor="middle" fill="#dc2626" font-size="11.5" font-weight="700" opacity="0.9">Self-Healing Loop (Traceback Feedback)</text>
 
                     <!-- Traveling Laser Orb Packets -->
                     <circle id="laserOrbForward" r="6" fill="#38bdf8" class="laser-orb" cx="90" cy="130" opacity="0" filter="url(#glow-filter)"/>
@@ -339,10 +339,6 @@
                         <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle;">code</span>
                         Active Code
                     </button>
-                    <button class="tab-btn" id="tabBtnDebugger" onclick="switchInspectorTab('debugger')">
-                        <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle; color: #f43f5e;">bug_report</span>
-                        Live Bug Injector & Debugger
-                    </button>
                     <button class="tab-btn" id="tabBtnState" onclick="switchInspectorTab('state')">
                         <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle;">data_object</span>
                         CrewState JSON
@@ -374,45 +370,6 @@
                     </button>
                 </div>
                 <pre id="activeCodeOutput" style="font-family: var(--font-mono); font-size: 13.5px; color: #f8fafc; line-height: 1.7; background: #020617; border: 1px solid #1e293b; padding: 18px; border-radius: 10px; margin: 0; min-height: 180px; max-height: 280px; overflow-y: auto; white-space: pre-wrap;"></pre>
-            </div>
-
-            <!-- Tab Content: Live Bug Injector & Sandbox Debugger -->
-            <div id="tabContentDebugger" style="padding: 22px; display: none;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
-                    <div style="font-size: 12px; font-weight: 700; color: #f43f5e; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
-                        <span class="material-symbols-outlined" style="font-size: 18px;">bug_report</span>
-                        INTERACTIVE SANDBOX BUG INJECTOR (Test Live Recovery)
-                    </div>
-                    <span class="cyber-badge cyber-badge-amber">INTERACTIVE LAB</span>
-                </div>
-
-                <p style="font-size: 12.5px; color: #94a3b8; margin-bottom: 12px; line-height: 1.5;">
-                    Edit the code below or click an intentional bug preset, then test in the live Sandbox to watch the State Machine catch the error and auto-correct it in real time:
-                </p>
-
-                <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 10px; color: #fca5a5; border-color: #ef4444;" onclick="injectIntentionalBug('assertion')">
-                        🪲 Inject Broken Assertion
-                    </button>
-                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 10px; color: #fca5a5; border-color: #ef4444;" onclick="injectIntentionalBug('zerodiv')">
-                        🪲 Inject Division by Zero
-                    </button>
-                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 10px; color: #fca5a5; border-color: #ef4444;" onclick="injectIntentionalBug('offbyone')">
-                        🪲 Inject Index Error
-                    </button>
-                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 10px; color: #34d399; border-color: #10b981;" onclick="resetDebuggerCode()">
-                        ↺ Reset Code
-                    </button>
-                </div>
-
-                <textarea id="debuggerCodeInput" style="width: 100%; min-height: 160px; background: #020617; border: 1px solid #334155; border-radius: 10px; padding: 14px; font-family: var(--font-mono); font-size: 13px; color: #f8fafc; line-height: 1.6; outline: none; box-sizing: border-box; resize: vertical;"></textarea>
-
-                <div style="margin-top: 14px; display: flex; justify-content: flex-end;">
-                    <button class="cyber-btn cyber-btn-primary" style="background: linear-gradient(135deg, #e11d48 0%, #be123c 100%); border-color: #e11d48;" onclick="runDebuggerSandboxTest()">
-                        <span class="material-symbols-outlined" style="font-size: 18px;">play_arrow</span>
-                        <span>Run in Sandbox & Trigger Auto-Heal</span>
-                    </button>
-                </div>
             </div>
 
             <!-- Tab Content: CrewState JSON -->
@@ -1136,8 +1093,6 @@
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('tabContentLog').style.display = 'none';
             document.getElementById('tabContentCode').style.display = 'none';
-            const debuggerTab = document.getElementById('tabContentDebugger');
-            if (debuggerTab) debuggerTab.style.display = 'none';
             document.getElementById('tabContentState').style.display = 'none';
 
             if (tabKey === 'log') {
@@ -1146,104 +1101,9 @@
             } else if (tabKey === 'code') {
                 document.getElementById('tabBtnCode').classList.add('active');
                 document.getElementById('tabContentCode').style.display = 'block';
-            } else if (tabKey === 'debugger') {
-                document.getElementById('tabBtnDebugger').classList.add('active');
-                if (debuggerTab) {
-                    debuggerTab.style.display = 'block';
-                    const textarea = document.getElementById('debuggerCodeInput');
-                    if (!textarea.value.trim()) {
-                        resetDebuggerCode();
-                    }
-                }
             } else if (tabKey === 'state') {
                 document.getElementById('tabBtnState').classList.add('active');
                 document.getElementById('tabContentState').style.display = 'block';
-            }
-        }
-
-        function resetDebuggerCode() {
-            const textarea = document.getElementById('debuggerCodeInput');
-            const code = document.getElementById('activeCodeOutput').textContent || generateDynamicCode(activeLanguage, activeTask, false);
-            if (textarea) {
-                textarea.value = code;
-                showToast('Code reset to current task draft', 'info');
-            }
-        }
-
-        function injectIntentionalBug(bugType) {
-            const textarea = document.getElementById('debuggerCodeInput');
-            if (!textarea) return;
-            let current = textarea.value;
-
-            if (bugType === 'assertion') {
-                current += `\n\n# INTENTIONAL BUG INJECTED BY USER:\nassert 10 == 999, "Intentional assertion error injected by user"`;
-                showToast('🪲 Broken assertion injected!', 'warning');
-            } else if (bugType === 'zerodiv') {
-                current += `\n\n# INTENTIONAL DIVISION BY ZERO INJECTED:\n_error_trigger = 100 / 0`;
-                showToast('🪲 Zero division error injected!', 'warning');
-            } else if (bugType === 'offbyone') {
-                current += `\n\n# INTENTIONAL OUT OF BOUNDS INDEX INJECTED:\n_out_of_bounds = [1, 2, 3][99]`;
-                showToast('🪲 Index error injected!', 'warning');
-            }
-            textarea.value = current;
-        }
-
-        async function runDebuggerSandboxTest() {
-            const textarea = document.getElementById('debuggerCodeInput');
-            const userCode = textarea ? textarea.value : '';
-            if (!userCode.trim()) {
-                showToast('Please provide code to run in sandbox', 'warning');
-                return;
-            }
-
-            switchInspectorTab('log');
-            showToast('🧪 Executing custom code in Sandbox...', 'info');
-
-            // Step 1: Tester Node evaluates custom code
-            ['START', 'Developer', 'Tester', 'Router', 'END'].forEach(k => {
-                const el = document.getElementById('node' + k);
-                if (el) el.classList.remove('node-active', 'node-pass', 'node-fail');
-            });
-            document.getElementById('nodeTester').classList.add('node-active', 'node-fail');
-            document.getElementById('edgeTestRoute').classList.add('edge-active');
-            
-            const isBuggy = userCode.includes('999') || userCode.includes('/ 0') || userCode.includes('[99]') || userCode.includes('assert');
-            
-            document.getElementById('streamLogOutput').textContent = `[SANDBOX RUNNER] Compiling & executing user code in ${activeLanguage.toUpperCase()} sandbox...\n`;
-            
-            await new Promise(r => setTimeout(r, 700));
-
-            if (isBuggy) {
-                document.getElementById('streamLogOutput').textContent += `❌ EXCEPTION CAUGHT IN SANDBOX:\nTraceback (most recent call last):\n  File "solution.${activeLanguage === 'python' ? 'py' : activeLanguage === 'java' ? 'java' : 'cpp'}", line 14, in <sandbox_run>\nAssertionError / RuntimeError: User injected defect detected.\n`;
-                document.getElementById('simStepStatus').textContent = 'Step: Tester caught error -> Routing along feedback loop';
-                
-                // Animate feedback loop
-                await new Promise(r => setTimeout(r, 700));
-                document.getElementById('edgeFeedbackLoop').classList.add('edge-loop-active');
-                document.getElementById('nodeTester').classList.remove('node-active');
-                document.getElementById('nodeDeveloper').classList.add('node-active', 'node-pass');
-                document.getElementById('streamLogOutput').textContent += `\n[FEEDBACK ROUTER] 🔄 Sending traceback payload to Developer Node (Loop 2)\n[DEVELOPER] 🤖 Analyzing failure: Removing buggy assertion/division...\n[DEVELOPER] 🛠️ Synthesizing auto-healed solution...\n`;
-
-                // Auto-fix
-                await new Promise(r => setTimeout(r, 900));
-                const fixed = generateDynamicCode(activeLanguage, activeTask, false);
-                document.getElementById('activeCodeOutput').textContent = fixed;
-                if (textarea) textarea.value = fixed;
-                document.getElementById('nodeDeveloper').classList.remove('node-active');
-                document.getElementById('nodeTester').classList.add('node-active', 'node-pass');
-                document.getElementById('streamLogOutput').textContent += `\n[SANDBOX LOOP 2] 🧪 Re-testing auto-healed code...\n✓ 100% assertions verified cleanly!\n[ROUTER] 🔀 execution_success = True. Routed to END.`;
-                
-                await new Promise(r => setTimeout(r, 600));
-                document.getElementById('nodeTester').classList.remove('node-active');
-                document.getElementById('nodeEND').classList.add('node-active', 'node-pass');
-                document.getElementById('simStepStatus').textContent = 'Auto-Healed: Code verified and saved in Loop 2!';
-                showToast('🎉 Bug caught & auto-healed by Developer Agent in Loop 2!', 'success');
-            } else {
-                document.getElementById('nodeTester').classList.remove('node-fail');
-                document.getElementById('nodeTester').classList.add('node-pass');
-                document.getElementById('streamLogOutput').textContent += `✓ Sandbox evaluation clean: All tests passed with 0 errors!\n[ROUTER] 🔀 Routed to END.`;
-                document.getElementById('nodeEND').classList.add('node-active', 'node-pass');
-                showToast('✓ Custom code passed sandbox tests cleanly!', 'success');
             }
         }
 
