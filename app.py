@@ -178,6 +178,71 @@ if os.path.exists("templates"):
 
 
 # ============================================================================
+# DISK-BACKED AUDIT LOG HISTORY PERSISTENCE
+# ============================================================================
+
+HISTORY_FILE = os.path.join("data", "runs_history.json")
+
+def load_runs_history() -> list:
+    if os.path.exists(HISTORY_FILE):
+        try:
+            with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return []
+    return []
+
+def save_run_to_disk(run_data: dict):
+    try:
+        os.makedirs("data", exist_ok=True)
+        history = load_runs_history()
+        run_id = run_data.get("id") or run_data.get("thread_id") or f"run_{int(time.time()*1000)}"
+        run_data["id"] = run_id
+        if not run_data.get("timestamp"):
+            run_data["timestamp"] = time.strftime("%Y-%m-%dT%H:%M:%SZ")
+        history = [r for r in history if r.get("id") != run_id]
+        history.insert(0, run_data)
+        with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+            json.dump(history[:100], f, indent=2)
+    except Exception as e:
+        logger.warning(f"Failed to save run history to disk: {e}")
+
+class RunRecordModel(BaseModel):
+    id: str
+    timestamp: Optional[str] = None
+    task: str
+    language: Optional[str] = "python"
+    mode: Optional[str] = "live"
+    success: bool
+    iterations: int = 1
+    code: Optional[str] = ""
+    report: Optional[str] = ""
+    thread_id: Optional[str] = ""
+
+@app.get("/api/history", tags=["History"])
+def get_history_records():
+    """Retrieve all persistent audit log history records."""
+    return {"runs": load_runs_history()}
+
+@app.post("/api/history", tags=["History"])
+def add_history_record(record: RunRecordModel):
+    """Add or update a run record in persistent disk storage."""
+    run_dict = record.dict()
+    save_run_to_disk(run_dict)
+    return {"status": "saved", "run": run_dict}
+
+@app.delete("/api/history", tags=["History"])
+def clear_history_records():
+    """Clear persistent audit log history."""
+    try:
+        if os.path.exists(HISTORY_FILE):
+            os.remove(HISTORY_FILE)
+    except Exception as e:
+        logger.warning(f"Failed to clear history file: {e}")
+    return {"status": "cleared"}
+
+
+# ============================================================================
 # REQUEST/RESPONSE MODELS
 # ============================================================================
 
@@ -832,7 +897,8 @@ async def stream_workflow_events(
     language: Optional[str] = Query("python"),
     max_iterations: Optional[int] = Query(3),
     hitl_mode: Optional[bool] = Query(False),
-    thread_id: Optional[str] = Query(None)
+    thread_id: Optional[str] = Query(None),
+    mode: Optional[str] = Query("live")
 ):
     """
     Stream live execution events from the LangGraph multi-agent workflow
@@ -846,6 +912,8 @@ async def stream_workflow_events(
     max_it = request.max_iterations if request and request.max_iterations else (max_iterations or 3)
     hitl = request.hitl_mode if request else (hitl_mode or False)
     tid = request.thread_id if request and request.thread_id else (thread_id or f"thread_{uuid.uuid4().hex[:12]}")
+    mode_val = (mode or "live").lower()
+    is_simulation = mode_val == "simulation" or "sim_" in tid
 
     async def event_generator():
         timestamp = time.strftime("%H:%M:%S")
@@ -877,12 +945,12 @@ async def stream_workflow_events(
             "hitl_enabled": hitl
         }
         
-        yield f"data: {json.dumps({'event': 'start', 'node': 'START', 'status': 'active', 'timestamp': timestamp, 'iteration': 0, 'thread_id': tid, 'message': f'Workflow initialized. Target language: {lang.upper()}', 'state': {'task': task_text, 'language': lang, 'max_iterations': max_it}})}\n\n"
-        await asyncio.sleep(0.25)
+        yield f"data: {json.dumps({'event': 'start', 'node': 'START', 'status': 'active', 'timestamp': timestamp, 'iteration': 0, 'thread_id': tid, 'message': f'Workflow initialized ({mode_val.upper()}). Target language: {lang.upper()}', 'state': {'task': task_text, 'language': lang, 'max_iterations': max_it, 'mode': mode_val}})}\n\n"
+        await asyncio.sleep(0.3)
         
         # 3. Input Guardrails
         yield f"data: {json.dumps({'event': 'node_start', 'node': 'guardrail', 'status': 'running', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 0, 'message': 'Input Guardrails: Scanning for Prompt Injection, Sensitive Data, and Code Safety...' })}\n\n"
-        await asyncio.sleep(0.2)
+        await asyncio.sleep(0.25)
         
         input_report = InputGuard.scan_all(task_text)
         guardrail_stats.record_input_scan(input_report)
@@ -893,10 +961,22 @@ async def stream_workflow_events(
             state["report"] = f"### 🛡️ Input Guardrail Alert\n{input_report.reason}\n\nBlocked by: {input_report.blocked_by}"
             yield f"data: {json.dumps({'event': 'guardrail_block', 'node': 'guardrail', 'status': 'failed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 0, 'error': input_report.reason, 'message': blocked_msg, 'state': {'code': state['code'], 'report': state['report'], 'execution_success': False}})}\n\n"
             yield f"data: {json.dumps({'event': 'workflow_complete', 'node': 'END', 'status': 'failed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 0, 'thread_id': tid, 'code': state['code'], 'report': state['report'], 'execution_success': False, 'message': 'Workflow terminated safely by security shield.'})}\n\n"
+            save_run_to_disk({
+                "id": tid,
+                "thread_id": tid,
+                "task": task_text,
+                "language": lang,
+                "mode": mode_val,
+                "success": False,
+                "iterations": 0,
+                "code": state["code"],
+                "report": state["report"],
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")
+            })
             return
             
-        yield f"data: {json.dumps({'event': 'node_complete', 'node': 'guardrail', 'status': 'success', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 0, 'message': 'Input Guardrails passed all 4 security checks cleanly.'})}\n\n"
-        await asyncio.sleep(0.25)
+        yield f"data: {json.dumps({'event': 'node_complete', 'node': 'guardrail', 'status': 'success', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 0, 'message': 'Input Guardrails passed all security checks cleanly.'})}\n\n"
+        await asyncio.sleep(0.3)
         
         # 4. Developer Node (Iteration 1)
         yield f"data: {json.dumps({'event': 'node_start', 'node': 'developer', 'status': 'running', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 1, 'message': f'Developer Agent drafting initial solution in {lang.upper()}...'})}\n\n"
@@ -908,7 +988,7 @@ async def stream_workflow_events(
         state["iterations"] = 1
         
         yield f"data: {json.dumps({'event': 'node_complete', 'node': 'developer', 'status': 'success', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 1, 'code': draft_code, 'message': f'Developer Agent synthesized {lang.upper()} candidate code.', 'state': {'code': draft_code, 'iterations': 1, 'language': lang}})}\n\n"
-        await asyncio.sleep(0.25)
+        await asyncio.sleep(0.3)
         
         # 5. Human-in-the-Loop Review Gate
         if hitl:
@@ -927,46 +1007,90 @@ async def stream_workflow_events(
             return
             
         yield f"data: {json.dumps({'event': 'node_complete', 'node': 'human_review', 'status': 'bypassed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 1, 'message': 'Human Review Gate bypassed (Automated Mode).'})}\n\n"
-        await asyncio.sleep(0.25)
+        await asyncio.sleep(0.3)
         
         # 6. Tester & Self-Healing Feedback Loop
         current_it = 1
         while current_it <= max_it:
             yield f"data: {json.dumps({'event': 'node_start', 'node': 'tester', 'status': 'running', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'message': f'Sandbox Tester evaluating assertions in isolated sandbox (Attempt {current_it}/{max_it})...'})}\n\n"
             
-            test_res = await loop.run_in_executor(None, tester_node, state)
+            if is_simulation and current_it == 1:
+                # Controlled failure injection for Attempt 1 in Simulation Mode
+                test_res = {
+                    "execution_success": False,
+                    "report": (
+                        f"[SANDBOX ASSERTION FAILURE]\n"
+                        f"AssertionError: Test scenario 2 failed for {lang.upper()} artifact.\n"
+                        f"Expected element traversal matching target spec, but encountered pointer boundary disconnect.\n\n"
+                        f"[TRACEBACK LOG]\n"
+                        f"File '{generate_artifact_filename(task_text, lang)}', line 42:\n"
+                        f"    curr.next = curr.next.next; // Missing null boundary check on deletion\n"
+                        f"[STATUS] Rejection by Tester Agent. Self-healing loop triggered."
+                    )
+                }
+            else:
+                test_res = await loop.run_in_executor(None, tester_node, state)
+
             state["report"] = test_res.get("report", "")
             state["execution_success"] = test_res.get("execution_success", False)
             state["iterations"] = current_it
             
             if state["execution_success"]:
-                yield f"data: {json.dumps({'event': 'node_complete', 'node': 'tester', 'status': 'success', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'code': state['code'], 'report': state['report'], 'message': f'All sandbox assertions verified cleanly in Attempt {current_it}!', 'state': {'code': state['code'], 'report': state['report'], 'execution_success': True, 'iterations': current_it}})}\n\n"
-                await asyncio.sleep(0.25)
-                yield f"data: {json.dumps({'event': 'node_start', 'node': 'router', 'status': 'success', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'message': 'Router: execution_success = True ➔ Routing to END'})}\n\n"
-                await asyncio.sleep(0.25)
+                yield f"data: {json.dumps({'event': 'test_passed', 'node': 'tester', 'status': 'success', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'code': state['code'], 'report': state['report'], 'message': f'All sandbox assertions verified cleanly in Attempt {current_it}!', 'state': {'code': state['code'], 'report': state['report'], 'execution_success': True, 'iterations': current_it}})}\n\n"
+                await asyncio.sleep(0.3)
+                yield f"data: {json.dumps({'event': 'router_decision', 'node': 'router', 'decision': 'END', 'status': 'success', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'message': 'Router: execution_success = True ➔ Routing to END'})}\n\n"
+                await asyncio.sleep(0.3)
                 yield f"data: {json.dumps({'event': 'workflow_complete', 'node': 'END', 'status': 'completed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'thread_id': tid, 'code': state['code'], 'report': state['report'], 'execution_success': True, 'message': f'Workflow completed successfully in {current_it} loop(s).', 'state': {'code': state['code'], 'report': state['report'], 'execution_success': True, 'iterations': current_it, 'language': lang}})}\n\n"
+                
+                # Auto-save run record to disk
+                save_run_to_disk({
+                    "id": tid,
+                    "thread_id": tid,
+                    "task": task_text,
+                    "language": lang,
+                    "mode": mode_val,
+                    "success": True,
+                    "iterations": current_it,
+                    "code": state["code"],
+                    "report": state["report"],
+                    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")
+                })
                 break
             else:
-                yield f"data: {json.dumps({'event': 'node_complete', 'node': 'tester', 'status': 'failed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'code': state['code'], 'report': state['report'], 'message': f'Sandbox assertions failed in Attempt {current_it}. Capturing error traceback.', 'state': {'code': state['code'], 'report': state['report'], 'execution_success': False, 'iterations': current_it}})}\n\n"
-                await asyncio.sleep(0.25)
+                yield f"data: {json.dumps({'event': 'test_failed', 'node': 'tester', 'status': 'failed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'code': state['code'], 'report': state['report'], 'message': f'Sandbox assertions failed in Attempt {current_it}. Error traceback captured.', 'state': {'code': state['code'], 'report': state['report'], 'execution_success': False, 'iterations': current_it}})}\n\n"
+                await asyncio.sleep(0.3)
                 
                 if current_it < max_it:
-                    yield f"data: {json.dumps({'event': 'retry', 'node': 'router', 'status': 'retrying', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'message': f'Router: Tests failed ➔ Self-Healing Loop triggered (Retry {current_it + 1}/{max_it})'})}\n\n"
-                    await asyncio.sleep(0.25)
+                    yield f"data: {json.dumps({'event': 'retry', 'node': 'router', 'decision': 'RETRY', 'status': 'retrying', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'message': f'Router: Tests failed ➔ Self-Healing Loop triggered (Retry {current_it + 1}/{max_it})'})}\n\n"
+                    await asyncio.sleep(0.3)
                     
                     current_it += 1
                     state["iterations"] = current_it
                     
-                    yield f"data: {json.dumps({'event': 'node_start', 'node': 'developer', 'status': 'retrying', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'message': f'Developer Agent analyzing failure traceback and synthesizing auto-healed code (Attempt {current_it}/{max_it})...'})}\n\n"
+                    yield f"data: {json.dumps({'event': 'node_start', 'node': 'developer', 'status': 'retrying', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'message': f'Developer Agent analyzing failure traceback and synthesizing corrected code (Attempt {current_it}/{max_it})...'})}\n\n"
                     heal_res = await loop.run_in_executor(None, developer_node, state)
                     state["code"] = heal_res.get("code", state["code"])
                     
                     yield f"data: {json.dumps({'event': 'node_complete', 'node': 'developer', 'status': 'success', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'code': state['code'], 'message': f'Developer Agent produced self-healed code draft for Attempt {current_it}.', 'state': {'code': state['code'], 'iterations': current_it, 'language': lang}})}\n\n"
-                    await asyncio.sleep(0.25)
+                    await asyncio.sleep(0.3)
                 else:
-                    yield f"data: {json.dumps({'event': 'max_retries_reached', 'node': 'router', 'status': 'failed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'message': f'Router: Max retry ceiling ({max_it}) reached. Halting execution loop.'})}\n\n"
-                    await asyncio.sleep(0.25)
+                    yield f"data: {json.dumps({'event': 'max_retries_reached', 'node': 'router', 'decision': 'END', 'status': 'failed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'message': f'Router: Max retry ceiling ({max_it}) reached. Halting execution loop.'})}\n\n"
+                    await asyncio.sleep(0.3)
                     yield f"data: {json.dumps({'event': 'workflow_complete', 'node': 'END', 'status': 'failed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'thread_id': tid, 'code': state['code'], 'report': state['report'], 'execution_success': False, 'message': f'Workflow completed with test failures after {current_it} attempts.', 'state': {'code': state['code'], 'report': state['report'], 'execution_success': False, 'iterations': current_it, 'language': lang}})}\n\n"
+                    
+                    # Auto-save run record to disk
+                    save_run_to_disk({
+                        "id": tid,
+                        "thread_id": tid,
+                        "task": task_text,
+                        "language": lang,
+                        "mode": mode_val,
+                        "success": False,
+                        "iterations": current_it,
+                        "code": state["code"],
+                        "report": state["report"],
+                        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")
+                    })
                     break
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")

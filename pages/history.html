@@ -118,8 +118,8 @@
             loadAuditHistoryTable();
         });
 
-        function loadAuditHistoryTable() {
-            fullHistory = getRunHistory();
+        async function loadAuditHistoryTable() {
+            fullHistory = await fetchServerRunHistory();
             renderTable(fullHistory);
         }
 

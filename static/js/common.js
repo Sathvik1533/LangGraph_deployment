@@ -114,25 +114,35 @@ function setCurrentWorkflowRun(run) {
     }
 }
 
-// Save run to local history
-function saveRunToHistory(runData) {
+// Save run to local & disk history
+async function saveRunToHistory(runData) {
     try {
-        const history = getRunHistory();
         const entry = {
-            id: runData.id || ('run_' + Date.now()),
+            id: runData.id || runData.runId || ('run_' + Date.now()),
             timestamp: runData.timestamp || new Date().toISOString(),
             task: runData.task,
             language: runData.language || 'python',
+            mode: runData.mode || 'live',
             success: !!runData.success,
             iterations: runData.iterations || 1,
             code: runData.code || '',
             report: runData.report || '',
-            thread_id: runData.thread_id || ''
+            thread_id: runData.thread_id || runData.id || ''
         };
-        history.unshift(entry);
-        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history.slice(0, 50)));
 
-        // Also update single source of truth for active run
+        // 1. Save to localStorage
+        const history = getRunHistoryLocal();
+        const updatedHistory = [entry, ...history.filter(r => r.id !== entry.id)].slice(0, 50);
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updatedHistory));
+
+        // 2. Save to backend disk API
+        fetch('/api/history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(entry)
+        }).catch(err => console.warn('Failed to sync history to backend API:', err));
+
+        // 3. Update active run state
         setCurrentWorkflowRun({
             ...entry,
             runId: entry.id,
@@ -147,8 +157,7 @@ function saveRunToHistory(runData) {
     }
 }
 
-// Get run history
-function getRunHistory() {
+function getRunHistoryLocal() {
     try {
         const data = localStorage.getItem(HISTORY_STORAGE_KEY);
         return data ? JSON.parse(data) : [];
@@ -157,9 +166,31 @@ function getRunHistory() {
     }
 }
 
-// Clear run history
-function clearRunHistory() {
+async function fetchServerRunHistory() {
+    try {
+        const res = await fetch('/api/history');
+        if (res.ok) {
+            const data = await res.json();
+            if (data && Array.isArray(data.runs) && data.runs.length > 0) {
+                localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(data.runs));
+                return data.runs;
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to fetch backend run history:', e);
+    }
+    return getRunHistoryLocal();
+}
+
+function getRunHistory() {
+    return getRunHistoryLocal();
+}
+
+async function clearRunHistory() {
     localStorage.removeItem(HISTORY_STORAGE_KEY);
+    try {
+        await fetch('/api/history', { method: 'DELETE' });
+    } catch (e) {}
     showToast('Audit log history cleared', 'info');
 }
 

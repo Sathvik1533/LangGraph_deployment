@@ -1636,11 +1636,7 @@
                     document.getElementById('stateGraphSvg')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }, 300);
 
-                if (queryMode === 'simulation') {
-                    togglePlaySimulation();
-                } else {
-                    runLiveBackendWorkflow(activeRunId, activeTask, activeLanguage, hitlModeParam);
-                }
+                runLiveBackendWorkflow(activeRunId, activeTask, activeLanguage, hitlModeParam, queryMode);
             } else if (currentRun && currentRun.generatedCode) {
                 // Restore completed or saved run context from passive storage
                 if (currentRun.generatedCode) document.getElementById('activeCodeOutput').textContent = currentRun.generatedCode;
@@ -1772,20 +1768,7 @@
             // Smoothly auto-scroll visualizer into view
             document.getElementById('stateGraphSvg')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-            if (mode === 'simulation') {
-                if (liveEventSource) {
-                    liveEventSource.close();
-                    liveEventSource = null;
-                }
-                if (playInterval) {
-                    clearInterval(playInterval);
-                    playInterval = null;
-                }
-                currentStepIndex = 0;
-                togglePlaySimulation();
-            } else {
-                runLiveBackendWorkflow(runId, activeTask, activeLanguage, typeof hitlModeParam !== 'undefined' ? hitlModeParam : false);
-            }
+            runLiveBackendWorkflow(runId, activeTask, activeLanguage, typeof hitlModeParam !== 'undefined' ? hitlModeParam : false, mode);
         }
 
         // =========================================================================
@@ -1795,7 +1778,7 @@
         let activeLiveThreadId = null;
         let liveEventCount = 0;
 
-        async function runLiveBackendWorkflow(overrideRunId, overrideTask, overrideLang, overrideHitl) {
+        async function runLiveBackendWorkflow(overrideRunId, overrideTask, overrideLang, overrideHitl, overrideMode) {
             const btn = document.getElementById('liveApiRunBtn');
             const simBtn = document.getElementById('simPlayBtn');
             const origHtml = btn ? btn.innerHTML : '';
@@ -1804,6 +1787,7 @@
             const lang = overrideLang || activeLanguage || 'python';
             const hitlMode = overrideHitl || (currentScenario === 'hitl_gate');
             const runId = overrideRunId || `run_${Date.now()}`;
+            const modeVal = overrideMode || 'live';
 
             if (!inputTask) {
                 showToast('Please enter a task specification first', 'warning');
@@ -1815,7 +1799,7 @@
                 minimizeTourForExecution();
             }
 
-            // Stop simulation if running
+            // Stop simulation timer if running
             if (playInterval) {
                 clearInterval(playInterval);
                 playInterval = null;
@@ -1833,7 +1817,7 @@
             liveEventCount = 0;
             isExecutionPaused = false;
             
-            document.getElementById('telemetryModeBadge').textContent = 'MODE: LIVE';
+            document.getElementById('telemetryModeBadge').textContent = `MODE: ${modeVal.toUpperCase()}`;
             document.getElementById('telemetryStatusBadge').textContent = 'STATUS: RUNNING';
             document.getElementById('telemetryStatusBadge').className = 'cyber-badge cyber-badge-emerald';
             document.getElementById('telemetryAgentBadge').textContent = 'AGENT: START';
@@ -1844,14 +1828,14 @@
             document.getElementById('activeRunIdBadge').textContent = `ID: ${runId.substring(0, 18)}`;
 
             document.getElementById('simStepStatus').textContent = `LIVE: Initializing workflow for task: "${inputTask.substring(0, 35)}..."`;
-            document.getElementById('streamLogOutput').textContent = `[${new Date().toLocaleTimeString()}] 🚀 Initiating Live SSE Event Stream...\n[${new Date().toLocaleTimeString()}] 📋 Run ID: ${runId} | Task: "${inputTask}" | Language: ${lang.toUpperCase()}\n`;
+            document.getElementById('streamLogOutput').textContent = `[${new Date().toLocaleTimeString()}] 🚀 Initiating SSE Event Stream (${modeVal.toUpperCase()})...\n[${new Date().toLocaleTimeString()}] 📋 Run ID: ${runId} | Task: "${inputTask}" | Language: ${lang.toUpperCase()}\n`;
             document.getElementById('activeCodeOutput').textContent = '// Awaiting live generation from Developer Agent...';
-            document.getElementById('activeStateOutput').textContent = JSON.stringify({ runId, task: inputTask, language: lang, status: 'RUNNING' }, null, 2);
+            document.getElementById('activeStateOutput').textContent = JSON.stringify({ runId, task: inputTask, language: lang, mode: modeVal, status: 'RUNNING' }, null, 2);
             
-            showToast(`🚀 Live execution started (ID: ${runId.substring(0, 10)})`, 'info');
+            showToast(`🚀 ${modeVal.toUpperCase()} execution started (ID: ${runId.substring(0, 10)})`, 'info');
 
             try {
-                const streamUrl = `/stream?task=${encodeURIComponent(inputTask)}&language=${encodeURIComponent(lang)}&max_iterations=3&hitl_mode=${hitlMode}&thread_id=${encodeURIComponent(runId)}`;
+                const streamUrl = `/stream?task=${encodeURIComponent(inputTask)}&language=${encodeURIComponent(lang)}&max_iterations=3&hitl_mode=${hitlMode}&thread_id=${encodeURIComponent(runId)}&mode=${encodeURIComponent(modeVal)}`;
                 
                 if (liveEventSource) {
                     liveEventSource.close();
@@ -1863,7 +1847,7 @@
                     if (isExecutionPaused) return; // Honor Pause control
                     try {
                         const data = JSON.parse(event.data);
-                        handleLiveSseMessage(data, btn, simBtn, origHtml, inputTask, lang, runId);
+                        handleLiveSseMessage(data, btn, simBtn, origHtml, inputTask, lang, runId, modeVal);
                     } catch (err) {
                         console.error('SSE JSON parse error:', err, event.data);
                     }
@@ -1892,7 +1876,7 @@
             }
         }
 
-        function handleLiveSseMessage(data, btn, simBtn, origHtml, task, lang, runId) {
+        function handleLiveSseMessage(data, btn, simBtn, origHtml, task, lang, runId, modeVal) {
             liveEventCount++;
             
             // 1. Highlight Visual Graph Node (Event-Driven)
@@ -1906,7 +1890,7 @@
             document.getElementById('telemetryIterationBadge').textContent = `ITERATION: ${data.iteration || 1} / 3`;
 
             if (data.message) {
-                document.getElementById('simStepStatus').textContent = `LIVE: ${data.message}`;
+                document.getElementById('simStepStatus').textContent = `[${modeVal.toUpperCase()}] ${data.message}`;
             }
 
             // 3. Append to Real Execution Log
@@ -1967,29 +1951,32 @@
                 }
                 if (simBtn) simBtn.disabled = false;
 
-                if (data.event === 'workflow_complete' && data.execution_success) {
+                const isSuccess = data.event === 'workflow_complete' && data.execution_success !== false;
+
+                if (isSuccess) {
                     highlightLiveNode('END', 'success');
                     document.getElementById('telemetryStatusBadge').textContent = 'STATUS: COMPLETED (SUCCESS)';
                     document.getElementById('telemetryStatusBadge').className = 'cyber-badge cyber-badge-emerald';
-                    showToast(`🎉 Live LangGraph Execution Completed Successfully!`, 'success');
-                } else if (data.event === 'workflow_complete') {
+                    showToast(`🎉 Execution Completed Successfully!`, 'success');
+                } else {
                     highlightLiveNode('END', 'failed');
                     document.getElementById('telemetryStatusBadge').textContent = 'STATUS: COMPLETED (FAILED)';
                     document.getElementById('telemetryStatusBadge').className = 'cyber-badge cyber-badge-amber';
                     showToast(`⚠️ Workflow completed with test issues.`, 'warning');
                 }
 
-                // Save to history log
+                // Automatically save run to persistent history
                 saveRunToHistory({
                     id: runId,
+                    thread_id: runId,
                     task: task,
                     language: lang,
-                    code: data.code || document.getElementById('activeCodeOutput').textContent,
-                    report: data.report || data.message,
-                    success: !!data.execution_success,
+                    mode: modeVal || 'live',
+                    success: isSuccess,
                     iterations: data.iteration || 1,
-                    timestamp: new Date().toISOString(),
-                    thread_id: data.thread_id || runId
+                    code: data.code || document.getElementById('activeCodeOutput')?.textContent || '',
+                    report: data.report || '',
+                    timestamp: new Date().toISOString()
                 });
             }
         }
