@@ -1,5 +1,6 @@
-<!-- Floating Airy Top Navbar -->
+<!-- Floating Airy Top Navbar (Universal AppHeader Component) -->
 <nav class="top-navbar">
+    <!-- LEFT: Logo & Platform Identity -->
     <a href="/" class="nav-brand">
         <div class="brand-icon">
             <span class="material-symbols-outlined" style="font-size: 20px;">account_tree</span>
@@ -10,36 +11,37 @@
         </div>
     </a>
 
+    <!-- CENTER: Primary Route Destinations -->
     <div class="nav-links">
-        <a href="/" class="nav-link-item" data-page="dashboard" data-tooltip="Overview: Platform dashboard, agent workflow, and security scanners.">
+        <a href="/" class="nav-link-item" data-page="dashboard" data-tooltip="Overview: Platform dashboard, agent metrics, and security scanners.">
             <span class="material-symbols-outlined">dashboard</span>
             <span>Overview</span>
         </a>
 
-        <a href="/generate" class="nav-link-item" data-page="generator" data-tooltip="Workspace: Run tasks through the collaborative multi-agent workflow.">
+        <a href="/generate" class="nav-link-item" data-page="generator" data-tooltip="Workspace: Configure task specification, target language, and review policy.">
             <span class="material-symbols-outlined">code_blocks</span>
             <span>Workspace</span>
         </a>
 
-        <a href="/workflow" class="nav-link-item" data-page="workflow" data-tooltip="How It Works: Interactive state machine pipeline visualizer.">
+        <a href="/workflow" class="nav-link-item" data-page="workflow" data-tooltip="Pipeline: Observe real-time state machine transitions and execution events.">
             <span class="material-symbols-outlined">account_tree</span>
             <span>Pipeline</span>
         </a>
 
-        <a href="/history" class="nav-link-item" data-page="history" data-tooltip="Runs: Audit log of past workflow executions and generated artifacts.">
+        <a href="/history" class="nav-link-item" data-page="history" data-tooltip="Runs: Complete audit log history of past workflow executions and artifacts.">
             <span class="material-symbols-outlined">history</span>
             <span>Runs</span>
         </a>
     </div>
 
+    <!-- RIGHT: Secondary Actions -->
     <div style="display: flex; align-items: center; gap: 8px;">
-        <!-- Workshop Origin / Under the Hood button -->
-        <button class="cyber-btn cyber-btn-secondary desktop-only" onclick="openWorkshopOriginModal()" style="font-size: 12px; padding: 6px 12px; border-radius: var(--radius-pill); background: #f8fafc;" data-tooltip="Under the Hood: How this project evolved from a LangGraph workshop.">
+        <button class="cyber-btn cyber-btn-secondary desktop-only" onclick="openWorkshopOriginModal()" style="font-size: 12px; padding: 6px 14px; border-radius: var(--radius-pill); background: #f8fafc;" data-tooltip="Under the Hood: Evolution from workshop assignment to production platform.">
             <span class="material-symbols-outlined" style="font-size: 16px; color: var(--accent-terracotta);">info</span>
             <span>Under the Hood</span>
         </button>
 
-        <button class="cyber-btn cyber-btn-primary desktop-only" onclick="openPlatformGuide()" style="font-size: 12px; padding: 6px 12px; border-radius: var(--radius-pill);" data-tooltip="Guided Tour: Step-by-step walkthrough of AI Workflow Studio.">
+        <button class="cyber-btn cyber-btn-primary desktop-only" onclick="openPlatformGuide()" style="font-size: 12px; padding: 6px 14px; border-radius: var(--radius-pill);" data-tooltip="Guided Tour: Step-by-step walkthrough of AI Workflow Studio.">
             <span class="material-symbols-outlined" style="font-size: 16px;">explore</span>
             <span>Tour</span>
         </button>
@@ -51,10 +53,10 @@
     </div>
 </nav>
 
-<!-- Sub-Navigation Stepper & Forward/Backward Arrows Helper -->
+<!-- Sub-Navigation Stepper & Forward/Backward Navigation Bar -->
 <div class="page-flow-bar-container" id="pageFlowBarContainer">
     <div class="page-flow-bar">
-        <button class="flow-nav-btn flow-nav-prev" onclick="navigatePageStep(-1)" id="pageFlowPrevBtn" data-tooltip="Go to Previous Page">
+        <button class="flow-nav-btn flow-nav-prev" onclick="navigatePageStep(-1)" id="pageFlowPrevBtn" data-tooltip="Go to Previous Destination">
             <span class="material-symbols-outlined" style="font-size: 18px;">arrow_back</span>
             <span class="flow-btn-label" id="pageFlowPrevLabel">Previous</span>
         </button>
@@ -65,28 +67,28 @@
         </div>
 
         <div class="flow-stepper-track">
-            <a href="/" class="flow-step-node" data-flow="dashboard" data-tooltip="Page 1: Platform Overview">
+            <a href="/" class="flow-step-node" data-flow="dashboard" data-tooltip="Overview (Page 1)">
                 <span class="flow-step-num">1</span>
                 <span class="flow-step-text">Overview</span>
             </a>
             <span class="flow-step-divider">➔</span>
-            <a href="/generate" class="flow-step-node" data-flow="generator" data-tooltip="Page 2: Workspace">
+            <a href="/generate" class="flow-step-node" data-flow="generator" data-tooltip="Workspace (Page 2)">
                 <span class="flow-step-num">2</span>
                 <span class="flow-step-text">Workspace</span>
             </a>
             <span class="flow-step-divider">➔</span>
-            <a href="/workflow" class="flow-step-node" data-flow="workflow" data-tooltip="Page 3: Pipeline Visualizer">
+            <a href="/workflow" class="flow-step-node" data-flow="workflow" data-tooltip="Pipeline (Page 3)">
                 <span class="flow-step-num">3</span>
                 <span class="flow-step-text">Pipeline</span>
             </a>
             <span class="flow-step-divider">➔</span>
-            <a href="/history" class="flow-step-node" data-flow="history" data-tooltip="Page 4: Past Runs">
+            <a href="/history" class="flow-step-node" data-flow="history" data-tooltip="Runs (Page 4)">
                 <span class="flow-step-num">4</span>
                 <span class="flow-step-text">Runs</span>
             </a>
         </div>
 
-        <button class="flow-nav-btn flow-nav-next" onclick="navigatePageStep(1)" id="pageFlowNextBtn" data-tooltip="Go to Next Page">
+        <button class="flow-nav-btn flow-nav-next" onclick="navigatePageStep(1)" id="pageFlowNextBtn" data-tooltip="Go to Next Destination">
             <span class="flow-btn-label" id="pageFlowNextLabel">Next</span>
             <span class="material-symbols-outlined" style="font-size: 18px;">arrow_forward</span>
         </button>
@@ -125,32 +127,32 @@
                 <span class="material-symbols-outlined">history</span> Runs
             </a>
         </nav>
-        <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
-            <button class="cyber-btn cyber-btn-primary" onclick="openPlatformGuide(); toggleMobileNav();" style="width: 100%; justify-content: center;">
+        <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 10px;">
+            <button class="cyber-btn cyber-btn-primary" onclick="openPlatformGuide(); toggleMobileNav();" style="width: 100%; justify-content: center; min-height: 44px;">
                 <span class="material-symbols-outlined" style="font-size: 16px;">explore</span> Launch Tour
             </button>
-            <button class="cyber-btn cyber-btn-secondary" onclick="openWorkshopOriginModal(); toggleMobileNav();" style="width: 100%; justify-content: center;">
+            <button class="cyber-btn cyber-btn-secondary" onclick="openWorkshopOriginModal(); toggleMobileNav();" style="width: 100%; justify-content: center; min-height: 44px;">
                 <span class="material-symbols-outlined" style="font-size: 16px; color: var(--accent-terracotta);">info</span> Under the Hood
             </button>
         </div>
     </div>
 </div>
 
-
 <script>
 function toggleMobileNav() {
     const overlay = document.getElementById('mobileNavOverlay');
     const drawer = document.getElementById('mobileNavDrawer');
     const icon = document.getElementById('mobileMenuIcon');
+    if (!drawer) return;
     const isOpen = drawer.classList.contains('open');
     if (isOpen) {
         drawer.classList.remove('open');
-        overlay.classList.remove('open');
-        icon.textContent = 'menu';
+        if (overlay) overlay.classList.remove('open');
+        if (icon) icon.textContent = 'menu';
     } else {
         drawer.classList.add('open');
-        overlay.classList.add('open');
-        icon.textContent = 'close';
+        if (overlay) overlay.classList.add('open');
+        if (icon) icon.textContent = 'close';
     }
 }
 </script>
