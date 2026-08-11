@@ -485,6 +485,10 @@ function initWorkshopOriginModal() {
                     </div>
 
                     <div style="display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap; border-top: 1px solid var(--border-subtle); padding-top: 18px;">
+                        <button class="cyber-btn cyber-btn-secondary" onclick="closeWorkshopOriginModal(); if (typeof openSecurityLabModal === 'function') openSecurityLabModal(); else window.location.href='/?openLab=true';" style="font-size: 13px;">
+                            <span class="material-symbols-outlined" style="font-size: 16px; color: var(--accent-indigo);">science</span>
+                            <span>Security Lab</span>
+                        </button>
                         <a href="https://langgraph-deployment-qhy0.onrender.com/" target="_blank" rel="noopener noreferrer" class="cyber-btn cyber-btn-secondary" style="font-size: 13px; text-decoration: none;">
                             <span class="material-symbols-outlined" style="font-size: 16px;">open_in_new</span>
                             Open Original Workshop Playground
