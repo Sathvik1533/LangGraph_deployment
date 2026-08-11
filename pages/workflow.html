@@ -307,14 +307,14 @@
                     <line id="edgeTestRoute" x1="635" y1="130" x2="710" y2="130" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)"/>
                     <line id="edgeRouteEnd" x1="790" y1="130" x2="865" y2="130" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow-emerald)"/>
 
-                    <!-- Conditional Feedback Loop (Back from Router to Developer) -->
-                    <path id="edgeFeedbackLoop" d="M 750 90 Q 480 15 210 90" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#arrow-red)"/>
-                    <text id="loopLabel" x="480" y="38" text-anchor="middle" fill="#dc2626" font-size="11.5" font-weight="700" opacity="0.9">Self-Healing Loop (Traceback Feedback)</text>
+                    <!-- Conditional Feedback Loop (Back from Router to Developer - Hidden by Default) -->
+                    <path id="edgeFeedbackLoop" d="M 750 90 Q 480 15 210 90" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#arrow-red)" opacity="0"/>
+                    <text id="loopLabel" x="480" y="38" text-anchor="middle" fill="#dc2626" font-size="11.5" font-weight="700" opacity="0">Self-Healing Loop (Traceback Feedback)</text>
 
                     <!-- START Node -->
-                    <g id="nodeSTART" transform="translate(50, 130)" class="node-item node-active" onclick="jumpToStepByName('START')" style="cursor: pointer;" data-tooltip="START Node: Workflow initial payload receiver.">
-                        <circle r="30" fill="#ffffff" stroke="#2563eb" stroke-width="2.5"/>
-                        <circle r="36" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4,4" opacity="0.6"/>
+                    <g id="nodeSTART" transform="translate(50, 130)" class="node-item" onclick="jumpToStepByName('START')" style="cursor: pointer;" data-tooltip="START Node: Workflow initial payload receiver.">
+                        <circle r="30" fill="#ffffff" stroke="#94a3b8" stroke-width="2.5"/>
+                        <circle r="36" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,4" opacity="0.6"/>
                         <text text-anchor="middle" dy="4" fill="#0f172a" font-size="11" font-weight="800">START</text>
                     </g>
 
@@ -1165,9 +1165,13 @@
                 if (edgeEl) edgeEl.classList.remove('edge-active');
             });
             const loopEl = document.getElementById('edgeFeedbackLoop');
+            const loopLabel = document.getElementById('loopLabel');
             if (loopEl) {
                 loopEl.classList.remove('edge-loop-active');
-                document.getElementById('loopLabel').style.opacity = '0.4';
+                loopEl.style.opacity = '0';
+            }
+            if (loopLabel) {
+                loopLabel.style.opacity = '0';
             }
         }
 
@@ -1182,19 +1186,35 @@
                 else if (status === 'running') el.classList.add('node-running');
             }
 
-            if (nodeName === 'START') document.getElementById('edgeStartDev')?.classList.add('edge-active');
-            else if (nodeName === 'developer' || nodeName === 'Developer') document.getElementById('edgeDevReview')?.classList.add('edge-active');
-            else if (nodeName === 'human_review' || nodeName === 'ReviewGate') document.getElementById('edgeReviewTest')?.classList.add('edge-active');
-            else if (nodeName === 'tester' || nodeName === 'Tester') document.getElementById('edgeTestRoute')?.classList.add('edge-active');
-            else if (nodeName === 'router' || nodeName === 'Router') {
+            if (nodeName === 'START') {
+                document.getElementById('edgeStartDev')?.classList.add('edge-active');
+            } else if (nodeName === 'developer' || nodeName === 'Developer') {
                 if (status === 'retrying') {
                     const loopEl = document.getElementById('edgeFeedbackLoop');
+                    const loopLabel = document.getElementById('loopLabel');
                     if (loopEl) {
                         loopEl.classList.add('edge-loop-active');
-                        document.getElementById('loopLabel').style.opacity = '1';
+                        loopEl.style.opacity = '1';
                     }
+                    if (loopLabel) loopLabel.style.opacity = '1';
                 } else {
-                    document.getElementById('edgeRouteEnd')?.classList.add('edge-active');
+                    document.getElementById('edgeStartDev')?.classList.add('edge-active');
+                }
+            } else if (nodeName === 'human_review' || nodeName === 'ReviewGate') {
+                document.getElementById('edgeDevReview')?.classList.add('edge-active');
+            } else if (nodeName === 'tester' || nodeName === 'Tester') {
+                document.getElementById('edgeReviewTest')?.classList.add('edge-active');
+            } else if (nodeName === 'router' || nodeName === 'Router') {
+                if (status === 'retrying') {
+                    const loopEl = document.getElementById('edgeFeedbackLoop');
+                    const loopLabel = document.getElementById('loopLabel');
+                    if (loopEl) {
+                        loopEl.classList.add('edge-loop-active');
+                        loopEl.style.opacity = '1';
+                    }
+                    if (loopLabel) loopLabel.style.opacity = '1';
+                } else {
+                    document.getElementById('edgeTestRoute')?.classList.add('edge-active');
                 }
             } else if (nodeName === 'END') {
                 document.getElementById('edgeRouteEnd')?.classList.add('edge-active');
@@ -1678,6 +1698,8 @@
                 playInterval = null;
             }
 
+            resetGraphVisuals();
+
             const btn = document.getElementById('liveApiRunBtn');
             const simBtn = document.getElementById('simPlayBtn');
             if (btn) btn.disabled = false;
@@ -1689,8 +1711,12 @@
                 badge.className = 'cyber-badge cyber-badge-amber';
             }
 
-            document.getElementById('simStepStatus').textContent = 'Workflow execution stopped by user.';
-            document.getElementById('streamLogOutput').textContent += `\n[${new Date().toLocaleTimeString()}] 🛑 [STOP] Execution run cancelled by user.\n`;
+            document.getElementById('simStepStatus').textContent = 'Execution stopped by user.';
+            const logBox = document.getElementById('streamLogOutput');
+            if (logBox) {
+                logBox.textContent += `\n[${new Date().toLocaleTimeString()}] 🛑 [STOP] Execution run cancelled by user.\n`;
+                logBox.scrollTop = logBox.scrollHeight;
+            }
             
             showToast('🛑 Active workflow run stopped', 'warning');
         }
