@@ -288,24 +288,27 @@ async function submitHitlAction(action) {
 
         if (action === 'abort') {
             if (hitlReviewModal) hitlReviewModal.style.display = 'none';
-            statusBanner.style.borderColor = 'rgba(239, 68, 68, 0.4)';
-            statusBanner.style.background = 'var(--accent-rose-bg)';
-            statusBanner.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <span class="material-symbols-outlined" style="color: #f87171; font-size: 24px;">cancel</span>
-                    <div>
-                        <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">Task Cancelled by Human Reviewer</div>
-                        <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Execution was halted safely without running untrusted code.</div>
+            if (statusBanner) {
+                statusBanner.style.display = 'block';
+                statusBanner.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+                statusBanner.style.background = 'var(--accent-rose-bg)';
+                statusBanner.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span class="material-symbols-outlined" style="color: #f87171; font-size: 24px;">cancel</span>
+                        <div>
+                            <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">Task Cancelled by Human Reviewer</div>
+                            <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Execution was halted safely without running untrusted code.</div>
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
             showToast('🛑 Task aborted by user', 'info');
 
         } else if (action === 'reject') {
             // Revised by AI, still awaiting review
-            codeDisplay.textContent = data.code;
+            if (codeDisplay) codeDisplay.textContent = data.code || '';
             if (hitlEditableCode) hitlEditableCode.value = data.code || '';
-            reportDisplay.textContent = data.report;
+            if (reportDisplay) reportDisplay.textContent = data.report || '';
             showToast('🔄 AI revised code based on your feedback! Please review.', 'success');
 
         } else {
@@ -353,38 +356,54 @@ function renderSuccessfulExecution(data, language, task) {
         reportBadge.textContent = 'PASSED';
     }
 
-    statusBanner.className = 'studio-card';
-    statusBanner.style.borderColor = 'rgba(5, 150, 105, 0.4)';
-    statusBanner.style.background = 'var(--accent-emerald-bg)';
-    statusBanner.innerHTML = `
-        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <span class="material-symbols-outlined" style="color: var(--accent-emerald); font-size: 24px;">check_circle</span>
-                <div>
-                    <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">${language.toUpperCase()} Code — All Tests Passed!</div>
-                    <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Completed in ${data.iterations} attempt(s) • Session: ${data.thread_id || 'active'}</div>
+    if (statusBanner) {
+        statusBanner.style.display = 'block';
+        statusBanner.className = 'studio-card';
+        statusBanner.style.borderColor = 'rgba(5, 150, 105, 0.4)';
+        statusBanner.style.background = 'var(--accent-emerald-bg)';
+        statusBanner.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span class="material-symbols-outlined" style="color: var(--accent-emerald); font-size: 24px;">check_circle</span>
+                    <div>
+                        <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">${(language || 'Python').toUpperCase()} Code — All Tests Passed!</div>
+                        <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Completed in ${data.iterations || 1} attempt(s) • Session: ${data.thread_id || 'active'}</div>
+                    </div>
                 </div>
+                <span class="cyber-badge cyber-badge-emerald">PASSED</span>
             </div>
-            <span class="cyber-badge cyber-badge-emerald">PASSED</span>
-        </div>
-    `;
-
-    if (pipelineStepper) {
-        document.getElementById('stepDeveloper').className = 'cyber-badge cyber-badge-emerald';
-        document.getElementById('stepDeveloper').textContent = '1. Written ✓';
-        document.getElementById('stepSandbox').className = 'cyber-badge cyber-badge-emerald';
-        document.getElementById('stepSandbox').textContent = '2. Tested ✓';
-        document.getElementById('stepRouter').className = 'cyber-badge cyber-badge-emerald';
-        document.getElementById('stepRouter').textContent = '3. Approved ✓';
+        `;
     }
 
-    codeDisplay.style.fontStyle = 'normal';
-    codeDisplay.style.color = '#f8fafc';
-    codeDisplay.textContent = data.code;
+    if (pipelineStepper) {
+        const stepDev = document.getElementById('stepDeveloper');
+        if (stepDev) {
+            stepDev.className = 'cyber-badge cyber-badge-emerald';
+            stepDev.textContent = '1. Written ✓';
+        }
+        const stepSand = document.getElementById('stepSandbox');
+        if (stepSand) {
+            stepSand.className = 'cyber-badge cyber-badge-emerald';
+            stepSand.textContent = '2. Tested ✓';
+        }
+        const stepRout = document.getElementById('stepRouter');
+        if (stepRout) {
+            stepRout.className = 'cyber-badge cyber-badge-emerald';
+            stepRout.textContent = '3. Approved ✓';
+        }
+    }
 
-    reportDisplay.style.fontStyle = 'normal';
-    reportDisplay.style.color = '#94a3b8';
-    reportDisplay.textContent = data.report || 'No detailed report output generated.';
+    if (codeDisplay) {
+        codeDisplay.style.fontStyle = 'normal';
+        codeDisplay.style.color = '#f8fafc';
+        codeDisplay.textContent = data.code || '';
+    }
+
+    if (reportDisplay) {
+        reportDisplay.style.fontStyle = 'normal';
+        reportDisplay.style.color = '#94a3b8';
+        reportDisplay.textContent = data.report || 'No detailed report output generated.';
+    }
     
     if (typeof setCurrentWorkflowRun === 'function') {
         setCurrentWorkflowRun({
