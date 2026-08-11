@@ -323,6 +323,63 @@ class AgentResponse(BaseModel):
     target_language: Optional[str] = Field(None, description="Authoritative target language")
 
 
+class WorkflowControlRequest(BaseModel):
+    """Request model for real-time workflow visualizer control actions"""
+    action: str = Field(..., description="Action: 'play', 'pause', 'resume', 'stop', 'reset', 'next', 'speed'")
+    thread_id: Optional[str] = Field(None, description="Unique run/thread ID")
+    run_id: Optional[str] = Field(None, description="Alias for thread_id")
+    scenario: Optional[str] = Field(None, description="Scenario name ('self_fix', 'clean_pass', 'guardrail_block', 'max_retry', 'hitl_gate')")
+    speed: Optional[float] = Field(1.0, description="Simulation speed multiplier (0.5, 1.0, 2.0)")
+    task: Optional[str] = Field(None, description="User task specification")
+    target_language: Optional[str] = Field(None, description="Authoritative target language")
+
+class WorkflowRunState:
+    """State Machine Execution Run State tracking backend state machine status"""
+    def __init__(self, run_id: str, mode: str = "live", scenario: str = "self_fix", speed: float = 1.0, task: str = "", language: str = "python"):
+        self.run_id = run_id
+        self.mode = mode
+        self.scenario = scenario
+        self.speed = max(0.1, min(5.0, float(speed or 1.0)))
+        self.task = task
+        self.language = language
+        self.status = "IDLE"  # IDLE, RUNNING, PAUSED, STOPPED, COMPLETED, FAILED
+        self.current_node = "START"
+        self.step_mode = False
+        self.pause_event = asyncio.Event()
+        self.pause_event.set()  # set = running (not paused)
+        self.stop_requested = False
+        self.history_events: List[Dict[str, Any]] = []
+
+class WorkflowController:
+    """Thread-safe controller for real-time workflow state machine execution"""
+    def __init__(self):
+        self.runs: Dict[str, WorkflowRunState] = {}
+
+    def get_or_create_run(self, run_id: str, mode: str = "live", scenario: str = "self_fix", speed: float = 1.0, task: str = "", language: str = "python") -> WorkflowRunState:
+        if run_id not in self.runs:
+            self.runs[run_id] = WorkflowRunState(run_id, mode, scenario, speed, task, language)
+        else:
+            run = self.runs[run_id]
+            if mode: run.mode = mode
+            if scenario: run.scenario = scenario
+            if speed and speed > 0: run.speed = speed
+            if task: run.task = task
+            if language: run.language = language
+        return self.runs[run_id]
+
+    def reset_run(self, run_id: str):
+        if run_id in self.runs:
+            run = self.runs[run_id]
+            run.status = "IDLE"
+            run.current_node = "START"
+            run.step_mode = False
+            run.stop_requested = False
+            run.pause_event.set()
+            run.history_events.clear()
+
+workflow_controller = WorkflowController()
+
+
 # In-memory storage for active Human-in-the-Loop review sessions
 hitl_sessions: Dict[str, Dict[str, Any]] = {}
 hitl_stats: Dict[str, int] = {
@@ -332,6 +389,67 @@ hitl_stats: Dict[str, int] = {
     "rejected": 0,
     "aborted": 0
 }
+
+
+@app.post("/api/workflow/control", tags=["Agent"])
+async def control_workflow(req: WorkflowControlRequest):
+    """
+    Control real-time workflow state machine execution.
+    Supported actions: 'play', 'pause', 'resume', 'stop', 'reset', 'next', 'speed'
+    """
+    tid = req.thread_id or req.run_id or "default_run"
+    run = workflow_controller.get_or_create_run(
+        tid, 
+        scenario=req.scenario or "self_fix", 
+        speed=req.speed or 1.0, 
+        task=req.task or "", 
+        language=req.target_language or "python"
+    )
+    
+    act = req.action.lower()
+    if act in ["play", "start"]:
+        run.status = "RUNNING"
+        run.stop_requested = False
+        run.step_mode = False
+        run.pause_event.set()
+    elif act == "pause":
+        run.status = "PAUSED"
+        run.pause_event.clear()
+    elif act == "resume":
+        run.status = "RUNNING"
+        run.step_mode = False
+        run.pause_event.set()
+    elif act == "stop":
+        run.status = "STOPPED"
+        run.stop_requested = True
+        run.pause_event.set()
+    elif act == "reset":
+        workflow_controller.reset_run(tid)
+        return {
+            "success": True, 
+            "action": "reset", 
+            "status": "IDLE", 
+            "thread_id": tid, 
+            "current_node": "START",
+            "message": "Workflow state machine reset to IDLE."
+        }
+    elif act == "next":
+        run.status = "RUNNING"
+        run.step_mode = True
+        run.pause_event.set()
+    elif act == "speed":
+        run.speed = max(0.1, min(5.0, float(req.speed or 1.0)))
+
+    return {
+        "success": True,
+        "action": act,
+        "status": run.status,
+        "thread_id": tid,
+        "current_node": run.current_node,
+        "speed": run.speed,
+        "step_mode": run.step_mode
+    }
+
 
 
 # ============================================================================
@@ -954,11 +1072,14 @@ async def stream_workflow_events(
     max_iterations: Optional[int] = Query(3),
     hitl_mode: Optional[bool] = Query(False),
     thread_id: Optional[str] = Query(None),
-    mode: Optional[str] = Query("live")
+    mode: Optional[str] = Query("live"),
+    scenario: Optional[str] = Query(None),
+    speed: Optional[float] = Query(1.0)
 ):
     """
-    Stream live execution events from the LangGraph multi-agent workflow
+    Stream real-time execution events from the LangGraph multi-agent workflow
     using Server-Sent Events (SSE) with task intent normalization and target language authority.
+    Supports interactive simulation state machine with Play, Pause, Resume, Stop, Reset, Next, and Speed controls.
     """
     from agent import validate_task_input, developer_node, tester_node
     
@@ -972,28 +1093,87 @@ async def stream_workflow_events(
     hitl = request.hitl_mode if request else (hitl_mode or False)
     tid = request.thread_id if request and request.thread_id else (thread_id or f"thread_{uuid.uuid4().hex[:12]}")
     mode_val = (mode or "live").lower()
-    is_simulation = mode_val == "simulation" or "sim_" in tid
+    scenario_val = (scenario or "self_fix").lower()
+    speed_val = float(speed or 1.0)
+    is_simulation = mode_val == "simulation" or "sim_" in tid or scenario_val != "live"
+
+
+    # Initialize workflow run state in controller
+    run_state = workflow_controller.get_or_create_run(
+        tid, 
+        mode=mode_val, 
+        scenario=scenario_val, 
+        speed=speed_val, 
+        task=task_text, 
+        language=target_lang
+    )
+    run_state.status = "RUNNING"
+
     lang_labels = {"python": "Python 3.11", "java": "Java 17", "cpp": "C++ 20"}
     target_lang_label = lang_labels.get(target_lang, target_lang.upper())
 
     async def event_generator():
         timestamp = time.strftime("%H:%M:%S")
         
+        async def step_sleep(base_seconds: float = 0.4):
+            spd = max(0.1, min(5.0, float(run_state.speed or 1.0)))
+            await asyncio.sleep(base_seconds / spd)
+
+        async def check_checkpoint(node_name: str):
+            run_state.current_node = node_name
+            if run_state.stop_requested:
+                run_state.status = "STOPPED"
+                raise asyncio.CancelledError("Workflow stopped by user")
+            
+            if run_state.step_mode:
+                run_state.step_mode = False
+                run_state.status = "PAUSED"
+                run_state.pause_event.clear()
+
+            if not run_state.pause_event.is_set():
+                pause_payload = {
+                    "run_id": tid,
+                    "event": "paused",
+                    "node": node_name,
+                    "status": "paused",
+                    "timestamp": time.strftime("%H:%M:%S"),
+                    "thread_id": tid,
+                    "message": f"Workflow execution paused at {node_name} node."
+                }
+                run_state.history_events.append(pause_payload)
+                yield f"data: {json.dumps(pause_payload)}\n\n"
+                await run_state.pause_event.wait()
+
+            if run_state.stop_requested:
+                run_state.status = "STOPPED"
+                raise asyncio.CancelledError("Workflow stopped by user")
+
+        def make_event(event_type: str, node: str, status: str, message: str, **kwargs) -> str:
+            payload = {
+                "run_id": tid,
+                "thread_id": tid,
+                "event": event_type,
+                "node": node,
+                "status": status,
+                "timestamp": time.strftime("%H:%M:%S"),
+                "task": task_text,
+                "task_intent": task_intent_val,
+                "language": target_lang,
+                "target_language": target_lang,
+                "filename": artifact_filename,
+                "message": message
+            }
+            payload.update(kwargs)
+            run_state.history_events.append(payload)
+            return f"data: {json.dumps(payload)}\n\n"
+
         # 1. Validation check
         is_valid, validation_error = validate_task_input(task_text)
         if not is_valid:
-            payload = {
-                "event": "error",
-                "node": "START",
-                "status": "failed",
-                "timestamp": timestamp,
-                "iteration": 0,
-                "error": validation_error or "Invalid task input",
-                "message": validation_error or "Task input validation failed."
-            }
-            yield f"data: {json.dumps(payload)}\n\n"
+            run_state.status = "FAILED"
+            yield make_event("error", "START", "failed", validation_error or "Task input validation failed.", error=validation_error, iteration=0)
             return
-            
+
         # 2. Start Event
         state: CrewState = {
             "messages": [HumanMessage(content=task_text)],
@@ -1009,22 +1189,22 @@ async def stream_workflow_events(
             "max_iterations": max_it,
             "hitl_enabled": hitl
         }
-        
-        yield f"data: {json.dumps({'event': 'start', 'node': 'START', 'status': 'active', 'timestamp': timestamp, 'iteration': 0, 'thread_id': tid, 'task_intent': task_intent_val, 'target_language': target_lang, 'target_language_label': target_lang_label, 'filename': artifact_filename, 'message': f'Workflow initialized ({mode_val.upper()}). Intent: {task_intent_val} | Target: {target_lang_label}', 'state': {'task': task_text, 'task_intent': task_intent_val, 'language': target_lang, 'target_language': target_lang, 'filename': artifact_filename, 'max_iterations': max_it, 'mode': mode_val}})}\n\n"
-        await asyncio.sleep(0.3)
-        
+
+        yield make_event("start", "START", "active", f"Workflow initialized ({mode_val.upper()}). Intent: {task_intent_val} | Target: {target_lang_label}", iteration=0, target_language_label=target_lang_label, state={'task': task_text, 'task_intent': task_intent_val, 'language': target_lang, 'target_language': target_lang, 'filename': artifact_filename, 'max_iterations': max_it, 'mode': mode_val})
+        await step_sleep(0.3)
+
         # 3. Input Guardrails
-        yield f"data: {json.dumps({'event': 'node_start', 'node': 'guardrail', 'status': 'running', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 0, 'message': 'Input Guardrails: Scanning for Prompt Injection, Sensitive Data, and Code Safety...', 'controls_status': 'SCANNING'})}\n\n"
-        await asyncio.sleep(0.25)
-        
+        async for item in check_checkpoint("guardrail"): yield item
+        yield make_event("node_start", "guardrail", "running", "Input Guardrails: Scanning for Prompt Injection, Sensitive Data, and Code Safety...", iteration=0, controls_status="SCANNING")
+        await step_sleep(0.3)
+
+        # Execute Guardrails Scan
         input_report = InputGuard.scan_all(task_text)
         guardrail_stats.record_input_scan(input_report)
-        
-        # Build individual control breakdown from scan results
+
         prompt_res = next((r for r in input_report.results if "Prompt Injection" in r.scanner), None)
         sensitive_res = next((r for r in input_report.results if "Sensitive" in r.scanner or "PII" in r.scanner or "Pattern" in r.scanner), None)
-        content_res = next((r for r in input_report.results if "Content" in r.scanner or "Topic" in r.scanner), None)
-        
+
         controls = {
             "prompt_injection": {
                 "name": "LLM01: Prompt Injection Defense",
@@ -1055,85 +1235,92 @@ async def stream_workflow_events(
                 "action": "Iteration bounds active"
             }
         }
-        
-        if not input_report.passed:
-            blocked_msg = f"Guardrail Intercept: {input_report.reason} (Blocked by {input_report.blocked_by})"
-            state["code"] = f"// GUARDRAIL BLOCKED: {input_report.reason}"
-            state["report"] = f"### 🛡️ Input Guardrail Alert\n{input_report.reason}\n\nBlocked by: {input_report.blocked_by}"
-            yield f"data: {json.dumps({'event': 'guardrail_block', 'node': 'guardrail', 'status': 'failed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 0, 'error': input_report.reason, 'message': blocked_msg, 'security_controls': controls, 'state': {'code': state['code'], 'report': state['report'], 'execution_success': False}})}\n\n"
-            yield f"data: {json.dumps({'event': 'workflow_complete', 'node': 'END', 'status': 'failed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 0, 'thread_id': tid, 'code': state['code'], 'report': state['report'], 'execution_success': False, 'message': 'Workflow terminated safely by security shield.'})}\n\n"
+
+        # Guardrail block condition (or guardrail_block scenario)
+        if not input_report.passed or scenario_val == "guardrail_block":
+            reason = input_report.reason if not input_report.passed else "Guardrail Intercept: Prompt Injection pattern detected (LLM01)."
+            blocked_by = input_report.blocked_by if not input_report.passed else "prompt_injection"
+            if scenario_val == "guardrail_block":
+                controls["prompt_injection"]["status"] = "BLOCKED"
+                controls["prompt_injection"]["reason"] = reason
+
+            blocked_msg = f"Guardrail Intercept: {reason} (Blocked by {blocked_by})"
+            state["code"] = f"// GUARDRAIL BLOCKED: {reason}"
+            state["report"] = f"### 🛡️ Input Guardrail Alert\n{reason}\n\nBlocked by: {blocked_by}"
+            run_state.status = "FAILED"
+
+            yield make_event("guardrail_block", "guardrail", "failed", blocked_msg, iteration=0, error=reason, security_controls=controls, state={'code': state['code'], 'report': state['report'], 'execution_success': False})
+            await step_sleep(0.3)
+            yield make_event("workflow_complete", "END", "failed", "Workflow terminated safely by security shield.", iteration=0, code=state['code'], report=state['report'], execution_success=False)
+            
             save_run_to_disk({
-                "id": tid,
-                "thread_id": tid,
-                "task": task_text,
-                "task_intent": task_intent_val,
-                "language": target_lang,
-                "target_language": target_lang,
-                "filename": artifact_filename,
-                "mode": mode_val,
-                "success": False,
-                "iterations": 0,
-                "code": state["code"],
-                "report": state["report"],
-                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")
+                "id": tid, "thread_id": tid, "task": task_text, "task_intent": task_intent_val,
+                "language": target_lang, "target_language": target_lang, "filename": artifact_filename,
+                "mode": mode_val, "success": False, "iterations": 0, "code": state["code"],
+                "report": state["report"], "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")
             })
             return
-            
-        yield f"data: {json.dumps({'event': 'node_complete', 'node': 'guardrail', 'status': 'success', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 0, 'security_controls': controls, 'message': 'Input Guardrails passed all security checks cleanly.'})}\n\n"
-        await asyncio.sleep(0.3)
-        
+
+        yield make_event("node_complete", "guardrail", "success", "Input Guardrails passed all security checks cleanly.", iteration=0, security_controls=controls)
+        await step_sleep(0.3)
+
         # 4. Developer Node (Iteration 1)
-        yield f"data: {json.dumps({'event': 'node_start', 'node': 'developer', 'status': 'running', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 1, 'message': f'Developer Agent synthesizing {target_lang_label} artifact for intent: {task_intent_val}...'})}\n\n"
-        
+        async for item in check_checkpoint("developer"): yield item
+        yield make_event("node_start", "developer", "running", f"Developer Agent synthesizing {target_lang_label} artifact for intent: {task_intent_val}...", iteration=1)
+        await step_sleep(0.3)
+
         loop = asyncio.get_event_loop()
         dev_res = await loop.run_in_executor(None, developer_node, state)
         draft_code = dev_res.get("code", "")
         state["code"] = draft_code
         state["iterations"] = 1
-        
-        yield f"data: {json.dumps({'event': 'node_complete', 'node': 'developer', 'status': 'success', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 1, 'code': draft_code, 'filename': artifact_filename, 'task_intent': task_intent_val, 'target_language': target_lang, 'message': f'Developer Agent synthesized {artifact_filename} ({target_lang_label}).', 'state': {'code': draft_code, 'filename': artifact_filename, 'iterations': 1, 'language': target_lang, 'task_intent': task_intent_val}})}\n\n"
-        await asyncio.sleep(0.3)
-        
+
+        yield make_event("node_complete", "developer", "success", f"Developer Agent synthesized {artifact_filename} ({target_lang_label}).", iteration=1, code=draft_code, state={'code': draft_code, 'filename': artifact_filename, 'iterations': 1, 'language': target_lang, 'task_intent': task_intent_val})
+        await step_sleep(0.3)
+
         # 5. Human-in-the-Loop Review Gate
-        if hitl:
+        async for item in check_checkpoint("human_review"): yield item
+        if hitl or scenario_val == "hitl_gate":
             hitl_sessions[tid] = {
-                "thread_id": tid,
-                "task": task_text,
-                "task_intent": task_intent_val,
-                "language": target_lang,
-                "target_language": target_lang,
-                "code": draft_code,
-                "filename": artifact_filename,
-                "max_iterations": max_it,
-                "iterations": 1,
-                "status": "awaiting_human_review",
-                "created_at": time.time()
+                "thread_id": tid, "task": task_text, "task_intent": task_intent_val,
+                "language": target_lang, "target_language": target_lang, "code": draft_code,
+                "filename": artifact_filename, "max_iterations": max_it, "iterations": 1,
+                "status": "awaiting_human_review", "created_at": time.time()
             }
             hitl_stats["total_interventions"] += 1
-            yield f"data: {json.dumps({'event': 'human_review_required', 'node': 'human_review', 'status': 'waiting_for_human', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 1, 'thread_id': tid, 'code': draft_code, 'filename': artifact_filename, 'task_intent': task_intent_val, 'target_language': target_lang, 'message': 'Paused at Human Review Gate. Awaiting human sign-off.', 'state': {'code': draft_code, 'filename': artifact_filename, 'status': 'awaiting_human_review', 'thread_id': tid, 'task_intent': task_intent_val, 'target_language': target_lang}})}\n\n"
+            run_state.status = "PAUSED"
+            yield make_event("human_review_required", "human_review", "waiting_for_human", "Paused at Human Review Gate. Awaiting human sign-off.", iteration=1, code=draft_code, state={'code': draft_code, 'filename': artifact_filename, 'status': 'awaiting_human_review', 'thread_id': tid, 'task_intent': task_intent_val, 'target_language': target_lang})
             return
-            
-        yield f"data: {json.dumps({'event': 'node_complete', 'node': 'human_review', 'status': 'bypassed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 1, 'message': 'Human Review Gate bypassed (Automated Mode).'})}\n\n"
-        await asyncio.sleep(0.3)
-        
+
+        yield make_event("node_complete", "human_review", "bypassed", "Human Review Gate bypassed (Automated Mode).", iteration=1)
+        await step_sleep(0.3)
+
         # 6. Tester & Self-Healing Feedback Loop
         current_it = 1
         while current_it <= max_it:
-            yield f"data: {json.dumps({'event': 'node_start', 'node': 'tester', 'status': 'running', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'message': f'Sandbox Tester evaluating {target_lang_label} assertions in isolated sandbox (Attempt {current_it}/{max_it})...'})}\n\n"
-            
-            if is_simulation and current_it == 1:
-                # Controlled failure injection for Attempt 1 in Simulation Mode
+            async for item in check_checkpoint("tester"): yield item
+            yield make_event("node_start", "tester", "running", f"Sandbox Tester evaluating {target_lang_label} assertions in isolated sandbox (Attempt {current_it}/{max_it})...", iteration=current_it)
+            await step_sleep(0.3)
+
+            # Check if simulation failure injection is needed for attempt 1
+            force_fail_attempt1 = (is_simulation or scenario_val in ["self_fix", "max_retry"]) and current_it == 1
+            if force_fail_attempt1:
                 test_res = {
                     "execution_success": False,
                     "report": (
                         f"[SANDBOX ASSERTION FAILURE]\n"
                         f"AssertionError: Test scenario 2 failed for {target_lang.upper()} artifact.\n"
-                        f"Expected element traversal matching target spec, but encountered pointer boundary disconnect.\n\n"
+                        f"Expected element traversal matching target spec, but encountered boundary disconnect.\n\n"
                         f"[TRACEBACK LOG]\n"
                         f"File '{artifact_filename}', line 42:\n"
-                        f"    curr.next = curr.next.next; // Missing null boundary check on deletion\n"
+                        f"    assert result == expected; // Missing boundary check on empty collection\n"
                         f"[STATUS] Rejection by Tester Agent. Self-healing loop triggered."
                     )
+                }
+            elif scenario_val == "max_retry" and current_it < max_it:
+                test_res = {
+                    "execution_success": False,
+                    "report": f"[SANDBOX ASSERTION FAILURE]\nAssertionError: Attempt {current_it} failed in isolated sandbox."
                 }
             else:
                 test_res = await loop.run_in_executor(None, tester_node, state)
@@ -1141,72 +1328,65 @@ async def stream_workflow_events(
             state["report"] = test_res.get("report", "")
             state["execution_success"] = test_res.get("execution_success", False)
             state["iterations"] = current_it
-            
+
             if state["execution_success"]:
-                yield f"data: {json.dumps({'event': 'test_passed', 'node': 'tester', 'status': 'success', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'code': state['code'], 'filename': artifact_filename, 'report': state['report'], 'message': f'All sandbox assertions verified cleanly for {target_lang_label} in Attempt {current_it}!', 'state': {'code': state['code'], 'filename': artifact_filename, 'report': state['report'], 'execution_success': True, 'iterations': current_it, 'target_language': target_lang}})}\n\n"
-                await asyncio.sleep(0.3)
-                yield f"data: {json.dumps({'event': 'router_decision', 'node': 'router', 'decision': 'END', 'status': 'success', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'message': 'Router: execution_success = True ➔ Routing to END'})}\n\n"
-                await asyncio.sleep(0.3)
-                yield f"data: {json.dumps({'event': 'workflow_complete', 'node': 'END', 'status': 'completed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'thread_id': tid, 'code': state['code'], 'filename': artifact_filename, 'task_intent': task_intent_val, 'target_language': target_lang, 'report': state['report'], 'execution_success': True, 'message': f'Workflow completed successfully in {current_it} loop(s).', 'state': {'code': state['code'], 'filename': artifact_filename, 'report': state['report'], 'execution_success': True, 'iterations': current_it, 'language': target_lang, 'target_language': target_lang, 'task_intent': task_intent_val}})}\n\n"
-                
-                # Auto-save run record to disk
+                yield make_event("test_passed", "tester", "success", f"All sandbox assertions verified cleanly for {target_lang_label} in Attempt {current_it}!", iteration=current_it, code=state["code"], report=state["report"], state={'code': state['code'], 'filename': artifact_filename, 'report': state['report'], 'execution_success': True, 'iterations': current_it, 'target_language': target_lang})
+                await step_sleep(0.3)
+
+                async for item in check_checkpoint("router"): yield item
+                yield make_event("router_decision", "router", "success", "Router: execution_success = True ➔ Routing to END", decision="END", iteration=current_it)
+                await step_sleep(0.3)
+
+                async for item in check_checkpoint("END"): yield item
+                run_state.status = "COMPLETED"
+                yield make_event("workflow_complete", "END", "completed", f"Workflow completed successfully in {current_it} loop(s).", iteration=current_it, code=state["code"], report=state["report"], execution_success=True, state={'code': state['code'], 'filename': artifact_filename, 'report': state['report'], 'execution_success': True, 'iterations': current_it, 'language': target_lang, 'target_language': target_lang, 'task_intent': task_intent_val})
+
                 save_run_to_disk({
-                    "id": tid,
-                    "thread_id": tid,
-                    "task": task_text,
-                    "task_intent": task_intent_val,
-                    "language": target_lang,
-                    "target_language": target_lang,
-                    "filename": artifact_filename,
-                    "mode": mode_val,
-                    "success": True,
-                    "iterations": current_it,
-                    "code": state["code"],
-                    "report": state["report"],
-                    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")
+                    "id": tid, "thread_id": tid, "task": task_text, "task_intent": task_intent_val,
+                    "language": target_lang, "target_language": target_lang, "filename": artifact_filename,
+                    "mode": mode_val, "success": True, "iterations": current_it, "code": state["code"],
+                    "report": state["report"], "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")
                 })
                 break
             else:
-                yield f"data: {json.dumps({'event': 'test_failed', 'node': 'tester', 'status': 'failed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'code': state['code'], 'filename': artifact_filename, 'report': state['report'], 'message': f'Sandbox assertions failed in Attempt {current_it}. Error traceback captured.', 'state': {'code': state['code'], 'filename': artifact_filename, 'report': state['report'], 'execution_success': False, 'iterations': current_it, 'target_language': target_lang}})}\n\n"
-                await asyncio.sleep(0.3)
-                
+                yield make_event("test_failed", "tester", "failed", f"Sandbox assertions failed in Attempt {current_it}. Error traceback captured.", iteration=current_it, code=state["code"], report=state["report"], state={'code': state['code'], 'filename': artifact_filename, 'report': state['report'], 'execution_success': False, 'iterations': current_it, 'target_language': target_lang})
+                await step_sleep(0.3)
+
+                async for item in check_checkpoint("router"): yield item
                 if current_it < max_it:
-                    yield f"data: {json.dumps({'event': 'retry', 'node': 'router', 'decision': 'RETRY', 'status': 'retrying', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'message': f'Router: Tests failed ➔ Self-Healing Loop triggered (Retry {current_it + 1}/{max_it})'})}\n\n"
-                    await asyncio.sleep(0.3)
-                    
+                    yield make_event("retry", "router", "retrying", f"Router: Tests failed ➔ Self-Healing Loop triggered (Retry {current_it + 1}/{max_it})", decision="RETRY", iteration=current_it)
+                    await step_sleep(0.3)
+
                     current_it += 1
                     state["iterations"] = current_it
-                    
-                    yield f"data: {json.dumps({'event': 'node_start', 'node': 'developer', 'status': 'retrying', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'message': f'Developer Agent analyzing failure traceback and synthesizing corrected {target_lang_label} code (Attempt {current_it}/{max_it})...'})}\n\n"
+
+                    async for item in check_checkpoint("developer"): yield item
+                    yield make_event("node_start", "developer", "retrying", f"Developer Agent analyzing failure traceback and synthesizing corrected {target_lang_label} code (Attempt {current_it}/{max_it})...", iteration=current_it)
+                    await step_sleep(0.3)
+
                     heal_res = await loop.run_in_executor(None, developer_node, state)
                     state["code"] = heal_res.get("code", state["code"])
-                    
-                    yield f"data: {json.dumps({'event': 'node_complete', 'node': 'developer', 'status': 'success', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'code': state['code'], 'filename': artifact_filename, 'message': f'Developer Agent produced self-healed code draft for Attempt {current_it}.', 'state': {'code': state['code'], 'filename': artifact_filename, 'iterations': current_it, 'language': target_lang, 'task_intent': task_intent_val}})}\n\n"
-                    await asyncio.sleep(0.3)
+
+                    yield make_event("node_complete", "developer", "success", f"Developer Agent produced self-healed code draft for Attempt {current_it}.", iteration=current_it, code=state["code"], state={'code': state['code'], 'filename': artifact_filename, 'iterations': current_it, 'language': target_lang, 'task_intent': task_intent_val})
+                    await step_sleep(0.3)
                 else:
-                    yield f"data: {json.dumps({'event': 'max_retries_reached', 'node': 'router', 'decision': 'END', 'status': 'failed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'message': f'Router: Max retry ceiling ({max_it}) reached. Halting execution loop.'})}\n\n"
-                    await asyncio.sleep(0.3)
-                    yield f"data: {json.dumps({'event': 'workflow_complete', 'node': 'END', 'status': 'failed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': current_it, 'thread_id': tid, 'code': state['code'], 'filename': artifact_filename, 'task_intent': task_intent_val, 'target_language': target_lang, 'report': state['report'], 'execution_success': False, 'message': f'Workflow completed with test failures after {current_it} attempts.', 'state': {'code': state['code'], 'filename': artifact_filename, 'report': state['report'], 'execution_success': False, 'iterations': current_it, 'language': target_lang, 'target_language': target_lang, 'task_intent': task_intent_val}})}\n\n"
-                    
-                    # Auto-save run record to disk
+                    yield make_event("max_retries_reached", "router", "failed", f"Router: Max retry ceiling ({max_it}) reached. Halting execution loop.", decision="END", iteration=current_it)
+                    await step_sleep(0.3)
+
+                    async for item in check_checkpoint("END"): yield item
+                    run_state.status = "FAILED"
+                    yield make_event("workflow_complete", "END", "failed", f"Workflow completed with test failures after {current_it} attempts.", iteration=current_it, code=state["code"], report=state["report"], execution_success=False, state={'code': state['code'], 'filename': artifact_filename, 'report': state['report'], 'execution_success': False, 'iterations': current_it, 'language': target_lang, 'target_language': target_lang, 'task_intent': task_intent_val})
+
                     save_run_to_disk({
-                        "id": tid,
-                        "thread_id": tid,
-                        "task": task_text,
-                        "task_intent": task_intent_val,
-                        "language": target_lang,
-                        "target_language": target_lang,
-                        "filename": artifact_filename,
-                        "mode": mode_val,
-                        "success": False,
-                        "iterations": current_it,
-                        "code": state["code"],
-                        "report": state["report"],
-                        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")
+                        "id": tid, "thread_id": tid, "task": task_text, "task_intent": task_intent_val,
+                        "language": target_lang, "target_language": target_lang, "filename": artifact_filename,
+                        "mode": mode_val, "success": False, "iterations": current_it, "code": state["code"],
+                        "report": state["report"], "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ")
                     })
                     break
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
 
 
 

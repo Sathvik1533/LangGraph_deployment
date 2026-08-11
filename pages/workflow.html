@@ -1417,20 +1417,12 @@
                 scope: 'Constrains runtime execution to isolated compilation environments without direct host filesystem or socket access.',
                 detector: 'Multi-Lang Sandboxed Process Isolation',
                 status: 'WAITING',
-                action: 'Monitoring execution permissions',
-                reason: 'Awaiting task execution trigger...'
-            },
-            unbounded_consumption: {
-                name: 'LLM10: Unbounded Consumption & Rate Boundary',
-                scope: 'Enforces strict iteration ceiling (max 3 cycles) and token usage caps to prevent runaway recursive costs.',
-                detector: 'LangGraph Max Iteration Guardrail (Cap: 3)',
-                status: 'WAITING',
-                action: 'Monitoring retry counters',
-                reason: 'Awaiting task execution trigger...'
-            }
+            prompt_injection: { name: 'LLM01: Prompt Injection Defense', status: 'WAITING', reason: 'Awaiting task execution trigger...' },
+            sensitive_data: { name: 'LLM02: Sensitive Data Leak Prevention', status: 'WAITING', reason: 'Awaiting task execution trigger...' },
+            excessive_agency: { name: 'LLM06: Excessive Agency & OS Shield', status: 'WAITING', reason: 'Awaiting task execution trigger...' },
+            unbounded_consumption: { name: 'LLM10: Unbounded Consumption & Rate Boundary', status: 'WAITING', reason: 'Awaiting task execution trigger...' }
         };
 
-        // Stored Execution Information per Node
         let nodeStore = {
             'START': { events: [], log: '[00:00.00] 🚀 START Node ready. Awaiting task execution.', code: '', state: null, status: 'IDLE', iteration: 0, time: '' },
             'guardrail': { events: [], log: '', code: '', state: null, status: 'WAITING', iteration: 0, time: '' },
@@ -1448,7 +1440,7 @@
 
         function normalizeNodeKey(rawNode) {
             if (!rawNode) return 'START';
-            const lower = rawNode.toLowerCase().replace(/[\s_-]/g, '');
+            const lower = String(rawNode).toLowerCase().replace(/[\s_-]/g, '');
             if (lower === 'start') return 'START';
             if (lower === 'guardrail' || lower === 'guardrails') return 'guardrail';
             if (lower === 'developer' || lower === 'developernode') return 'developer';
@@ -1467,6 +1459,11 @@
             if (canonicalKey === 'router') return 'nodeRouter';
             if (canonicalKey === 'END') return 'nodeEND';
             return 'nodeSTART';
+        }
+
+        function getActiveLanguage() {
+            const hidden = document.getElementById('canvasLangSelect');
+            return hidden ? hidden.value.toLowerCase() : 'python';
         }
 
         function resetGraphVisuals() {
@@ -1489,73 +1486,16 @@
             }
         }
 
-        function highlightLiveNode(nodeName, status) {
-            resetGraphVisuals();
-            const canonicalKey = normalizeNodeKey(nodeName);
-            const svgId = getSvgNodeId(canonicalKey);
-            const el = document.getElementById(svgId);
-
-            if (el) {
-                el.classList.add('node-active');
-                if (status === 'success' || status === 'completed' || status === 'PASSED' || status === 'CLEAN') el.classList.add('node-pass');
-                else if (status === 'failed' || status === 'BLOCKED' || status === 'ASSERTION ERROR') el.classList.add('node-fail');
-                else if (status === 'running' || status === 'retrying' || status === 'SCANNING') el.classList.add('node-running');
-            }
-
-            if (canonicalKey === 'START') {
-                document.getElementById('edgeStartGuard')?.classList.add('edge-active');
-            } else if (canonicalKey === 'guardrail') {
-                document.getElementById('edgeStartGuard')?.classList.add('edge-active');
-                document.getElementById('edgeGuardDev')?.classList.add('edge-active');
-            } else if (canonicalKey === 'developer') {
-                if (status === 'retrying') {
-                    const loopEl = document.getElementById('edgeFeedbackLoop');
-                    const loopLabel = document.getElementById('loopLabel');
-                    if (loopEl) {
-                        loopEl.classList.add('edge-loop-active');
-                        loopEl.style.opacity = '1';
-                    }
-                    if (loopLabel) loopLabel.style.opacity = '1';
-                } else {
-                    document.getElementById('edgeGuardDev')?.classList.add('edge-active');
-                    document.getElementById('edgeDevReview')?.classList.add('edge-active');
-                }
-            } else if (canonicalKey === 'human_review') {
-                document.getElementById('edgeDevReview')?.classList.add('edge-active');
-            } else if (canonicalKey === 'tester') {
-                document.getElementById('edgeReviewTest')?.classList.add('edge-active');
-                document.getElementById('edgeTestRoute')?.classList.add('edge-active');
-            } else if (canonicalKey === 'router') {
-                if (status === 'retrying') {
-                    const loopEl = document.getElementById('edgeFeedbackLoop');
-                    const loopLabel = document.getElementById('loopLabel');
-                    if (loopEl) {
-                        loopEl.classList.add('edge-loop-active');
-                        loopEl.style.opacity = '1';
-                    }
-                    if (loopLabel) loopLabel.style.opacity = '1';
-                } else {
-                    document.getElementById('edgeTestRoute')?.classList.add('edge-active');
-                }
-            } else if (canonicalKey === 'END') {
-                document.getElementById('edgeRouteEnd')?.classList.add('edge-active');
-            }
-        }
-
         function updateInspectorView(nodeKey) {
             const canonicalKey = normalizeNodeKey(nodeKey);
-            const nodeMeta = NODE_REGISTRY[canonicalKey] || {
-                name: canonicalKey,
-                role: 'Custom Workflow Node',
-                icon: 'view_in_ar',
-                color: '#38bdf8',
-                description: 'LangGraph custom state transformer.'
-            };
+            const nodeMeta = NODE_REGISTRY[canonicalKey] || { name: canonicalKey, role: 'Custom Workflow Node', icon: 'view_in_ar', color: '#38bdf8', description: 'LangGraph custom state transformer.' };
             const stored = nodeStore[canonicalKey] || { log: '', code: '', state: null, status: 'WAITING', iteration: 1 };
             const langLabelMap = { 'python': 'PYTHON 3.11', 'java': 'JAVA 17', 'cpp': 'C++ 20' };
             const currentLangUpper = langLabelMap[activeLanguage] || (activeLanguage || 'PYTHON').toUpperCase();
 
-            setElemText('nodeInspectorTitle', nodeMeta.name);
+            // Dynamic header follows active node
+            const dynamicHeader = NODE_CONSOLE_HEADERS[canonicalKey] || nodeMeta.name;
+            setElemText('nodeInspectorTitle', dynamicHeader);
             setElemText('nodeInspectorSubtitle', `${nodeMeta.role} • ${stored.status}`);
             const iconEl = document.getElementById('nodeInspectorIcon');
             if (iconEl) {
@@ -1566,108 +1506,49 @@
             const statusBadge = document.getElementById('nodeInspectorStatusBadge');
             if (statusBadge) {
                 statusBadge.textContent = stored.status;
-                if (stored.status === 'RUNNING' || stored.status === 'SCANNING' || stored.status === 'GENERATING') {
-                    statusBadge.className = 'cyber-badge cyber-badge-indigo';
-                } else if (stored.status === 'SUCCESS' || stored.status === 'CLEAN' || stored.status === 'PASSED' || stored.status === 'VERIFIED') {
-                    statusBadge.className = 'cyber-badge cyber-badge-emerald';
-                } else if (stored.status === 'BLOCKED' || stored.status === 'FAILED') {
-                    statusBadge.className = 'cyber-badge cyber-badge-amber';
-                } else {
-                    statusBadge.className = 'cyber-badge';
-                    statusBadge.style.background = '#334155';
-                    statusBadge.style.color = '#cbd5e1';
-                }
+                statusBadge.className = 'cyber-badge';
+                if (['RUNNING', 'SCANNING', 'GENERATING'].includes(stored.status)) statusBadge.className += ' cyber-badge-indigo';
+                else if (['SUCCESS', 'CLEAN', 'PASSED', 'VERIFIED'].includes(stored.status)) statusBadge.className += ' cyber-badge-emerald';
+                else if (['BLOCKED', 'FAILED'].includes(stored.status)) statusBadge.className += ' cyber-badge-amber';
             }
 
             setElemText('nodeInspectorLangBadge', currentLangUpper);
             setElemText('nodeRoleLabel', `ROLE: ${nodeMeta.role.toUpperCase()}`);
             setElemText('nodeDescriptionLabel', nodeMeta.description);
             setElemText('nodeAttemptBadge', `ATTEMPT: ${stored.iteration || 1} / 3`);
-            setElemText('nodeTargetLangBadge', `TARGET: ${currentLangUpper}`);
 
             const nodeLogBox = document.getElementById('nodeSpecificLogOutput');
             if (nodeLogBox) {
-                nodeLogBox.textContent = stored.log || `[${new Date().toLocaleTimeString()}] ℹ️ No isolated log output recorded yet for ${nodeMeta.name}.`;
+                nodeLogBox.textContent = stored.log || `[${new Date().toLocaleTimeString()}] ℹ️ No isolated log output recorded yet.`;
                 nodeLogBox.scrollTop = nodeLogBox.scrollHeight;
             }
 
-            ['nodeSTART', 'nodeGuardrail', 'nodeDeveloper', 'nodeReviewGate', 'nodeTester', 'nodeRouter', 'nodeEND'].forEach(id => {
-                document.getElementById(id)?.classList.remove('selected');
-            });
+            document.querySelectorAll('.graph-node').forEach(n => n.classList.remove('selected'));
             const selectedSvgId = getSvgNodeId(canonicalKey);
             document.getElementById(selectedSvgId)?.classList.add('selected');
-
-            updateFollowLiveButton();
-        }
-
-        function selectInspectorNode(nodeKey) {
-            const canonicalKey = normalizeNodeKey(nodeKey);
-            selectedInspectorNode = canonicalKey;
-            
-            if (canonicalKey !== activeExecutionNode) {
-                followLiveNode = false;
-            }
-            updateInspectorView(canonicalKey);
-        }
-
-        function toggleFollowLive() {
-            followLiveNode = !followLiveNode;
-            if (followLiveNode) {
-                selectedInspectorNode = activeExecutionNode;
-                updateInspectorView(activeExecutionNode);
-                showToast('▶️ Resumed following live active node', 'info');
-            } else {
-                updateFollowLiveButton();
-                showToast('⏸️ Inspection paused on selected node', 'info');
-            }
-        }
-
-        function updateFollowLiveButton() {
-            const btn = document.getElementById('followLiveToggleBtn');
-            const icon = document.getElementById('followLiveIcon');
-            const label = document.getElementById('followLiveLabel');
-
-            if (followLiveNode) {
-                if (btn) {
-                    btn.style.background = 'rgba(5, 150, 105, 0.15)';
-                    btn.style.color = '#34d399';
-                    btn.style.borderColor = 'rgba(5, 150, 105, 0.4)';
-                }
-                if (icon) icon.textContent = 'sync_alt';
-                if (label) label.textContent = 'Following Live';
-            } else {
-                if (btn) {
-                    btn.style.background = 'rgba(234, 88, 12, 0.15)';
-                    btn.style.color = '#fb923c';
-                    btn.style.borderColor = 'rgba(234, 88, 12, 0.4)';
-                }
-                if (icon) icon.textContent = 'pause';
-                if (label) label.textContent = `Viewing: ${NODE_REGISTRY[selectedInspectorNode]?.name || selectedInspectorNode}`;
-            }
         }
 
         function switchInspectorTab(tabKey) {
             currentInspectorTab = tabKey;
-            ['tabBtnActiveNode', 'tabBtnTimeline', 'tabBtnCode', 'tabBtnState'].forEach(id => {
-                document.getElementById(id)?.classList.remove('active');
-            });
-            ['tabContentActiveNode', 'tabContentTimeline', 'tabContentCode', 'tabContentState'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.style.display = 'none';
-            });
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content-panel').forEach(p => p.style.display = 'none');
 
             if (tabKey === 'node') {
                 document.getElementById('tabBtnActiveNode')?.classList.add('active');
-                document.getElementById('tabContentActiveNode') && (document.getElementById('tabContentActiveNode').style.display = 'block');
+                const panel = document.getElementById('tabContentActiveNode');
+                if (panel) panel.style.display = 'block';
             } else if (tabKey === 'timeline') {
                 document.getElementById('tabBtnTimeline')?.classList.add('active');
-                document.getElementById('tabContentTimeline') && (document.getElementById('tabContentTimeline').style.display = 'block');
+                const panel = document.getElementById('tabContentTimeline');
+                if (panel) panel.style.display = 'block';
             } else if (tabKey === 'code') {
                 document.getElementById('tabBtnCode')?.classList.add('active');
-                document.getElementById('tabContentCode') && (document.getElementById('tabContentCode').style.display = 'block');
+                const panel = document.getElementById('tabContentCode');
+                if (panel) panel.style.display = 'block';
             } else if (tabKey === 'state') {
                 document.getElementById('tabBtnState')?.classList.add('active');
-                document.getElementById('tabContentState') && (document.getElementById('tabContentState').style.display = 'block');
+                const panel = document.getElementById('tabContentState');
+                if (panel) panel.style.display = 'block';
             }
         }
 
