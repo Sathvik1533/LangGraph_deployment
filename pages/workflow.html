@@ -620,6 +620,12 @@
         let playInterval = null;
         let activeTask = "";
         let activeLanguage = "python";
+        let liveEventSource = null;
+        let activeLiveThreadId = null;
+        let liveEventCount = 0;
+        let isExecutionPaused = false;
+        let currentSimSpeed = 1.0;
+
 
         function getActiveLanguage() {
             const hidden = document.getElementById('canvasLangSelect');
@@ -1273,7 +1279,8 @@
         }
 
         function setSimSpeed(multiplier, btnEl) {
-            simSpeedMultiplier = multiplier;
+            const speedVal = multiplier === 0.5 ? 2.0 : (multiplier === 2 ? 0.5 : 1.0);
+            currentSimSpeed = speedVal;
             document.querySelectorAll('.speed-btn').forEach(b => {
                 b.classList.remove('active');
                 b.style.color = 'var(--text-muted)';
@@ -1282,12 +1289,18 @@
                 btnEl.classList.add('active');
                 btnEl.style.color = 'var(--accent-indigo)';
             }
-            if (playInterval) {
-                togglePlaySimulation();
-                togglePlaySimulation();
-            }
-            showToast(`Simulation speed set to ${multiplier === 0.5 ? '2x' : multiplier === 2 ? '0.5x' : '1x'}`, 'info');
+
+            try {
+                fetch('/api/workflow/control', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'speed', speed: speedVal, thread_id: activeLiveThreadId })
+                }).catch(() => {});
+            } catch (e) {}
+
+            showToast(`Execution speed set to ${speedVal}x`, 'info');
         }
+
 
         function animateLaserPacket(step) {
             const forwardOrb = document.getElementById('laserOrbForward');
@@ -1494,7 +1507,58 @@
             }
         }
 
+        function highlightLiveNode(nodeKey, status) {
+            const canonicalKey = normalizeNodeKey(nodeKey);
+            const svgId = getSvgNodeId(canonicalKey);
+
+            ['nodeSTART', 'nodeGuardrail', 'nodeDeveloper', 'nodeReviewGate', 'nodeTester', 'nodeRouter', 'nodeEND'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (id === svgId) {
+                        el.classList.add('node-active');
+                        const st = (status || '').toLowerCase();
+                        if (['running', 'active', 'scanning', 'generating'].includes(st)) {
+                            el.classList.add('node-running');
+                            el.classList.remove('node-pass', 'node-fail');
+                        } else if (['success', 'passed', 'clean', 'verified', 'bypassed'].includes(st)) {
+                            el.classList.add('node-pass');
+                            el.classList.remove('node-running', 'node-fail');
+                        } else if (['failed', 'blocked', 'error'].includes(st)) {
+                            el.classList.add('node-fail');
+                            el.classList.remove('node-running', 'node-pass');
+                        }
+                    }
+                }
+            });
+
+            const edgeMap = {
+                guardrail: 'edgeStartGuard',
+                developer: 'edgeGuardDev',
+                human_review: 'edgeDevReview',
+                tester: 'edgeReviewTest',
+                router: 'edgeTestRoute',
+                end: 'edgeRouteEnd'
+            };
+            const edgeId = edgeMap[canonicalKey];
+            if (edgeId) {
+                const edgeEl = document.getElementById(edgeId);
+                if (edgeEl) edgeEl.classList.add('edge-active');
+            }
+        }
+
+
+        const NODE_CONSOLE_HEADERS = {
+            start: 'START Node (Payload Ingestion & Contract Init)',
+            guardrail: 'Input Guardrail Shield (Adversarial & PII Scan)',
+            developer: 'Developer Agent (Code Synthesis Engine)',
+            human_review: 'Human Review Gate (HITL Inspection & Approval)',
+            tester: 'Sandbox Tester (Automated Assertion Verification)',
+            router: 'Router Node (Defect Evaluation & Path Decision)',
+            end: 'END Node (Final Delivered Artifact)'
+        };
+
         function updateInspectorView(nodeKey) {
+
             const canonicalKey = normalizeNodeKey(nodeKey);
             const nodeMeta = NODE_REGISTRY[canonicalKey] || { name: canonicalKey, role: 'Custom Workflow Node', icon: 'view_in_ar', color: '#38bdf8', description: 'LangGraph custom state transformer.' };
             const stored = nodeStore[canonicalKey] || { log: '', code: '', state: null, status: 'WAITING', iteration: 1 };
@@ -1919,9 +1983,9 @@
             }
         }
 
-        let isExecutionPaused = false;
 
         document.addEventListener('DOMContentLoaded', async () => {
+
             const navbarRes = await fetch('/templates/navigation.html');
             if (navbarRes.ok) {
                 document.getElementById('navbarContainer').innerHTML = await navbarRes.text();
@@ -2204,7 +2268,9 @@
             const artifactFilename = generateArtifactFilename(taskIntent || inputTask, lang);
             const hitlMode = overrideHitl || (currentScenario === 'hitl_gate');
             const runId = overrideRunId || `run_${Date.now()}`;
+            activeLiveThreadId = runId;
             const modeVal = overrideMode || 'live';
+
             const labelMap = { 'python': 'PYTHON 3.11', 'java': 'JAVA 17', 'cpp': 'C++ 20' };
 
             if (!inputTask) {
