@@ -443,7 +443,69 @@
             </div>
         </div>
 
+        <!-- Real-Time Payload & Guardrail Inspection Trace Panel -->
+        <div class="cyber-card" style="margin-bottom: 24px; padding: 20px; background: rgba(15, 23, 42, 0.75); border: 1px solid var(--border-subtle); border-radius: 14px; backdrop-filter: blur(12px);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="material-symbols-outlined" style="color: var(--accent-cyan); font-size: 24px;">shield</span>
+                    <div>
+                        <h3 style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">Real-Time Payload & Guardrail Inspection Trace</h3>
+                        <div style="font-size: 11.5px; color: var(--text-muted);">Demonstrates live user input passing from START through InputGuard scanners to Developer / Safe Halt decision.</div>
+                    </div>
+                </div>
+                <span id="inputTraceBadge" class="cyber-badge cyber-badge-indigo">PAYLOAD STATUS: IDLE</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                <!-- 1. RAW USER INPUT -->
+                <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px;">
+                    <div style="font-size: 11px; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">input</span>
+                        1. RAW USER INPUT
+                    </div>
+                    <div id="traceRawInput" style="font-family: var(--font-mono); font-size: 11.5px; color: #cbd5e1; background: #020617; padding: 10px; border-radius: 6px; border: 1px solid #1e293b; min-height: 54px; max-height: 90px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;">Awaiting task specification...</div>
+                </div>
+
+                <!-- 2. START NODE -->
+                <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px;">
+                    <div style="font-size: 11px; font-weight: 700; color: var(--accent-indigo); text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">play_circle</span>
+                        2. START NODE (INGEST)
+                    </div>
+                    <div id="traceStartIngest" style="font-family: var(--font-mono); font-size: 11.5px; color: #cbd5e1; background: #020617; padding: 10px; border-radius: 6px; border: 1px solid #1e293b; min-height: 54px; max-height: 90px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;">Task payload uninitialized.</div>
+                </div>
+
+                <!-- 3. GUARDRAIL INPUT -->
+                <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px;">
+                    <div style="font-size: 11px; font-weight: 700; color: var(--accent-amber); text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">security</span>
+                        3. GUARDRAIL SCANNERS
+                    </div>
+                    <div id="traceGuardrailScanners" style="font-family: var(--font-mono); font-size: 11.5px; color: #cbd5e1; background: #020617; padding: 10px; border-radius: 6px; border: 1px solid #1e293b; min-height: 54px; max-height: 90px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;">Awaiting AST scan...</div>
+                </div>
+
+                <!-- 4. GUARDRAIL DECISION -->
+                <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px;">
+                    <div style="font-size: 11px; font-weight: 700; color: var(--accent-emerald); text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">gavel</span>
+                        4. GUARDRAIL DECISION
+                    </div>
+                    <div id="traceGuardrailDecision" style="font-family: var(--font-mono); font-size: 11.5px; color: #cbd5e1; background: #020617; padding: 10px; border-radius: 6px; border: 1px solid #1e293b; min-height: 54px; max-height: 90px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;">Decision pending...</div>
+                </div>
+
+                <!-- 5. DEVELOPER AGENT INPUT -->
+                <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px;">
+                    <div style="font-size: 11px; font-weight: 700; color: #a855f7; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">code</span>
+                        5. DEVELOPER AGENT
+                    </div>
+                    <div id="traceDeveloperInput" style="font-family: var(--font-mono); font-size: 11.5px; color: #cbd5e1; background: #020617; padding: 10px; border-radius: 6px; border: 1px solid #1e293b; min-height: 54px; max-height: 90px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;">Awaiting approved payload...</div>
+                </div>
+            </div>
+        </div>
+
         <!-- Dynamic Active-Node Inspector & Multi-Tab Execution Console -->
+
         <div class="studio-card" id="inspectorCard" style="background: #0f172a; color: #f8fafc; border: 1px solid #334155; padding: 0; overflow: hidden; margin-bottom: 32px;">
             
             <!-- Inspector Header with Dynamic Active-Node Indicator & Live Follow Toggle -->
@@ -1884,6 +1946,15 @@
             });
             renderSecurityControlCards();
 
+            setElemText('traceRawInput', activeTask || 'Awaiting task specification...');
+            setElemText('traceStartIngest', 'Task payload uninitialized.');
+            setElemText('traceGuardrailScanners', 'Awaiting AST scan...');
+            setElemText('traceGuardrailDecision', 'Decision pending...');
+            setElemText('traceDeveloperInput', 'Awaiting approved payload...');
+            setElemText('inputTraceBadge', 'PAYLOAD STATUS: IDLE');
+            const traceBadge = document.getElementById('inputTraceBadge');
+            if (traceBadge) traceBadge.className = 'cyber-badge cyber-badge-indigo';
+
             activeExecutionNode = 'START';
             selectedInspectorNode = 'START';
             updateInspectorView('START');
@@ -2328,6 +2399,15 @@
             setElemText('activeArtifactBadge', artifactFilename);
             setElemText('activeRunIdBadge', `ID: ${runId.substring(0, 18)}`);
 
+            setElemText('traceRawInput', inputTask);
+            setElemText('traceStartIngest', `Task: "${inputTask}"\nTarget Language: ${labelMap[lang] || lang.toUpperCase()}\nThread ID: ${runId}`);
+            setElemText('traceGuardrailScanners', 'Awaiting Guardrail AST scan...');
+            setElemText('traceGuardrailDecision', 'Decision Pending...');
+            setElemText('traceDeveloperInput', 'Awaiting Guardrail approval...');
+            setElemText('inputTraceBadge', 'PAYLOAD: INGESTED AT START');
+            const traceBadge = document.getElementById('inputTraceBadge');
+            if (traceBadge) traceBadge.className = 'cyber-badge cyber-badge-indigo';
+
             setElemText('simStepStatus', `LIVE: Synthesizing ${labelMap[lang] || lang.toUpperCase()} for intent: "${taskIntent.substring(0, 35)}..."`);
             setElemText('streamLogOutput', `[${new Date().toLocaleTimeString()}] 🚀 Initiating SSE Event Stream (${modeVal.toUpperCase()})...\n[${new Date().toLocaleTimeString()}] 📋 Run ID: ${runId}\n[${new Date().toLocaleTimeString()}] 🎯 Task Intent: "${taskIntent}" | Authoritative Target: ${labelMap[lang] || lang.toUpperCase()} | Artifact: ${artifactFilename}\n`);
             setElemText('activeCodeOutput', '// Awaiting live generation from Developer Agent...');
@@ -2385,6 +2465,7 @@
             const canonicalNode = normalizeNodeKey(data.node);
             const timeStr = data.timestamp || new Date().toLocaleTimeString();
             const nodeUpper = canonicalNode.toUpperCase();
+            const labelMap = { 'python': 'PYTHON 3.11', 'java': 'JAVA 17', 'cpp': 'C++ 20' };
 
             if (data.node) {
                 highlightLiveNode(canonicalNode, data.status);
@@ -2397,12 +2478,25 @@
                 setElemText('simStepStatus', `[${modeVal.toUpperCase()}] ${data.message}`);
             }
 
+            if (data.event === 'start' || canonicalNode === 'start') {
+                setElemText('traceRawInput', data.task || task);
+                setElemText('traceStartIngest', `Task: "${data.task || task}"\nTarget Language: ${(labelMap[lang] || lang).toUpperCase()}\nThread ID: ${data.thread_id || runId}`);
+                setElemText('inputTraceBadge', 'PAYLOAD: INGESTED AT START');
+                const tb = document.getElementById('inputTraceBadge');
+                if (tb) tb.className = 'cyber-badge cyber-badge-indigo';
+            }
+
             if (data.event === 'node_start' && canonicalNode === 'guardrail') {
                 Object.keys(liveSecurityControls).forEach(k => {
                     liveSecurityControls[k].status = 'SCANNING...';
                     liveSecurityControls[k].reason = 'Active InputGuard AST scanning in progress...';
                 });
                 renderSecurityControlCards();
+
+                setElemText('traceGuardrailScanners', `Active InputGuard AST Scanners:\n• LLM01: Prompt Injection\n• LLM02: Sensitive Data\n• LLM06: Excessive Agency\n• LLM10: Unbounded Consumption\nScanning payload: "${(data.task || task || '').substring(0, 40)}..."`);
+                setElemText('inputTraceBadge', 'PAYLOAD: SCANNING IN GUARDRAIL');
+                const tb = document.getElementById('inputTraceBadge');
+                if (tb) tb.className = 'cyber-badge cyber-badge-amber';
             }
 
             if (data.security_controls) {
@@ -2418,7 +2512,14 @@
                     liveSecurityControls[k].reason = 'Zero adversarial patterns or sensitive data detected.';
                 });
                 renderSecurityControlCards();
+
+                setElemText('traceGuardrailDecision', '✅ APPROVED (PASS): All security scanners passed cleanly.');
+                setElemText('traceDeveloperInput', '🚀 APPROVED: Task payload forwarded to Developer Agent for code synthesis.');
+                setElemText('inputTraceBadge', 'PAYLOAD: APPROVED FOR DEVELOPER');
+                const tb = document.getElementById('inputTraceBadge');
+                if (tb) tb.className = 'cyber-badge cyber-badge-emerald';
             }
+
 
             if (!nodeStore[canonicalNode]) {
                 nodeStore[canonicalNode] = { events: [], log: '', code: '', state: null, status: 'WAITING', iteration: data.iteration || 1 };
@@ -2466,10 +2567,17 @@
             }
 
             if (data.event === 'guardrail_block' || data.status === 'BLOCKED') {
+                setElemText('traceGuardrailDecision', '⛔ BLOCKED: ' + (data.error || data.message || 'Adversarial security violation detected'));
+                setElemText('traceDeveloperInput', '🚫 BLOCKED BY GUARDRAIL: Developer Agent execution halted. Task terminated safely.');
+                setElemText('inputTraceBadge', 'PAYLOAD: BLOCKED (SAFE HALT)');
+                const tb = document.getElementById('inputTraceBadge');
+                if (tb) tb.className = 'cyber-badge cyber-badge-amber';
+
                 if (liveEventSource) {
                     liveEventSource.close();
                     liveEventSource = null;
                 }
+
                 if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = origHtml;

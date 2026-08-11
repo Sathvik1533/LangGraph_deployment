@@ -9,6 +9,7 @@ Verifies:
 5. Human-in-the-Loop Governance: Approve, Edit & Approve, Request Changes, Abort
 6. Scenario card selections
 7. Real-time execution advancement & state machine invariants (A-J)
+8. Input -> Guardrail -> Workflow Payload Trace Panel & Security Decisions
 """
 
 import pytest
@@ -162,30 +163,36 @@ def test_full_platform_e2e_flow():
 
 
 def test_workflow_execution_advancement_and_state_invariants():
-    """Proves real execution events, node state transitions, control handlers, and state invariants A-J."""
+    """Proves real execution events, node state transitions, control handlers, and payload trace panel."""
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(viewport={"width": 1400, "height": 900})
         context.add_init_script("localStorage.setItem('ai_workflow_studio_tour_completed_v3', 'true');")
         page = context.new_page()
 
-        # A-D. SIMULATION PLAY produces real START execution event and advances to GUARDRAIL & DEVELOPER
+        # A-D. Clean task passes Guardrail and populates trace panel
         page.goto(f"{BASE_URL}/workflow?run=sim_e2e_inv_1&task=Write%20a%20python%20function%20to%20reverse%20a%20string&mode=simulation&autoRun=true")
         
         # Verify SSE stream connection and real START event
         page.wait_for_timeout(1500)
         log_box = page.locator("#streamLogOutput")
         expect(log_box).to_contain_text(re.compile(r"(START|Workflow initialized)"))
-        print("  ✓ A-B: Simulation Play produces real START event over SSE stream")
+        
+        # Verify Input Trace Panel shows real payload
+        expect(page.locator("#traceRawInput")).to_contain_text("reverse a string")
+        expect(page.locator("#traceStartIngest")).to_contain_text("sim_e2e_inv_1")
+        print("  ✓ A-B: Input Trace Panel populates raw task & ingested START payload")
 
-        # Verify START transitions to GUARDRAIL and guardrail state changes from WAITING
+        # Verify START transitions to GUARDRAIL
         expect(page.locator("#nodeGuardrail")).to_have_class(re.compile(r"(node-active|node-pass|node-running)"))
         expect(page.locator("#badgeGuardrailPrompt")).not_to_contain_text("WAITING")
-        print("  ✓ C-D: START transitions to GUARDRAIL and guardrail state changes from WAITING")
 
-        # Wait for workflow completion
+        # Wait for workflow completion and verify payload decision
         page.wait_for_timeout(3500)
         expect(page.locator("#telemetryStatusBadge")).to_contain_text(re.compile(r"(Tests Passed|COMPLETED|SUCCESS)"))
+        expect(page.locator("#traceGuardrailDecision")).to_contain_text("APPROVED")
+        expect(page.locator("#traceDeveloperInput")).to_contain_text("APPROVED")
+        print("  ✓ C-D: Clean task passes Guardrail decision and reaches Developer Agent")
 
         # G. Pause / Resume / Stop affect real run
         page.locator("#pauseResumeBtn").click()
@@ -206,9 +213,10 @@ def test_workflow_execution_advancement_and_state_invariants():
         page.wait_for_timeout(400)
         expect(page.locator("#telemetryStatusBadge")).to_contain_text("STATUS: IDLE")
         expect(page.locator("#badgeGuardrailPrompt")).to_contain_text("WAITING")
-        print("  ✓ H: Reset returns workflow state to clean IDLE state")
+        expect(page.locator("#inputTraceBadge")).to_contain_text("IDLE")
+        print("  ✓ H: Reset returns workflow state and trace panel to clean IDLE state")
 
-        # E. Security Lab TEST IN PIPELINE executes after redirect
+        # E. Security Lab TEST IN PIPELINE executes after redirect and halts at Guardrail
         page.goto(f"{BASE_URL}/")
         page.locator("button:has-text('Security Lab')").first.click()
         page.wait_for_timeout(300)
@@ -220,8 +228,9 @@ def test_workflow_execution_advancement_and_state_invariants():
 
         page.wait_for_timeout(3000)
         expect(page.locator("#telemetryStatusBadge")).to_contain_text(re.compile(r"(BLOCKED BY GUARDRAIL|BLOCKED)"))
-        expect(page.locator("#badgeGuardrailPrompt")).to_contain_text(re.compile(r"(BLOCKED|SCANNING)"))
-        print("  ✓ E: TEST IN PIPELINE actually executes after redirect and halts at guardrail block")
+        expect(page.locator("#traceGuardrailDecision")).to_contain_text("BLOCKED")
+        expect(page.locator("#traceDeveloperInput")).to_contain_text("BLOCKED BY GUARDRAIL")
+        print("  ✓ E: Prompt injection payload halts at Guardrail and NEVER reaches Developer Agent")
 
         # F. LIVE Execute API actually starts execution
         page.goto(f"{BASE_URL}/workflow")
@@ -231,4 +240,4 @@ def test_workflow_execution_advancement_and_state_invariants():
         print("  ✓ F: LIVE Execute API starts real backend workflow execution")
 
         browser.close()
-        print("\n🎉 ALL ADVANCED EXECUTION & STATE INVARIANT VERIFICATIONS PASSED!")
+        print("\n🎉 ALL ADVANCED EXECUTION, PAYLOAD TRACE & STATE INVARIANT VERIFICATIONS PASSED!")
