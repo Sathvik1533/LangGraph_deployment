@@ -635,6 +635,10 @@ function renderSpotlightStep() {
     const pageTour = FULL_PLATFORM_TOUR[currentTourPageIndex];
     if (!pageTour || !pageTour.steps) return;
 
+    // Show subordinate flow bar when tour is actively running
+    const flowBar = document.getElementById('pageFlowBarContainer');
+    if (flowBar) flowBar.classList.add('active');
+
     document.querySelectorAll('.element-highlighted').forEach(el => el.classList.remove('element-highlighted'));
 
     const step = pageTour.steps[currentTourStepIndex];
@@ -778,6 +782,9 @@ function closeSpotlightTour() {
     document.querySelectorAll('.element-highlighted').forEach(el => el.classList.remove('element-highlighted'));
     const callout = document.getElementById('tourCalloutCard');
     if (callout) callout.style.display = 'none';
+
+    const flowBar = document.getElementById('pageFlowBarContainer');
+    if (flowBar) flowBar.classList.remove('active');
 }
 
 function openPlatformGuide() {
