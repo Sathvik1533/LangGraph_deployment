@@ -171,14 +171,14 @@ class InputGuard:
             if match:
                 return GuardrailResult(
                     passed=False,
-                    scanner="PromptInjectionScanner",
+                    scanner="Prompt Injection Scanner",
                     blocked_by="prompt_injection",
                     reason=f"🛡️ Your request was blocked because it looks like it's trying to change how the AI works internally. Please just describe the code you want to build!",
                     severity=Severity.CRITICAL,
                     details={"matched_pattern": pattern, "matched_text": match.group()}
                 )
 
-        return GuardrailResult(passed=True, scanner="PromptInjectionScanner")
+        return GuardrailResult(passed=True, scanner="Prompt Injection Scanner")
 
     @classmethod
     def scan_topic_boundary(cls, text: str) -> GuardrailResult:
@@ -191,7 +191,7 @@ class InputGuard:
         if not found_keywords:
             return GuardrailResult(
                 passed=False,
-                scanner="TopicBoundaryScanner",
+                scanner="Topic Boundary Scanner",
                 blocked_by="off_topic",
                 reason=f"🎯 This platform is designed for coding tasks only. Please describe what program, function, or algorithm you'd like the AI to build for you!",
                 severity=Severity.MEDIUM,
@@ -200,7 +200,7 @@ class InputGuard:
 
         return GuardrailResult(
             passed=True,
-            scanner="TopicBoundaryScanner",
+            scanner="Topic Boundary Scanner",
             details={"coding_keywords_found": len(found_keywords), "sample_keywords": found_keywords[:5]}
         )
 
@@ -214,14 +214,14 @@ class InputGuard:
             if match:
                 return GuardrailResult(
                     passed=False,
-                    scanner="ContentSafetyScanner",
+                    scanner="Content Safety Scanner",
                     blocked_by="unsafe_content",
                     reason=f"⚠️ Your request was blocked because it appears to contain harmful content. This platform only generates safe, educational code.",
                     severity=Severity.CRITICAL,
                     details={"matched_pattern": pattern}
                 )
 
-        return GuardrailResult(passed=True, scanner="ContentSafetyScanner")
+        return GuardrailResult(passed=True, scanner="Content Safety Scanner")
 
     @classmethod
     def scan_all(cls, text: str) -> GuardrailReport:
@@ -302,14 +302,14 @@ class OutputGuard:
         if found_dangers:
             return GuardrailResult(
                 passed=False,
-                scanner="DangerousCodeScanner",
+                scanner="Dangerous Code Scanner",
                 blocked_by="dangerous_code",
                 reason=f"🔒 The generated code was blocked because it contains potentially unsafe operations: {found_dangers[0]}. The AI has been asked to regenerate a safe version.",
                 severity=Severity.HIGH,
                 details={"dangerous_patterns_found": found_dangers}
             )
 
-        return GuardrailResult(passed=True, scanner="DangerousCodeScanner")
+        return GuardrailResult(passed=True, scanner="Dangerous Code Scanner")
 
     @classmethod
     def scan_pii_leaks(cls, code: str) -> GuardrailResult:
@@ -331,14 +331,14 @@ class OutputGuard:
             pii_types = [p["type"] for p in found_pii]
             return GuardrailResult(
                 passed=False,
-                scanner="PIILeakScanner",
+                scanner="PII Leak Scanner",
                 blocked_by="pii_leak",
                 reason=f"🔐 The generated code was blocked because it contains what looks like sensitive data ({', '.join(pii_types)}). The AI has been asked to use placeholder values instead.",
                 severity=Severity.HIGH,
                 details={"pii_found": found_pii}
             )
 
-        return GuardrailResult(passed=True, scanner="PIILeakScanner")
+        return GuardrailResult(passed=True, scanner="PII Leak Scanner")
 
     @classmethod
     def validate_code_relevance(cls, code: str) -> GuardrailResult:
@@ -356,7 +356,7 @@ class OutputGuard:
             if re.search(pattern, code_stripped, re.IGNORECASE):
                 return GuardrailResult(
                     passed=False,
-                    scanner="CodeRelevanceValidator",
+                    scanner="Code Relevance Validator",
                     blocked_by="llm_refusal",
                     reason="🤖 The AI refused to generate code. Retrying with a rephrased prompt.",
                     severity=Severity.MEDIUM,
@@ -370,14 +370,14 @@ class OutputGuard:
         if indicator_count < 2 and len(code_stripped) > 50:
             return GuardrailResult(
                 passed=False,
-                scanner="CodeRelevanceValidator",
+                scanner="Code Relevance Validator",
                 blocked_by="not_code",
                 reason="📝 The AI returned text instead of code. Retrying to get actual source code.",
                 severity=Severity.MEDIUM,
                 details={"code_indicators_found": indicator_count}
             )
 
-        return GuardrailResult(passed=True, scanner="CodeRelevanceValidator")
+        return GuardrailResult(passed=True, scanner="Code Relevance Validator")
 
     @classmethod
     def validate_language_correctness(cls, code: str, expected_language: str) -> GuardrailResult:
@@ -387,7 +387,7 @@ class OutputGuard:
             expected = "cpp"
 
         if expected not in cls.LANGUAGE_MARKERS:
-            return GuardrailResult(passed=True, scanner="LanguageCorrectnessValidator")
+            return GuardrailResult(passed=True, scanner="Language Correctness Validator")
 
         markers = cls.LANGUAGE_MARKERS[expected]
         matched = sum(1 for m in markers if re.search(m, code, re.MULTILINE))
@@ -407,14 +407,14 @@ class OutputGuard:
 
             return GuardrailResult(
                 passed=False,
-                scanner="LanguageCorrectnessValidator",
+                scanner="Language Correctness Validator",
                 blocked_by="wrong_language",
                 reason=reason,
                 severity=Severity.MEDIUM,
                 details={"expected": expected, "markers_matched": matched, "detected_wrong_language": wrong_lang}
             )
 
-        return GuardrailResult(passed=True, scanner="LanguageCorrectnessValidator", details={"markers_matched": matched})
+        return GuardrailResult(passed=True, scanner="Language Correctness Validator", details={"markers_matched": matched})
 
     @classmethod
     def scan_all(cls, code: str, expected_language: str = "python") -> GuardrailReport:
