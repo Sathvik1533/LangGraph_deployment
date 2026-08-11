@@ -42,7 +42,7 @@
                     <label style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">
                         <span>Task Specification</span>
                     </label>
-                    <textarea id="taskInput" rows="3" style="width: 100%; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px; color: var(--text-primary); font-family: var(--font-sans); font-size: 14.5px; line-height: 1.6; outline: none; resize: vertical;" placeholder="Describe what you want to build (e.g., 'Write a Python function to validate an email address')..." data-tooltip="Task Input: Describe what code or algorithm you want the multi-agent workflow to build."></textarea>
+                    <textarea id="taskInput" rows="3" style="width: 100%; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px; color: var(--text-primary); font-family: var(--font-sans); font-size: 14.5px; line-height: 1.6; outline: none; resize: vertical;" placeholder="Describe what you want to build (e.g., 'Write a Python function that reverses a string and create tests for it.')..." data-tooltip="Task Input: Describe what code or algorithm you want the multi-agent workflow to build.">Write a Python function that reverses a string and create tests for it.</textarea>
                     
                     <!-- Inline Validation Banner inside the Card -->
                     <div id="taskInlineAlert" style="display: none; margin-top: 10px; padding: 10px 14px; background: var(--accent-terracotta-bg); border: 1px solid rgba(234, 88, 12, 0.3); border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--accent-terracotta); align-items: center; gap: 8px;">
@@ -98,9 +98,9 @@
 
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
                 <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;" id="presetRow">
-                    <button class="cyber-btn cyber-btn-secondary preset-btn" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Write a function to calculate fibonacci numbers')" data-tooltip="Quick Preset: Fibonacci sequence calculation with unit tests.">Fibonacci</button>
-                    <button class="cyber-btn cyber-btn-secondary preset-btn" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Create a function that checks if a string is a palindrome')" data-tooltip="Quick Preset: Palindrome validator with edge cases.">Palindrome</button>
-                    <button class="cyber-btn cyber-btn-secondary preset-btn" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Write a function to divide two numbers with proper error handling')" data-tooltip="Quick Preset: Safe division with zero-division handling.">Safe Division</button>
+                    <button class="cyber-btn cyber-btn-secondary preset-btn" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Write a Python function that reverses a string and create tests for it.')" data-tooltip="Quick Preset: String Reverser with unit tests.">String Reverser</button>
+                    <button class="cyber-btn cyber-btn-secondary preset-btn" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Write a Python function that validates an email address.')" data-tooltip="Quick Preset: Email Validator with regex test cases.">Email Validator</button>
+                    <button class="cyber-btn cyber-btn-secondary preset-btn" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Create a singly linked list in Java with insertion, deletion, and traversal.')" data-tooltip="Quick Preset: Java Singly Linked List algorithm.">Java Linked List</button>
                 </div>
 
                 <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">

@@ -90,16 +90,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const preset = urlParams.get('preset');
     const taskInput = document.getElementById('taskInput');
+    if (taskInput && !taskInput.value.trim()) {
+        taskInput.value = 'Write a Python function that reverses a string and create tests for it.';
+    }
     
     if (preset && taskInput) {
-        if (preset === 'fibonacci') {
+        if (preset === 'reverser' || preset === 'string') {
+            taskInput.value = 'Write a Python function that reverses a string and create tests for it.';
+        } else if (preset === 'email') {
+            taskInput.value = 'Write a Python function that validates an email address.';
+        } else if (preset === 'java_list') {
+            taskInput.value = 'Create a singly linked list in Java with insertion, deletion, and traversal.';
+        } else if (preset === 'fibonacci') {
             taskInput.value = 'Write a function to calculate fibonacci numbers with self-validation assertions';
-        } else if (preset === 'palindrome') {
-            taskInput.value = 'Create a function that checks if a string is a palindrome ignoring case and punctuation';
-        } else if (preset === 'divide') {
-            taskInput.value = 'Write a function to divide two numbers with proper zero-division error handling';
-        } else if (preset === 'stats') {
-            taskInput.value = 'Write a function to process numeric data and return count, sum, average, min, and max';
         }
     }
 
