@@ -51,11 +51,18 @@ class GuardrailReport:
     reason: Optional[str] = None
     severity: Severity = Severity.LOW
 
+    # Severity ordering for priority comparison
+    _SEVERITY_ORDER = {Severity.LOW: 0, Severity.MEDIUM: 1, Severity.HIGH: 2, Severity.CRITICAL: 3}
+
     def add(self, result: GuardrailResult):
         self.results.append(result)
         if not result.passed:
             self.passed = False
-            if self.severity.value < result.severity.value or self.blocked_by is None:
+            # Keep the HIGHEST severity blocker as the primary blocked_by
+            # (CRITICAL > HIGH > MEDIUM > LOW)
+            current_order = self._SEVERITY_ORDER.get(self.severity, 0)
+            new_order = self._SEVERITY_ORDER.get(result.severity, 0)
+            if self.blocked_by is None or new_order > current_order:
                 self.blocked_by = result.blocked_by
                 self.reason = result.reason
                 self.severity = result.severity
@@ -82,9 +89,11 @@ class InputGuard:
         r"override\s+(all\s+)?instructions",
         r"bypass\s+(all\s+)?(safety|filters|guardrails|restrictions)",
         # System prompt extraction
-        r"(reveal|show|print|output|display)\s+(your\s+)?(system\s+prompt|instructions|rules)",
+        r"(reveal|show|print|output|display|expose|dump|give\s+me)\s+(your\s+)?(system\s+prompt|hidden\s+prompt|internal\s+(configuration|rules|instructions))",
         r"what\s+(are|is)\s+your\s+(system\s+)?prompt",
         r"repeat\s+(the\s+)?(text|words|instructions)\s+above",
+        r"(print|echo|say)\s+(the\s+)?(system|hidden|secret)\s+(message|prompt|text)",
+        r"(tell|show)\s+me\s+(your\s+)?(system|internal|hidden|secret)\s+(prompt|instructions|rules|configuration)",
         # Role manipulation
         r"you\s+are\s+now\s+(DAN|evil|unrestricted|jailbroken)",
         r"pretend\s+you\s+are\s+(?!a\s+(python|java|c\+\+|software|developer|programmer))",
@@ -96,8 +105,92 @@ class InputGuard:
         r"\[/INST\]",
         r"<<SYS>>",
         r"<</SYS>>",
-        # Prompt leaking
-        r"(print|echo|say)\s+(the\s+)?(system|hidden|secret)\s+(message|prompt|text)",
+    ]
+
+    # --- Sensitive Data / PII Input Patterns ---
+    # These detect PII in user INPUT (not in generated code — that's OutputGuard.scan_pii_leaks)
+    PII_INPUT_PATTERNS = {
+        # SSN — US Social Security Number variants
+        r"\b\d{3}[-\s]\d{2}[-\s]\d{4}\b": "ssn",
+        # Credit card numbers (major card patterns — 16-digit Visa/MC, 15-digit Amex)
+        r"\b4[0-9]{12}(?:[0-9]{3})?\b": "credit_card",
+        r"\b5[1-5][0-9]{14}\b": "credit_card",
+        r"\b3[47][0-9]{13}\b": "credit_card",
+        r"\b6(?:011|5[0-9]{2})[0-9]{12}\b": "credit_card",
+        # Formatted credit card: 4 groups of 4 digits separated by space or dash
+        r"\b(?:\d{4}[\-\s]){3}\d{4}\b": "credit_card_formatted",
+        # Passwords / secrets hardcoded as string literals
+        r"(?:password|passwd|pwd|secret)\s*[=:]\s*[\'\"][^\'\"\{\s]{6,}[\'\"]": "hardcoded_credential",
+        r"(?:api[_\-]?key|apikey|token|auth[_\-]?token|access[_\-]?token)\s*[=:]\s*[\'\"][^\'\"\{\s]{8,}[\'\"]": "hardcoded_api_key",
+        # Known API key prefixes (long enough to avoid false positives)
+        r"(?:sk-|pk-|rk-|ak-)[A-Za-z0-9]{20,}": "api_key_prefix",
+        r"(?:ghp_|gho_|github_pat_)[A-Za-z0-9_]{20,}": "github_token",
+        r"(?:AKIA|ASIA)[A-Z0-9]{16}": "aws_access_key",
+        r"(?:xox[bpsa]-)[A-Za-z0-9-]{10,}": "slack_token",
+        # Real email addresses (excluding RFC 2606 test domains)
+        r"[A-Za-z0-9._%+\-]+@(?!example\.(?:com|org|net)|test\.(?:com|org)|sample\.com|domain\.org)[A-Za-z0-9.\-]+\.[A-Za-z]{2,}": "real_email",
+        # Phone — require country code or 10+ digit patterns
+        r"\+\d{1,3}[\-\s.]?\(?\d{1,4}\)?[\-\s.]?\d{3,5}[\-\s.]?\d{4,9}\b": "phone_number",
+        r"\b\d{3}[-.]\d{3}[-.]\d{4}\b": "phone_number_us",
+        # Bank account / routing numbers
+        r"\b(?:account|acct|routing)\s*(?:number|no|#)?\s*[=:]?\s*\d{8,17}\b": "bank_account",
+    }
+
+    # --- Excessive Agency / Dangerous Execution Intent Patterns ---
+    # These detect requests to perform dangerous OS-level or system-level operations
+    EXCESSIVE_AGENCY_PATTERNS = [
+        # Unrestricted shell / command execution intent
+        r"(execute|run|spawn|launch|invoke)\s+.{0,30}(unrestricted|arbitrary|unlimited|unfiltered|unconstrained)\s+.{0,20}(shell|command|script|process|executable)",
+        r"(shell|command|script|process)\s+.{0,20}(without|with\s+no|bypassing|disabling)\s+.{0,20}(restriction|limit|sandbox|security|safety)",
+        r"run\s+(?:commands?|scripts?)\s+(?:directly\s+)?(?:on|against)\s+(?:the\s+)?(?:server|host|machine|system|os)",
+        r"execute\s+(?:arbitrary|unrestricted|unfiltered)\s+(?:os|system|shell|native)",
+        # Root / privilege escalation
+        r"(?:get|gain|obtain|acquire|escalate\s+to)\s+(?:root|admin|administrator|sudo|superuser|privileged)\s+(?:access|privileges?|rights?|permissions?)",
+        r"(?:gains?|obtain)\s+root\s+access",
+        r"(?:sudo|su\s+-|su\s+root|setuid|setgid|chmod\s+[47]\d\d\d?)",
+        # Sandbox escape / security bypass
+        r"(?:bypass|disable|circumvent|escape|evade)\s+.{0,30}(?:sandbox|security|guardrail|restriction|firewall|antivirus|filter)",
+        r"escape\s+(?:from\s+)?(?:the\s+)?(?:sandbox|container|jail|chroot)",
+        r"run\s+code\s+(?:directly|without\s+sandbox)\s+(?:on|in)\s+(?:the\s+)?(?:host|server|machine|system)",
+        # Destructive filesystem operations requested as a task
+        r"(?:delete|remove|wipe|erase|format|destroy)\s+(?:all|the|system|root|/)\s+(?:files?|directories?|data|disk|drive|filesystem)",
+        r"rm\s+-rf\s+/",
+        r"format\s+(?:the\s+)?(?:disk|drive|c:|/dev/)",
+        # Backdoor / malware installation
+        r"(?:install|deploy|setup|create)\s+(?:a\s+)?(?:backdoor|rootkit|keylogger|trojan|malware|ransomware|spyware|worm)",
+        r"installs?\s+(?:a\s+)?backdoor",
+        # Reverse / bind shell
+        r"(?:reverse|bind)\s+shell",
+        r"connect\s+back\s+to\s+(?:my|the|an?)\s+(?:server|host|machine|ip|listener)",
+        r"(?:nc|netcat|ncat)\s+-(?:e|c|lvp)",
+        # System file access
+        r"(?:read|access|modify|write|overwrite)\s+(?:/etc/(?:passwd|shadow|sudoers|crontab)|/root/|C:\\Windows\\System32)",
+        # Raw socket / port scanning
+        r"(?:port\s+scan|nmap|masscan)\s+.{0,40}(?:range|subnet|network|all\s+ports|0-65535)",
+    ]
+
+    # --- Unbounded Consumption / Resource Exhaustion Patterns ---
+    UNBOUNDED_CONSUMPTION_PATTERNS = [
+        # Explicit infinite / no-exit loops
+        r"(?:infinite|endless|perpetual|never-ending|eternal)\s+(?:loop|recursion|iteration|cycle)",
+        r"(?:run|loop|iterate|recurse)\s+(?:forever|indefinitely|without\s+(?:stopping|end|limit|exit|break))",
+        r"(?:loop|run|execute)\s+indefinitely",
+        r"loops?\s+indefinitely",
+        r"runs?\s+indefinitely",
+        r"while\s+true\s+(?:without|with\s+no)\s+(?:break|exit|stop|condition)",
+        r"(?:no|without\s+any?)\s+(?:timeout|limit|bound|cap|maximum|exit\s+condition)",
+        # Recursion without base case
+        r"recursi(?:on|ve)\s+(?:function\s+)?(?:without|with\s+no)\s+(?:base\s+case|exit|termination|stopping\s+condition)",
+        r"without\s+(?:any\s+)?(?:base\s+case|exit\s+condition|termination)",
+        # Fork bomb intent
+        r"fork\s+bomb",
+        r":\s*\(\s*\)\s*\{\s*:\s*\|\s*:",  # classic fork bomb :(){:|:&};:
+        # Exponential / massive resource requests
+        r"(?:\d+\s*(?:billion|trillion|million)\s+(?:iterations?|records?|requests?|threads?|processes?|forks?))",
+        r"(?:spawn|create|fork|start)\s+(?:unlimited|infinite|as\s+many|thousands?\s+of)\s+(?:threads?|processes?|workers?|connections?)",
+        # Memory exhaustion
+        r"(?:allocate|consume|use|fill)\s+(?:all|unlimited|as\s+much)\s+(?:available\s+)?(?:memory|ram|heap|disk|storage)",
+        r"memory\s+(?:leak|exhaust|overflow)\s+(?:intentional|on\s+purpose|deliberately)",
     ]
 
     # --- Off-Topic Detection (NeMo Guardrails inspired) ---
@@ -159,11 +252,16 @@ class InputGuard:
         r"\b(make|create|build|synthesize|produce)\b.*\b(bomb|weapon|explosive|poison|drug)\b",
         r"\b(steal|theft|rob|fraud|scam|counterfeit)\b.*\b(how|tutorial|guide|method)\b",
         r"\b(suicide|self.?harm|kill\s+(?:my|your)self)\b",
+        # Dangerous execution intent (defense-in-depth with Excessive Agency scanner)
+        r"\b(execute|run|spawn)\b.*\b(unrestricted|arbitrary|unlimited)\b.*\b(shell|command|process)\b",
+        r"\b(reverse|bind)\s+shell\b",
+        r"\b(backdoor|rootkit|keylogger)\b",
     ]
 
     @classmethod
     def scan_prompt_injection(cls, text: str) -> GuardrailResult:
-        """Scan for prompt injection attempts."""
+        """Scan for prompt injection attempts (LLM01)."""
+        # Detector type: Pattern-based (regex AST matching on known injection signatures)
         text_lower = text.lower().strip()
 
         for pattern in cls.INJECTION_PATTERNS:
@@ -181,9 +279,127 @@ class InputGuard:
         return GuardrailResult(passed=True, scanner="Prompt Injection Scanner")
 
     @classmethod
-    def scan_topic_boundary(cls, text: str) -> GuardrailResult:
-        """Ensure the request is related to coding/programming."""
+    def scan_sensitive_data(cls, text: str) -> GuardrailResult:
+        """
+        Scan user INPUT for PII and sensitive data (LLM02).
+        Detector type: Pattern-based (regex) on SSN, CC, phone, email, credential patterns.
+        Note: Does NOT claim 100% coverage — complex obfuscations may bypass regex.
+        """
+        found_pii = []
+        # RFC 2606 safe placeholder domains — allow these in educational examples
+        safe_domains = {"example.com", "example.org", "example.net", "test.com", "domain.org", "sample.com"}
+
+        for pattern, pii_type in cls.PII_INPUT_PATTERNS.items():
+            matches = re.findall(pattern, text, re.IGNORECASE)
+            if not matches:
+                continue
+            if pii_type == "real_email":
+                real = [m for m in matches if not any(m.lower().endswith(d) for d in safe_domains)]
+                if real:
+                    found_pii.append({"type": pii_type, "count": len(real), "sample": real[0][:30]})
+            elif pii_type == "phone_number":
+                # Require at least 10 digits total to avoid false positives on short numbers
+                real = [m for m in matches if len(re.sub(r"\D", "", m)) >= 10]
+                if real:
+                    found_pii.append({"type": pii_type, "count": len(real)})
+            else:
+                found_pii.append({"type": pii_type, "count": len(matches)})
+
+        if found_pii:
+            pii_types = list({p["type"] for p in found_pii})
+            return GuardrailResult(
+                passed=False,
+                scanner="Sensitive Data Scanner",
+                blocked_by="sensitive_data",
+                reason=(
+                    f"🔐 Your request appears to contain sensitive personal data "
+                    f"({', '.join(pii_types)}). This platform does not process real PII or credentials. "
+                    f"Please use placeholder values (e.g., example.com, 123-45-6789)."
+                ),
+                severity=Severity.HIGH,
+                details={"pii_found": found_pii}
+            )
+
+        return GuardrailResult(passed=True, scanner="Sensitive Data Scanner")
+
+    @classmethod
+    def scan_excessive_agency(cls, text: str) -> GuardrailResult:
+        """
+        Detect requests for dangerous OS-level / system execution operations (LLM06).
+        Detector type: Heuristic pattern-matching on execution-intent phrases.
+        This enforces the boundary between code generation and system exploitation.
+        """
         text_lower = text.lower().strip()
+
+        for pattern in cls.EXCESSIVE_AGENCY_PATTERNS:
+            match = re.search(pattern, text_lower, re.IGNORECASE)
+            if match:
+                return GuardrailResult(
+                    passed=False,
+                    scanner="Excessive Agency Scanner",
+                    blocked_by="excessive_agency",
+                    reason=(
+                        "🚫 Your request was blocked because it appears to request dangerous "
+                        "system-level execution, privilege escalation, sandbox escape, or destructive "
+                        "operations. This platform generates sandboxed code — it does not execute "
+                        "unrestricted system commands."
+                    ),
+                    severity=Severity.CRITICAL,
+                    details={"matched_pattern": pattern, "matched_text": match.group()[:80]}
+                )
+
+        return GuardrailResult(passed=True, scanner="Excessive Agency Scanner")
+
+    @classmethod
+    def scan_unbounded_consumption(cls, text: str) -> GuardrailResult:
+        """
+        Detect requests for unbounded resource consumption (LLM10).
+        Detector type: Pattern-based detection of infinite/limitless execution intent.
+        Policy enforcement: Max 3 self-healing retry iterations.
+        """
+        text_lower = text.lower().strip()
+
+        for pattern in cls.UNBOUNDED_CONSUMPTION_PATTERNS:
+            match = re.search(pattern, text_lower, re.IGNORECASE)
+            if match:
+                return GuardrailResult(
+                    passed=False,
+                    scanner="Unbounded Consumption Scanner",
+                    blocked_by="unbounded_consumption",
+                    reason=(
+                        "⏱️ Your request was blocked because it appears to request infinite loops, "
+                        "unlimited recursion, or unbounded resource consumption. This platform "
+                        "enforces a maximum retry boundary of 3 iterations for safety."
+                    ),
+                    severity=Severity.HIGH,
+                    details={"matched_pattern": pattern, "matched_text": match.group()[:80]}
+                )
+
+        return GuardrailResult(passed=True, scanner="Unbounded Consumption Scanner")
+
+    @classmethod
+    def scan_topic_boundary(cls, text: str) -> GuardrailResult:
+        """Ensure the request is related to coding/programming (policy rule)."""
+        text_lower = text.lower().strip()
+
+        # Hard-block explicitly non-coding creative/general requests
+        # even if they happen to contain a coding keyword (e.g. "write" a poem)
+        OFF_TOPIC_OVERRIDES = [
+            r"\b(?:write|compose|create|generate)\s+(?:me\s+)?(?:a\s+)?(?:poem|song|story|essay|haiku|limerick|letter|recipe|joke|riddle|lyrics)\b",
+            r"\b(?:tell|give)\s+me\s+(?:a\s+)?(?:joke|story|poem|riddle|fun\s+fact)\b",
+            r"\b(?:what|explain)\s+(?:is|are)\s+(?:the\s+)?(?:meaning\s+of\s+life|purpose|secret|best\s+way\s+to\s+live)\b",
+            r"\b(?:recipe|ingredients?)\s+(?:for|of)\s+\w+\b",
+        ]
+        for pattern in OFF_TOPIC_OVERRIDES:
+            if re.search(pattern, text_lower, re.IGNORECASE):
+                return GuardrailResult(
+                    passed=False,
+                    scanner="Topic Boundary Scanner",
+                    blocked_by="off_topic",
+                    reason="\U0001f3af This platform is designed for coding tasks only. Please describe what program, function, or algorithm you'd like the AI to build for you!",
+                    severity=Severity.MEDIUM,
+                    details={"input_length": len(text), "off_topic_override": True}
+                )
 
         # Check if any coding keyword appears in the text
         found_keywords = [kw for kw in cls.CODING_KEYWORDS if kw in text_lower]
@@ -193,7 +409,7 @@ class InputGuard:
                 passed=False,
                 scanner="Topic Boundary Scanner",
                 blocked_by="off_topic",
-                reason=f"🎯 This platform is designed for coding tasks only. Please describe what program, function, or algorithm you'd like the AI to build for you!",
+                reason="\U0001f3af This platform is designed for coding tasks only. Please describe what program, function, or algorithm you'd like the AI to build for you!",
                 severity=Severity.MEDIUM,
                 details={"input_length": len(text), "coding_keywords_found": 0}
             )
@@ -225,13 +441,27 @@ class InputGuard:
 
     @classmethod
     def scan_all(cls, text: str) -> GuardrailReport:
-        """Run all input guardrails and return aggregated report."""
+        """
+        Run ALL input guardrails and return aggregated report.
+
+        CANONICAL EVALUATION PATH — used identically by:
+          - /guardrails/scan (Security Lab & Live API Scan)
+          - /generate endpoint (non-streaming)
+          - /stream SSE endpoint (workflow execution)
+          - Production LangGraph workflow nodes
+
+        ALL 6 scanners run against the ACTUAL input text.
+        The text determines the result — not the caller, not the preset.
+        """
         report = GuardrailReport(passed=True)
-        report.add(cls.scan_prompt_injection(text))
-        if report.passed:
-            report.add(cls.scan_topic_boundary(text))
-        if report.passed:
-            report.add(cls.scan_content_safety(text))
+        # Run ALL scanners — no early return so every scanner contributes a result
+        # (needed for per-card UI state: CLEAN / BLOCKED for each of the 4 live controls)
+        report.add(cls.scan_prompt_injection(text))       # LLM01
+        report.add(cls.scan_sensitive_data(text))          # LLM02
+        report.add(cls.scan_excessive_agency(text))        # LLM06
+        report.add(cls.scan_unbounded_consumption(text))   # LLM10
+        report.add(cls.scan_topic_boundary(text))          # Policy: coding-only
+        report.add(cls.scan_content_safety(text))          # Policy: harmful content
         return report
 
 
@@ -484,13 +714,16 @@ class GuardrailStats:
                 "block_rate": f"{(self.output_blocks / max(1, self.output_scans)) * 100:.1f}%"
             },
             "scanners": {
-                "prompt_injection": "ACTIVE",
-                "topic_boundary": "ACTIVE",
-                "content_safety": "ACTIVE",
-                "dangerous_code": "ACTIVE",
-                "pii_leak": "ACTIVE",
-                "code_relevance": "ACTIVE",
-                "language_correctness": "ACTIVE"
+                "prompt_injection": "ACTIVE",       # LLM01 — input
+                "sensitive_data": "ACTIVE",          # LLM02 — input (NEW)
+                "excessive_agency": "ACTIVE",        # LLM06 — input (NEW)
+                "unbounded_consumption": "ACTIVE",   # LLM10 — input (NEW)
+                "topic_boundary": "ACTIVE",          # Policy — input
+                "content_safety": "ACTIVE",          # Policy — input
+                "dangerous_code": "ACTIVE",          # LLM06 — output
+                "pii_leak": "ACTIVE",                # LLM02 — output
+                "code_relevance": "ACTIVE",          # Output quality
+                "language_correctness": "ACTIVE"     # Output quality
             },
             "recent_blocks": self.recent_blocks[-5:],
             "shield_status": "NOMINAL" if (self.input_blocks + self.output_blocks) < 10 else "ELEVATED"
