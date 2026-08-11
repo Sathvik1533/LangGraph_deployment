@@ -2,8 +2,87 @@
 
 const API_URL = window.location.origin + '/invoke';
 const HEALTH_API_URL = window.location.origin + '/health';
-const HISTORY_STORAGE_KEY = 'langgraph_studio_history_v3';
-const TOUR_COMPLETED_KEY = 'langgraph_v3_tour_completed';
+const HISTORY_STORAGE_KEY = 'ai_workflow_studio_history_v3';
+const TOUR_COMPLETED_KEY = 'ai_workflow_studio_tour_completed_v3';
+
+// Page Stepper Order Definition
+const PLATFORM_PAGES = [
+    { id: 'dashboard', path: '/', name: 'Overview' },
+    { id: 'generator', path: '/generate', name: 'Workspace' },
+    { id: 'workflow', path: '/workflow', name: 'Pipeline' },
+    { id: 'execution', path: '/execution', name: 'Health' },
+    { id: 'history', path: '/history', name: 'History' }
+];
+
+// Initialize Page Flow Stepper & Previous/Next Navigation
+function initPageFlowStepper() {
+    const currentPath = window.location.pathname;
+    let currentIndex = PLATFORM_PAGES.findIndex(p => p.path === currentPath);
+    if (currentIndex === -1) {
+        if (currentPath.includes('generate')) currentIndex = 1;
+        else if (currentPath.includes('workflow')) currentIndex = 2;
+        else if (currentPath.includes('execution')) currentIndex = 3;
+        else if (currentPath.includes('history')) currentIndex = 4;
+        else currentIndex = 0;
+    }
+
+    const prevBtn = document.getElementById('pageFlowPrevBtn');
+    const nextBtn = document.getElementById('pageFlowNextBtn');
+    const prevLabel = document.getElementById('pageFlowPrevLabel');
+    const nextLabel = document.getElementById('pageFlowNextLabel');
+
+    if (prevBtn && nextBtn) {
+        if (currentIndex === 0) {
+            prevBtn.classList.add('disabled');
+            prevBtn.disabled = true;
+            if (prevLabel) prevLabel.textContent = 'Start of Tour';
+        } else {
+            prevBtn.classList.remove('disabled');
+            prevBtn.disabled = false;
+            const prevPage = PLATFORM_PAGES[currentIndex - 1];
+            if (prevLabel) prevLabel.textContent = `← ${prevPage.name}`;
+        }
+
+        if (currentIndex === PLATFORM_PAGES.length - 1) {
+            nextBtn.classList.add('disabled');
+            nextBtn.disabled = true;
+            if (nextLabel) nextLabel.textContent = 'End of Tour';
+        } else {
+            nextBtn.classList.remove('disabled');
+            nextBtn.disabled = false;
+            const nextPage = PLATFORM_PAGES[currentIndex + 1];
+            if (nextLabel) nextLabel.textContent = `${nextPage.name} →`;
+        }
+    }
+
+    // Highlight active flow stepper node
+    document.querySelectorAll('.flow-step-node').forEach((node, idx) => {
+        if (idx === currentIndex) {
+            node.classList.add('active');
+        } else {
+            node.classList.remove('active');
+        }
+    });
+}
+
+function navigatePageStep(direction) {
+    const currentPath = window.location.pathname;
+    let currentIndex = PLATFORM_PAGES.findIndex(p => p.path === currentPath);
+    if (currentIndex === -1) {
+        if (currentPath.includes('generate')) currentIndex = 1;
+        else if (currentPath.includes('workflow')) currentIndex = 2;
+        else if (currentPath.includes('execution')) currentIndex = 3;
+        else if (currentPath.includes('history')) currentIndex = 4;
+        else currentIndex = 0;
+    }
+
+    const targetIndex = currentIndex + direction;
+    if (targetIndex >= 0 && targetIndex < PLATFORM_PAGES.length) {
+        const targetPage = PLATFORM_PAGES[targetIndex];
+        showToast(`Navigating to ${targetPage.name}...`, 'info');
+        window.location.href = targetPage.path;
+    }
+}
 
 // Save run to local history
 function saveRunToHistory(runData) {
@@ -137,29 +216,33 @@ function initCommandPalette() {
         const modalHtml = `
             <div id="cmdSpotlightBackdrop" class="cmd-spotlight-backdrop">
                 <div class="cmd-spotlight-modal" onclick="event.stopPropagation()">
-                    <input id="cmdSpotlightInput" class="cmd-spotlight-input" placeholder="Type a command or search studio..." autofocus/>
+                    <input id="cmdSpotlightInput" class="cmd-spotlight-input" placeholder="Type a command or search platform (Overview, Workspace, Pipeline, Workshop Origin)..." autofocus/>
                     <div>
                         <div class="cmd-spotlight-item" onclick="navigateTo('/')">
-                            <span style="display:flex; align-items:center; gap:10px;"><span class="material-symbols-outlined">dashboard</span> Open Command Center</span>
+                            <span style="display:flex; align-items:center; gap:10px;"><span class="material-symbols-outlined">dashboard</span> Overview & Dashboard</span>
                             <span class="cyber-badge cyber-badge-terracotta">1</span>
                         </div>
                         <div class="cmd-spotlight-item" onclick="navigateTo('/generate')">
-                            <span style="display:flex; align-items:center; gap:10px;"><span class="material-symbols-outlined">code_blocks</span> Open Code Workbench</span>
+                            <span style="display:flex; align-items:center; gap:10px;"><span class="material-symbols-outlined">code_blocks</span> Workspace & Human Review</span>
                             <span class="cyber-badge cyber-badge-terracotta">2</span>
                         </div>
                         <div class="cmd-spotlight-item" onclick="navigateTo('/workflow')">
-                            <span style="display:flex; align-items:center; gap:10px;"><span class="material-symbols-outlined">account_tree</span> Inspect State Canvas</span>
+                            <span style="display:flex; align-items:center; gap:10px;"><span class="material-symbols-outlined">account_tree</span> Interactive Pipeline Visualizer</span>
                             <span class="cyber-badge cyber-badge-terracotta">3</span>
                         </div>
                         <div class="cmd-spotlight-item" onclick="navigateTo('/execution')">
-                            <span style="display:flex; align-items:center; gap:10px;"><span class="material-symbols-outlined">analytics</span> View Telemetry</span>
+                            <span style="display:flex; align-items:center; gap:10px;"><span class="material-symbols-outlined">analytics</span> Telemetry & Health</span>
                             <span class="cyber-badge cyber-badge-terracotta">4</span>
                         </div>
                         <div class="cmd-spotlight-item" onclick="navigateTo('/history')">
-                            <span style="display:flex; align-items:center; gap:10px;"><span class="material-symbols-outlined">history</span> View Audit Log</span>
+                            <span style="display:flex; align-items:center; gap:10px;"><span class="material-symbols-outlined">history</span> Audit Log History</span>
                             <span class="cyber-badge cyber-badge-terracotta">5</span>
                         </div>
-                        <div class="cmd-spotlight-item" onclick="startFullTourManually(); closeCommandPalette();">
+                        <div class="cmd-spotlight-item" onclick="openWorkshopOriginModal(); closeCommandPalette();">
+                            <span style="display:flex; align-items:center; gap:10px;"><span class="material-symbols-outlined">info</span> Workshop Origin (Project → Product)</span>
+                            <span class="cyber-badge cyber-badge-indigo">ORIGIN</span>
+                        </div>
+                        <div class="cmd-spotlight-item" onclick="openPlatformGuide(); closeCommandPalette();">
                             <span style="display:flex; align-items:center; gap:10px;"><span class="material-symbols-outlined">explore</span> Re-launch Guided Tour</span>
                             <span class="cyber-badge cyber-badge-emerald">TOUR</span>
                         </div>
@@ -201,11 +284,87 @@ document.addEventListener('keydown', (e) => {
         openCommandPalette();
     } else if (e.key === 'Escape') {
         closeCommandPalette();
+        closeWorkshopOriginModal();
         dismissTourPermanently();
     }
 });
 
-// Comprehensive Element-by-Element Tour Specification in Plain English
+// ==========================================================================
+// WORKSHOP ORIGIN MODAL CONTROLLER ("WHERE IT STARTED" / "PROJECT -> PRODUCT")
+// ==========================================================================
+function initWorkshopOriginModal() {
+    if (!document.getElementById('workshopOriginBackdrop')) {
+        const modalHtml = `
+            <div id="workshopOriginBackdrop" class="workshop-origin-modal-backdrop" onclick="closeWorkshopOriginModal()">
+                <div class="workshop-origin-modal" onclick="event.stopPropagation()">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 16px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div class="brand-icon" style="background: var(--accent-terracotta);">
+                                <span class="material-symbols-outlined" style="font-size: 20px;">history_edu</span>
+                            </div>
+                            <div>
+                                <h2 style="font-size: 18px; font-weight: 700; margin: 0;">Where It Started — Project → Product</h2>
+                                <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">From a LangGraph workshop assignment to a production AI workflow platform.</p>
+                            </div>
+                        </div>
+                        <button onclick="closeWorkshopOriginModal()" style="background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 4px;">
+                            <span class="material-symbols-outlined" style="font-size: 22px;">close</span>
+                        </button>
+                    </div>
+
+                    <div style="margin-bottom: 24px; line-height: 1.65; color: var(--text-secondary); font-size: 14px;">
+                        <p style="margin-bottom: 14px;">
+                            This project began as a <strong>LangGraph multi-agent workshop assignment</strong> designed to demonstrate state-based collaboration between specialized AI agents:
+                        </p>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 18px;">
+                            <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px;">
+                                <div style="font-weight: 700; color: #ea580c; font-size: 13px;">1. Developer Agent</div>
+                                <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">Drafts candidate code solutions tailored to the user prompt.</div>
+                            </div>
+                            <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px;">
+                                <div style="font-weight: 700; color: #6366f1; font-size: 13px;">2. Reviewer / HITL</div>
+                                <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">Human & AI gate inspects, modifies, and approves code.</div>
+                            </div>
+                            <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px;">
+                                <div style="font-weight: 700; color: #059669; font-size: 13px;">3. Tester Agent</div>
+                                <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">Automated sandbox execution with self-healing feedback loop.</div>
+                            </div>
+                        </div>
+                        <p style="margin-bottom: 14px;">
+                            Instead of stopping at a developer playground, we wrapped the underlying workflow into <strong>AI Workflow Studio</strong> — adding an interactive visual state graph, 7-layer security guardrails, live code editing gates, and end-to-end telemetry.
+                        </p>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap; border-top: 1px solid var(--border-subtle); padding-top: 18px;">
+                        <a href="https://langgraph-deployment-qhy0.onrender.com/" target="_blank" rel="noopener noreferrer" class="cyber-btn cyber-btn-secondary" style="font-size: 13px; text-decoration: none;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">open_in_new</span>
+                            Open Original Workshop Playground
+                        </a>
+                        <button class="cyber-btn cyber-btn-primary" onclick="closeWorkshopOriginModal()" style="font-size: 13px;">
+                            <span>Continue in Product</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+}
+
+function openWorkshopOriginModal() {
+    initWorkshopOriginModal();
+    const backdrop = document.getElementById('workshopOriginBackdrop');
+    if (backdrop) backdrop.style.display = 'flex';
+}
+
+function closeWorkshopOriginModal() {
+    const backdrop = document.getElementById('workshopOriginBackdrop');
+    if (backdrop) backdrop.style.display = 'none';
+}
+
+// ==========================================================================
+// COMPREHENSIVE SPOTLIGHT TOUR ENGINE (ENTIRE PLATFORM & KEY ELEMENTS)
+// ==========================================================================
 const FULL_PLATFORM_TOUR = [
     {
         path: '/',
@@ -214,146 +373,151 @@ const FULL_PLATFORM_TOUR = [
         steps: [
             {
                 selector: '.top-navbar',
-                title: '👋 Welcome to LangGraph Studio!',
-                desc: 'This top navigation bar lets you easily jump between Overview, Workbench, Pipeline, Health, and History.'
+                title: '👋 Welcome to AI Workflow Studio!',
+                desc: 'AI Workflow Studio turns complex programming prompts into a visual, coordinated multi-agent workflow.'
+            },
+            {
+                selector: '#pageFlowBarContainer',
+                title: '🧭 Step Navigation & Page Flow Stepper',
+                desc: 'Use these Prev/Next arrows and breadcrumb pills at any time to travel smoothly between all pages of the product.'
             },
             {
                 selector: '[data-tooltip*="Total Runs"]',
-                title: '📊 Total Runs',
-                desc: 'Tracks how many coding tasks our AI has generated and verified so far.'
+                title: '📊 Agent Verification Telemetry',
+                desc: 'Tracks real-time metrics on completed coding runs, 100% test pass rates, auto-fix self-healing attempts, and supported languages.'
             },
             {
-                selector: '[data-tooltip*="Success Rate"]',
-                title: '✅ 100% Success Rate',
-                desc: 'Shows the percentage of generated solutions that successfully passed automated sandbox testing.'
+                selector: '#liveGuardrailsLabCard, [data-tooltip*="Test Prompt Injection"]',
+                title: '🛡️ Live Guardrails Stress-Test & Resilience Lab',
+                desc: 'Click these live attack triggers to test Prompt Injection, Dangerous Code, and PII filters against our 7-layer defense shield safely in memory.'
             },
             {
-                selector: '[data-tooltip*="Auto-Fix Limit"]',
-                title: '🔄 Auto-Retry System',
-                desc: 'If the AI makes a coding error, our automated tester catches it and retries up to 3 times automatically.'
+                selector: '.studio-card:has([data-tooltip*="LLM01"])',
+                title: '🔒 OWASP Top 10 for LLM Applications (2025 Standard)',
+                desc: 'Complete enterprise defense coverage mapping against Prompt Injection (LLM01), Sensitive Data Leaks (LLM02), and Excessive Agency (LLM06).'
             },
             {
-                selector: '[data-tooltip*="Languages"]',
-                title: '💻 3 Supported Languages',
-                desc: 'You can generate clean, verified code in Python 3.11, Java 17, or C++ 20.'
+                selector: '.studio-card:has(.cyber-badge-indigo)',
+                title: '👤 Human-in-the-Loop Governance Hub',
+                desc: 'Gives human engineers control to pause the agentic pipeline after code drafting to review, edit in-place, or approve before sandbox testing.'
             },
             {
-                selector: '[data-tooltip*="Safety Shield"]',
-                title: '🛡️ Safety Guardrails Shield',
-                desc: 'Our 7-layer safety shield filters prompt injection, dangerous code, and data leaks to ensure 100% safe execution.'
-            },
-            {
-                selector: '#dashboardHistoryBody',
-                title: '📋 Recent Activity',
-                desc: 'Your 5 most recent coding tasks appear here in real time with their test status and quick-view actions.'
+                selector: '#dashboardHistoryBody, table',
+                title: '📋 Verified Artifacts & History Log',
+                desc: 'Your recent coding tasks appear here with instant copy, download, and test report inspection.'
             }
         ]
     },
     {
         path: '/generate',
-        pageName: 'Code Workbench',
+        pageName: 'Workspace',
         nextUrl: '/workflow',
         steps: [
             {
                 selector: '#taskInput',
-                title: '✍️ What code do you want to build?',
-                desc: 'Type your program description here (e.g. "Write a function to check if a number is prime"), or click a quick-fill button below!'
+                title: '✍️ Task Specification Input',
+                desc: 'Describe what you want the AI agents to accomplish (e.g. "Build a Python function to validate email addresses and create tests").'
+            },
+            {
+                selector: '.preset-btn',
+                title: '⚡ Quick-Fill Presets',
+                desc: 'Click any quick preset button to instantly load tested programming problems into the workspace.'
             },
             {
                 selector: '#langSelectWrapper',
-                title: '🌐 Choose Your Language',
-                desc: 'Pick Python 3.11, Java 17, or C++ 20 from our custom dropdown.'
+                title: '🌐 Multi-Language Engine',
+                desc: 'Generate clean, verified production source code in Python 3.11, Java 17, or C++ 20.'
             },
             {
-                selector: '#ceilingSelectWrapper',
-                title: '🔁 Auto-Fix Attempts',
-                desc: 'Choose how many times (1, 3, or 5 retries) the AI can automatically fix its own mistakes.'
+                selector: '#hitlModeToggleWrapper',
+                title: '👤 Human Review Gate Toggle',
+                desc: 'Turn on Human-in-the-Loop mode to inspect and edit the generated code in-place before automated sandbox verification begins.'
             },
             {
                 selector: '#generateBtn',
-                title: '🚀 Generate Code Button',
-                desc: 'Click here or press ⌘ + Enter to start AI code generation and automated test verification.'
+                title: '🚀 Run Workflow Button',
+                desc: 'Launches the collaborative multi-agent workflow: Developer drafts ➔ Reviewer inspects ➔ Tester validates.'
             },
             {
                 selector: '.code-editor-pane:first-child',
-                title: '📄 Clean Source Code Window',
-                desc: 'Displays the complete, production-ready code. You can copy it with 1-click or download it directly to your computer.'
+                title: '📄 Production Source Code Pane',
+                desc: 'Displays the final verified source code with language conversion buttons, 1-click copy, and file download.'
             },
             {
                 selector: '.code-editor-pane:last-child',
-                title: '🧪 Test Output Window',
-                desc: 'Shows real-time test execution results and assertion checks from our isolated sandbox.'
+                title: '🧪 Test Results & Assertion Output',
+                desc: 'Real-time sandbox execution report showing passed assertions, execution timing, and diagnostic reports.'
             }
         ]
     },
     {
         path: '/workflow',
-        pageName: 'AI Pipeline',
+        pageName: 'Pipeline',
         nextUrl: '/execution',
         steps: [
             {
+                selector: '.scenario-pill',
+                title: '🔀 5 Flow Scenarios with Rich Hover Glow',
+                desc: 'Hover and click across the 5 flow scenarios (Self-Healing Loop, 1-Shot Clean Pass, Guardrail Block, Max Attempts Limit, and Human-in-the-Loop Gate).'
+            },
+            {
                 selector: '#canvasTaskInput',
-                title: '⚡ Interactive Task Simulator',
-                desc: 'Type any task to simulate how our multi-agent AI pipeline processes and verifies your request.'
+                title: '⚡ Dynamic Task Synchronizer',
+                desc: 'Type any task or select any language to dynamically synchronize the state machine visualizer.'
             },
             {
-                selector: 'svg',
-                title: '🗺️ Visual Pipeline Diagram',
-                desc: 'Shows the step-by-step data flow: START ➔ Safety Guard ➔ Developer AI ➔ Tester AI ➔ Router ➔ END.'
+                selector: '#workflowSvg, svg',
+                title: '🗺️ Dynamic State Machine Graph',
+                desc: 'Visualizes real-time LangGraph transitions with traveling laser orbs, node state pulses, and quadratic bezier edge loops.'
             },
             {
-                selector: '#simStepBtn',
-                title: '▶️ Step-by-Step Simulator',
-                desc: 'Click "Step Forward" to advance node-by-node, or click "Auto-Play Tour" to watch active nodes glow in real time!'
+                selector: '#simPlayBtn, #liveApiRunBtn',
+                title: '▶️ Playback & Live API Execution',
+                desc: 'Click "Execute Live API" to run live on the backend, or click "Play Simulation" with adjustable 1x, 2x, 0.5x speeds and sound FX!'
             },
             {
                 selector: '#inspectorCard',
-                title: '🔍 State Inspector',
-                desc: 'Inspect the live data payload and code state at each stage of the pipeline.'
+                title: '🔍 Live State Inspector',
+                desc: 'Inspect the shared memory payload and agent state transitions at each exact step of the pipeline.'
             }
         ]
     },
     {
         path: '/execution',
-        pageName: 'System Health',
+        pageName: 'Health',
         nextUrl: '/history',
         steps: [
             {
                 selector: '[data-tooltip*="System Status"]',
                 title: '🟢 System Health & Uptime',
-                desc: 'Shows that our FastAPI backend and AI helpers are online, healthy, and operational.'
+                desc: 'Real-time telemetry showing server uptime, active workers, and FastAPI backend status.'
             },
             {
                 selector: '[data-tooltip*="Safety Guard"]',
-                title: '🛡️ Circuit Breaker & Safety',
-                desc: 'Protects the platform from cascading server failures with automatic fallback routing.'
-            },
-            {
-                selector: '[data-tooltip*="Speed Limiter"]',
-                title: '⚡ Rate Limiter',
-                desc: 'Ensures fast, consistent response times for all users with smart traffic pacing.'
+                title: '🛡️ Circuit Breaker & Safety Telemetry',
+                desc: 'Automatic protection against cascading failures and runaway execution loops.'
             },
             {
                 selector: '#logTerminal',
-                title: '📜 Live System Logs',
-                desc: 'Real-time diagnostic stream showing system events, test executions, and guardrail scans.'
+                title: '📜 Live Diagnostic Log Stream',
+                desc: 'Real-time telemetry streaming all agent state transitions, guardrail scans, and sandbox executions.'
             }
         ]
     },
     {
         path: '/history',
-        pageName: 'History & Saved Work',
+        pageName: 'History',
         nextUrl: '/',
         steps: [
             {
                 selector: '#searchInput',
-                title: '🔎 Search & Filter',
-                desc: 'Easily search through your past tasks by keyword or filter by Passed/Failed status.'
+                title: '🔎 Audit Log Search & Filter',
+                desc: 'Search past executions by keyword or filter by Passed/Failed status.'
             },
             {
                 selector: 'table',
-                title: '📁 Saved Code History',
-                desc: 'All your past solutions are saved here! Click any row to view, copy, or download the full source code and test results.'
+                title: '📁 Saved Artifact History',
+                desc: 'Inspect full source code, test assertions, and iterations for all past tasks.'
             }
         ]
     }
@@ -364,7 +528,7 @@ let currentTourStepIndex = 0;
 
 function getTouredPages() {
     try {
-        return JSON.parse(sessionStorage.getItem('langgraph_toured_pages') || '[]');
+        return JSON.parse(sessionStorage.getItem('ai_workflow_toured_pages') || '[]');
     } catch(e) { return []; }
 }
 
@@ -372,15 +536,15 @@ function markPageToured(path) {
     const pages = getTouredPages();
     if (!pages.includes(path)) {
         pages.push(path);
-        sessionStorage.setItem('langgraph_toured_pages', JSON.stringify(pages));
+        sessionStorage.setItem('ai_workflow_toured_pages', JSON.stringify(pages));
     }
 }
 
 function autoAwakenSpotlightTour(forceLaunch = false) {
     const currentPath = window.location.pathname;
     const isCompleted = localStorage.getItem(TOUR_COMPLETED_KEY) === 'true';
-    const isDismissed = sessionStorage.getItem('langgraph_tour_dismissed') === 'true';
-    const isManualSession = sessionStorage.getItem('langgraph_manual_tour_session') === 'true';
+    const isDismissed = sessionStorage.getItem('ai_workflow_tour_dismissed') === 'true';
+    const isManualSession = sessionStorage.getItem('ai_workflow_manual_tour_session') === 'true';
 
     // IF TOUR WAS COMPLETED OR EXPLICITLY DISMISSED, DO NOT AUTO-TRIGGER UNLESS MANUALLY REQUESTED
     if (!forceLaunch && (isCompleted || isDismissed) && !isManualSession) {
@@ -397,7 +561,13 @@ function autoAwakenSpotlightTour(forceLaunch = false) {
     markPageToured(currentPath);
 
     currentTourPageIndex = FULL_PLATFORM_TOUR.findIndex(p => p.path === currentPath);
-    if (currentTourPageIndex === -1) currentTourPageIndex = 0;
+    if (currentTourPageIndex === -1) {
+        if (currentPath.includes('generate')) currentTourPageIndex = 1;
+        else if (currentPath.includes('workflow')) currentTourPageIndex = 2;
+        else if (currentPath.includes('execution')) currentTourPageIndex = 3;
+        else if (currentPath.includes('history')) currentTourPageIndex = 4;
+        else currentTourPageIndex = 0;
+    }
 
     ensureTourCalloutExists();
     currentTourStepIndex = 0;
@@ -407,11 +577,11 @@ function autoAwakenSpotlightTour(forceLaunch = false) {
 function ensureTourCalloutExists() {
     if (!document.getElementById('tourCalloutCard')) {
         const calloutHtml = `
-            <div id="tourCalloutCard" class="tour-callout-card" style="display: none; position: fixed; z-index: 99999; width: 380px; max-width: calc(100vw - 32px); background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 16px; padding: 22px; box-shadow: 0 20px 35px -5px rgba(0,0,0,0.25), 0 10px 15px -5px rgba(0,0,0,0.1);">
+            <div id="tourCalloutCard" class="tour-callout-card" style="display: none; position: fixed; z-index: 99999; width: 400px; max-width: calc(100vw - 32px); background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 16px; padding: 22px; box-shadow: 0 20px 35px -5px rgba(0,0,0,0.25), 0 10px 15px -5px rgba(0,0,0,0.1);">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span class="material-symbols-outlined" style="color: var(--accent-terracotta); font-size: 22px;">explore</span>
-                        <h3 style="font-size: 15px; font-weight: 700; color: var(--text-primary);" id="tourTitle">Platform Tour Guide</h3>
+                        <h3 style="font-size: 15px; font-weight: 700; color: var(--text-primary);" id="tourTitle">AI Workflow Studio Guide</h3>
                     </div>
                     <button onclick="dismissTourPermanently()" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 6px;" title="Close Tour">
                         <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
@@ -420,9 +590,12 @@ function ensureTourCalloutExists() {
 
                 <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 18px;" id="tourDesc"></p>
 
-                <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
                     <span class="cyber-badge cyber-badge-terracotta" id="tourCounter">Step 1</span>
-                    <button class="cyber-btn cyber-btn-primary" style="font-size: 12.5px; padding: 7px 16px; border-radius: var(--radius-pill);" onclick="nextSpotlightStep()" id="tourNextBtn">Next →</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="cyber-btn cyber-btn-secondary" style="font-size: 12px; padding: 6px 12px; border-radius: var(--radius-pill);" onclick="prevSpotlightStep()" id="tourPrevBtn">← Back</button>
+                        <button class="cyber-btn cyber-btn-primary" style="font-size: 12px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="nextSpotlightStep()" id="tourNextBtn">Next →</button>
+                    </div>
                 </div>
             </div>
         `;
@@ -446,6 +619,15 @@ function renderSpotlightStep() {
     const targetEl = document.querySelector(step.selector);
     const callout = document.getElementById('tourCalloutCard');
     const nextBtn = document.getElementById('tourNextBtn');
+    const prevBtn = document.getElementById('tourPrevBtn');
+
+    if (prevBtn) {
+        if (currentTourStepIndex === 0 && currentTourPageIndex === 0) {
+            prevBtn.style.display = 'none';
+        } else {
+            prevBtn.style.display = 'inline-flex';
+        }
+    }
 
     const isLastStepOnPage = currentTourStepIndex === pageTour.steps.length - 1;
     const isLastPage = currentTourPageIndex === FULL_PLATFORM_TOUR.length - 1;
@@ -477,7 +659,7 @@ function renderSpotlightStep() {
         const rect = targetEl.getBoundingClientRect();
         callout.style.display = 'block';
 
-        const cardWidth = 380;
+        const cardWidth = 400;
         const cardHeight = 220;
 
         let top = rect.bottom + 16;
@@ -498,6 +680,18 @@ function renderSpotlightStep() {
         callout.style.bottom = '28px';
         callout.style.left = '28px';
         callout.style.top = 'auto';
+    }
+}
+
+function prevSpotlightStep() {
+    if (currentTourStepIndex > 0) {
+        currentTourStepIndex--;
+        renderSpotlightStep();
+    } else if (currentTourPageIndex > 0) {
+        const prevTarget = FULL_PLATFORM_TOUR[currentTourPageIndex - 1];
+        sessionStorage.setItem('ai_workflow_manual_tour_session', 'true');
+        showToast(`Returning to ${prevTarget.pageName}...`, 'info');
+        window.location.href = prevTarget.path;
     }
 }
 
@@ -522,8 +716,7 @@ function advanceToNextPageInTour() {
         showToast('🎉 You completed the full platform tour!', 'success');
     } else if (pageTour && pageTour.nextUrl) {
         const nextTarget = FULL_PLATFORM_TOUR[currentTourPageIndex + 1];
-        sessionStorage.setItem('langgraph_tour_in_progress', 'true');
-        sessionStorage.setItem('langgraph_manual_tour_session', 'true');
+        sessionStorage.setItem('ai_workflow_manual_tour_session', 'true');
         showToast(`Proceeding to ${nextTarget?.pageName}...`, 'info');
         setTimeout(() => {
             window.location.href = pageTour.nextUrl;
@@ -535,11 +728,10 @@ function advanceToNextPageInTour() {
 
 function dismissTourPermanently() {
     localStorage.setItem(TOUR_COMPLETED_KEY, 'true');
-    sessionStorage.setItem('langgraph_tour_dismissed', 'true');
-    sessionStorage.removeItem('langgraph_tour_in_progress');
-    sessionStorage.removeItem('langgraph_manual_tour_session');
+    sessionStorage.setItem('ai_workflow_tour_dismissed', 'true');
+    sessionStorage.removeItem('ai_workflow_manual_tour_session');
     closeSpotlightTour();
-    showToast('Tour closed. Click "Guide" in navbar anytime to reopen!', 'info');
+    showToast('Tour closed. Click "Tour" in navbar anytime to reopen!', 'info');
 }
 
 function closeSpotlightTour() {
@@ -549,8 +741,8 @@ function closeSpotlightTour() {
 }
 
 function openPlatformGuide() {
-    sessionStorage.removeItem('langgraph_tour_dismissed');
-    sessionStorage.setItem('langgraph_manual_tour_session', 'true');
+    sessionStorage.removeItem('ai_workflow_tour_dismissed');
+    sessionStorage.setItem('ai_workflow_manual_tour_session', 'true');
     autoAwakenSpotlightTour(true);
 }
 
@@ -583,7 +775,7 @@ function initHoverTooltips() {
                 const tooltipHeight = tooltipPopup.offsetHeight || 44;
                 const tooltipWidth = tooltipPopup.offsetWidth || 240;
 
-                // Position above the target element by default to prevent covering dropdowns/inputs below
+                // Position above the target element by default to prevent covering buttons/inputs below
                 let top = rect.top - tooltipHeight - 10;
                 let left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
 
@@ -609,25 +801,7 @@ function initHoverTooltips() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const path = window.location.pathname;
-    let pageId = 'dashboard';
-    
-    if (path.includes('generate')) pageId = 'generator';
-    else if (path.includes('workflow')) pageId = 'workflow';
-    else if (path.includes('execution')) pageId = 'execution';
-    else if (path.includes('history')) pageId = 'history';
-    
-    setActiveNav(pageId);
-    initCommandPalette();
-    initHoverTooltips();
-
-    // Auto-Awaken Multi-Page Tour after 600ms for First Visit
-    setTimeout(autoAwakenSpotlightTour, 600);
-});
-
-// Mobile Navigation Drawer Toggle
-function toggleMobileNav() {
+window.toggleMobileNav = function() {
     const overlay = document.getElementById('mobileNavOverlay');
     const drawer = document.getElementById('mobileNavDrawer');
     const icon = document.getElementById('mobileMenuIcon');
@@ -642,5 +816,24 @@ function toggleMobileNav() {
         if (overlay) overlay.classList.add('open');
         if (icon) icon.textContent = 'close';
     }
-}
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    const path = window.location.pathname;
+    let pageId = 'dashboard';
+    
+    if (path.includes('generate')) pageId = 'generator';
+    else if (path.includes('workflow')) pageId = 'workflow';
+    else if (path.includes('execution')) pageId = 'execution';
+    else if (path.includes('history')) pageId = 'history';
+    
+    setActiveNav(pageId);
+    initPageFlowStepper();
+    initCommandPalette();
+    initWorkshopOriginModal();
+    initHoverTooltips();
+
+    // Auto-Awaken Multi-Page Tour after 600ms for First Visit
+    setTimeout(autoAwakenSpotlightTour, 600);
+});
 

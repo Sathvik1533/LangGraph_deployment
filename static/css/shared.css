@@ -644,6 +644,267 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 20px;
 }
 
+/* Page Flow Stepper & Forward/Backward Navigation Bar */
+.page-flow-bar-container {
+    max-width: 1440px;
+    margin: 0 auto 24px auto;
+    padding: 0 40px;
+}
+
+.page-flow-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #ffffff;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 10px 20px;
+    box-shadow: var(--shadow-sm);
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.flow-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--bg-inset);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-pill);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.flow-nav-btn:hover {
+    background: #ffffff;
+    border-color: var(--accent-terracotta);
+    color: var(--accent-terracotta);
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.12);
+    transform: translateY(-1px);
+}
+
+.flow-nav-btn:active {
+    transform: translateY(0);
+}
+
+.flow-nav-btn:disabled,
+.flow-nav-btn.disabled {
+    opacity: 0.45;
+    pointer-events: none;
+    cursor: not-allowed;
+}
+
+.flow-stepper-track {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.flow-step-node {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: var(--radius-pill);
+    text-decoration: none;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.flow-step-node:hover {
+    color: var(--text-primary);
+    background: var(--bg-inset);
+}
+
+.flow-step-node.active {
+    background: linear-gradient(135deg, var(--accent-terracotta-bg), #ffffff);
+    color: var(--accent-terracotta);
+    border-color: rgba(234, 88, 12, 0.3);
+    box-shadow: 0 2px 8px rgba(234, 88, 12, 0.1);
+}
+
+.flow-step-num {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--bg-inset);
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.flow-step-node.active .flow-step-num {
+    background: var(--accent-terracotta);
+    color: #ffffff;
+}
+
+.flow-step-divider {
+    color: var(--text-light);
+    font-size: 12px;
+}
+
+/* ==========================================================================
+   SCENARIO PILLS RICH COLOR FLUTTER & GLOW ANIMATIONS
+   ========================================================================== */
+.scenario-pill {
+    padding: 14px 18px;
+    border-radius: var(--radius-md);
+    border: 1.5px solid var(--border-subtle);
+    background: #ffffff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scenario-pill::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: transparent;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+/* 1. Self-Healing Loop: Terracotta Flame Glow */
+#pillScenarioSelfFix:hover,
+.scenario-pill-self-fix:hover {
+    border-color: #ea580c;
+    background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%);
+    box-shadow: 0 10px 24px -4px rgba(234, 88, 12, 0.2), 0 0 0 1px rgba(234, 88, 12, 0.15);
+    transform: translateY(-3px) scale(1.015);
+}
+#pillScenarioSelfFix.active {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    border-color: #ea580c;
+    color: #ffffff;
+    box-shadow: 0 10px 25px -3px rgba(234, 88, 12, 0.35), 0 0 0 2px #ea580c;
+}
+
+/* 2. Clean Pass: Emerald Glow */
+#pillScenarioClean:hover,
+.scenario-pill-clean:hover {
+    border-color: #059669;
+    background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%);
+    box-shadow: 0 10px 24px -4px rgba(5, 150, 105, 0.2), 0 0 0 1px rgba(5, 150, 105, 0.15);
+    transform: translateY(-3px) scale(1.015);
+}
+#pillScenarioClean.active {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    border-color: #059669;
+    color: #ffffff;
+    box-shadow: 0 10px 25px -3px rgba(5, 150, 105, 0.35), 0 0 0 2px #059669;
+}
+
+/* 3. Guardrail Intercept: Sapphire Indigo Glow */
+#pillScenarioGuardrail:hover,
+.scenario-pill-guardrail:hover {
+    border-color: #2563eb;
+    background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+    box-shadow: 0 10px 24px -4px rgba(37, 99, 235, 0.2), 0 0 0 1px rgba(37, 99, 235, 0.15);
+    transform: translateY(-3px) scale(1.015);
+}
+#pillScenarioGuardrail.active {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    border-color: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 10px 25px -3px rgba(37, 99, 235, 0.35), 0 0 0 2px #2563eb;
+}
+
+/* 4. Max Attempts Limit: Rose Warning Glow */
+#pillScenarioMaxRetry:hover,
+.scenario-pill-max-retry:hover {
+    border-color: #dc2626;
+    background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
+    box-shadow: 0 10px 24px -4px rgba(220, 38, 38, 0.2), 0 0 0 1px rgba(220, 38, 38, 0.15);
+    transform: translateY(-3px) scale(1.015);
+}
+#pillScenarioMaxRetry.active {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    border-color: #dc2626;
+    color: #ffffff;
+    box-shadow: 0 10px 25px -3px rgba(220, 38, 38, 0.35), 0 0 0 2px #dc2626;
+}
+
+/* 5. Human-in-the-Loop: Purple/Violet Governance Glow */
+#pillScenarioHitl:hover,
+.scenario-pill-hitl:hover {
+    border-color: #6366f1;
+    background: linear-gradient(135deg, #eef2ff 0%, #ffffff 100%);
+    box-shadow: 0 10px 24px -4px rgba(99, 102, 241, 0.2), 0 0 0 1px rgba(99, 102, 241, 0.15);
+    transform: translateY(-3px) scale(1.015);
+}
+#pillScenarioHitl.active {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    border-color: #6366f1;
+    color: #ffffff;
+    box-shadow: 0 10px 25px -3px rgba(99, 102, 241, 0.35), 0 0 0 2px #6366f1;
+}
+
+/* Flutter Micro-Animation */
+@keyframes flutterPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+}
+
+.scenario-pill:hover span.material-symbols-outlined {
+    animation: flutterPulse 1.2s ease infinite;
+}
+
+/* ==========================================================================
+   WORKSHOP ORIGIN MODAL ("WHERE IT STARTED" / "PROJECT -> PRODUCT")
+   ========================================================================== */
+.workshop-origin-modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    z-index: 5000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.25s ease;
+}
+
+.workshop-origin-modal {
+    background: #ffffff;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-medium);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 680px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 32px;
+    position: relative;
+    animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
 /* ===== Tablet Breakpoint ===== */
 @media (max-width: 900px) {
     .top-navbar {
@@ -661,6 +922,12 @@ h1, h2, h3, h4, h5, h6 {
     .studio-layout {
         padding-left: 20px;
         padding-right: 20px;
+    }
+    .page-flow-bar-container {
+        padding: 0 20px;
+    }
+    .flow-stepper-track {
+        display: none;
     }
     .tour-callout-card {
         width: calc(100% - 40px);
@@ -685,6 +952,20 @@ h1, h2, h3, h4, h5, h6 {
         padding-left: 14px;
         padding-right: 14px;
         padding-bottom: 40px;
+    }
+    .page-flow-bar-container {
+        padding: 0 14px;
+        margin-bottom: 16px;
+    }
+    .page-flow-bar {
+        padding: 8px 12px;
+    }
+    .flow-nav-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+    .flow-stepper-track {
+        display: none;
     }
     .page-header {
         flex-direction: column;
@@ -746,6 +1027,12 @@ h1, h2, h3, h4, h5, h6 {
         padding-top: 72px;
         padding-left: 10px;
         padding-right: 10px;
+    }
+    .page-flow-bar-container {
+        padding: 0 10px;
+    }
+    .flow-nav-btn .flow-btn-label {
+        display: none;
     }
     .page-title {
         font-size: 18px;

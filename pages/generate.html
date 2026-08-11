@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>LangGraph | Code Workbench & Verification Studio</title>
+    <title>AI Workflow Studio | Collaborative Workspace</title>
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,9 +20,9 @@
             <div>
                 <h1 class="page-title">
                     <span class="material-symbols-outlined" style="color: var(--accent-terracotta);">code_blocks</span>
-                    Code Workbench
+                    Collaborative AI Workspace
                 </h1>
-                <p class="page-subtitle">Describe what code you want to build. Our AI will write it and run tests automatically!</p>
+                <p class="page-subtitle">What do you want the agents to accomplish? Watch Developer, Human Reviewer, and Sandbox Tester collaborate.</p>
             </div>
 
             <div id="pipelineStepper" style="display: none; align-items: center; gap: 8px;">
@@ -40,10 +40,9 @@
                 
                 <div>
                     <label style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">
-                        <span>What code do you want?</span>
-                        <span class="kbd-badge">Press ⌘ + Enter to run</span>
+                        <span>Task Specification</span>
                     </label>
-                    <textarea id="taskInput" rows="3" style="width: 100%; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px; color: var(--text-primary); font-family: var(--font-sans); font-size: 14.5px; line-height: 1.6; outline: none; resize: vertical;" placeholder="e.g. Write a function to check if a number is prime..." data-tooltip="Task Input: Type what program or function you want our AI team to create for you."></textarea>
+                    <textarea id="taskInput" rows="3" style="width: 100%; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px; color: var(--text-primary); font-family: var(--font-sans); font-size: 14.5px; line-height: 1.6; outline: none; resize: vertical;" placeholder="e.g. Build a Python function that validates email addresses and create tests for it..." data-tooltip="Task Input: Describe what code or algorithm you want the multi-agent workflow to build."></textarea>
                     
                     <!-- Inline Validation Banner inside the Card -->
                     <div id="taskInlineAlert" style="display: none; margin-top: 10px; padding: 10px 14px; background: var(--accent-terracotta-bg); border: 1px solid rgba(234, 88, 12, 0.3); border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--accent-terracotta); align-items: center; gap: 8px;">
@@ -80,8 +79,8 @@
 
                 <!-- Custom Studio Web Dropdown: Self-Fix Ceiling -->
                 <div>
-                    <label style="display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Auto-Fix Attempts</label>
-                    <div class="custom-select-wrapper" id="ceilingSelectWrapper" data-tooltip="Auto-Fix: How many times the AI can automatically retry if the code has errors.">
+                    <label style="display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Self-Healing Attempts</label>
+                    <div class="custom-select-wrapper" id="ceilingSelectWrapper" data-tooltip="Self-Healing Retries: How many times the AI can automatically fix its own mistakes if assertions fail.">
                         <input type="hidden" id="maxIterationsSelect" value="3"/>
                         <div class="custom-select-trigger" onclick="toggleCustomSelect(this, event)">
                             <span class="custom-select-value" id="ceilingSelectValue">3 Loops (Default)</span>
@@ -98,25 +97,25 @@
             </div>
 
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Write a function to calculate fibonacci numbers')" data-tooltip="Quick Fill: Fills in a sample Fibonacci sequence calculation task.">Fibonacci</button>
-                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Create a function that checks if a string is a palindrome')" data-tooltip="Quick Fill: Fills in a sample Palindrome checker task.">Palindrome</button>
-                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Write a function to divide two numbers with proper error handling')" data-tooltip="Quick Fill: Fills in a sample Safe Division task.">Safe Division</button>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;" id="presetRow">
+                    <button class="cyber-btn cyber-btn-secondary preset-btn" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Write a function to calculate fibonacci numbers')" data-tooltip="Quick Preset: Fibonacci sequence calculation with unit tests.">Fibonacci</button>
+                    <button class="cyber-btn cyber-btn-secondary preset-btn" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Create a function that checks if a string is a palindrome')" data-tooltip="Quick Preset: Palindrome validator with edge cases.">Palindrome</button>
+                    <button class="cyber-btn cyber-btn-secondary preset-btn" style="font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);" onclick="fillPreset('Write a function to divide two numbers with proper error handling')" data-tooltip="Quick Preset: Safe division with zero-division handling.">Safe Division</button>
                 </div>
 
-                <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
                     <!-- Human-in-the-Loop Toggle -->
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; padding: 6px 12px; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: var(--radius-pill);" data-tooltip="Human Review Gate: Pauses the AI after drafting code so you can review, edit, or reject before automated testing.">
-                        <input type="checkbox" id="hitlModeToggle" style="accent-color: var(--accent-indigo); width: 15px; height: 15px; cursor: pointer;"/>
-                        <span style="font-size: 12px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 4px;">
-                            <span class="material-symbols-outlined" style="font-size: 15px; color: var(--accent-indigo);">person_pin</span>
+                    <label id="hitlModeToggleWrapper" style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; padding: 7px 14px; background: rgba(99, 102, 241, 0.08); border: 1.5px solid rgba(99, 102, 241, 0.3); border-radius: var(--radius-pill);" data-tooltip="Human Review Gate: Pauses the AI after drafting code so you can review, edit in-place, or request changes before sandbox execution.">
+                        <input type="checkbox" id="hitlModeToggle" style="accent-color: var(--accent-indigo); width: 16px; height: 16px; cursor: pointer;"/>
+                        <span style="font-size: 12.5px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                            <span class="material-symbols-outlined" style="font-size: 16px; color: var(--accent-indigo);">person_pin</span>
                             Human Review Gate
                         </span>
                     </label>
 
-                    <button id="generateBtn" class="cyber-btn cyber-btn-primary" data-tooltip="Click to generate and test your code.">
-                        <span class="material-symbols-outlined">code_blocks</span>
-                        <span>Generate Code</span>
+                    <button id="generateBtn" class="cyber-btn cyber-btn-primary" style="padding: 9px 22px; font-size: 13.5px;" data-tooltip="Run Workflow: Launches Developer Agent ➔ Review Gate ➔ Sandbox Tester.">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">rocket_launch</span>
+                        <span>Run Workflow</span>
                     </button>
                 </div>
             </div>

@@ -90,7 +90,7 @@ class TestPageLoading:
     def test_generate_page_title(self, page):
         page.goto(BASE_URL + "/generate")
         title = page.title()
-        assert "LangGraph" in title or "Workbench" in title or "Code" in title
+        assert "AI Workflow Studio" in title or "Workspace" in title or "LangGraph" in title
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -162,7 +162,7 @@ class TestCodeGeneration:
         page.goto(BASE_URL + "/generate")
         page.wait_for_timeout(600)
         btn_text = page.locator("#generateBtn").text_content()
-        assert "Generate" in btn_text, "Button should say 'Generate Code', not technical jargon"
+        assert "Workflow" in btn_text or "Generate" in btn_text, "Button should say 'Run Workflow' or 'Generate Code', not technical jargon"
 
 
 # ═══════════════════════════════════════════════════════════════════
