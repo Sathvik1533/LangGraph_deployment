@@ -1316,20 +1316,31 @@
         function togglePlaySimulation() {
             const playIcon = document.getElementById('simPlayIcon');
             const playText = document.getElementById('simPlayText');
+            const statusBadge = document.getElementById('telemetryStatusBadge');
+            const modeBadge = document.getElementById('telemetryModeBadge');
 
             if (playInterval) {
                 clearInterval(playInterval);
                 playInterval = null;
-                playIcon.textContent = 'play_circle';
-                playText.textContent = 'SIMULATION: Play';
+                if (playIcon) playIcon.textContent = 'play_circle';
+                if (playText) playText.textContent = 'SIMULATION: Play';
+                if (statusBadge) {
+                    statusBadge.textContent = 'STATUS: PAUSED (SIMULATION)';
+                    statusBadge.className = 'cyber-badge cyber-badge-amber';
+                }
                 showToast('Simulation paused', 'info');
             } else {
                 const steps = getScenarioSteps(currentScenario, activeTask, activeLanguage);
                 if (currentStepIndex >= steps.length - 1) {
                     currentStepIndex = 0;
                 }
-                playIcon.textContent = 'pause_circle';
-                playText.textContent = 'SIMULATION: Pause';
+                if (playIcon) playIcon.textContent = 'pause_circle';
+                if (playText) playText.textContent = 'SIMULATION: Pause';
+                if (modeBadge) modeBadge.textContent = 'MODE: SIMULATION';
+                if (statusBadge) {
+                    statusBadge.textContent = 'STATUS: RUNNING (SIMULATION)';
+                    statusBadge.className = 'cyber-badge cyber-badge-emerald';
+                }
                 renderCurrentStep();
                 playInterval = setInterval(() => {
                     const steps = getScenarioSteps(currentScenario, activeTask, activeLanguage);
@@ -1339,8 +1350,12 @@
                     } else {
                         clearInterval(playInterval);
                         playInterval = null;
-                        playIcon.textContent = 'play_circle';
-                        playText.textContent = 'SIMULATION: Play';
+                        if (playIcon) playIcon.textContent = 'play_circle';
+                        if (playText) playText.textContent = 'SIMULATION: Play';
+                        if (statusBadge) {
+                            statusBadge.textContent = 'STATUS: COMPLETED (SIMULATION)';
+                            statusBadge.className = 'cyber-badge cyber-badge-emerald';
+                        }
                         showToast('🎉 Scenario simulation completed!', 'success');
                     }
                 }, Math.round(1500 * simSpeedMultiplier));
