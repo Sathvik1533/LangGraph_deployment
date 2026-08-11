@@ -101,12 +101,12 @@
 
             <!-- Playback & Execution Controls Toolbar -->
             <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                <button id="liveApiRunBtn" class="cyber-btn cyber-btn-primary" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); border-color: #059669;" onclick="runLiveBackendWorkflow()" data-tooltip="LIVE API: Sends task to backend /stream SSE endpoint for real multi-agent execution.">
+                <button id="liveApiRunBtn" class="cyber-btn cyber-btn-primary" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); border-color: #059669;" onclick="launchNewRunFromPipeline('live')" data-tooltip="LIVE API: Sends task to backend /stream SSE endpoint for real multi-agent execution.">
                     <span class="material-symbols-outlined" style="font-size: 18px;">bolt</span>
                     <span>LIVE: Execute API</span>
                 </button>
                 
-                <button id="simPlayBtn" class="cyber-btn cyber-btn-primary" onclick="togglePlaySimulation()" data-tooltip="SIMULATION: Runs deterministic step-by-step state machine simulation.">
+                <button id="simPlayBtn" class="cyber-btn cyber-btn-primary" onclick="launchNewRunFromPipeline('simulation')" data-tooltip="SIMULATION: Runs deterministic step-by-step state machine simulation.">
                     <span class="material-symbols-outlined" id="simPlayIcon">play_circle</span>
                     <span id="simPlayText">SIMULATION: Play</span>
                 </button>
@@ -1719,6 +1719,73 @@
             }
             
             showToast('🛑 Active workflow run stopped', 'warning');
+        }
+
+        function launchNewRunFromPipeline(mode) {
+            const inputTask = (document.getElementById('canvasTaskInput')?.value || activeTask || '').trim();
+            const inputLang = getActiveLanguage();
+
+            if (!inputTask) {
+                showToast('Please enter a task specification before executing', 'warning');
+                document.getElementById('canvasTaskInput')?.focus();
+                return;
+            }
+
+            if (typeof minimizeTourForExecution === 'function') {
+                minimizeTourForExecution();
+            }
+
+            const runId = (mode === 'simulation' ? 'sim_' : 'run_') + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+
+            activeTask = inputTask;
+            activeLanguage = inputLang;
+            localStorage.setItem('ai_workflow_current_task', activeTask);
+            localStorage.setItem('ai_workflow_current_lang', activeLanguage);
+
+            setCurrentWorkflowRun({
+                runId: runId,
+                task: activeTask,
+                language: activeLanguage,
+                mode: mode,
+                status: 'RUNNING',
+                currentNode: 'START',
+                generatedCode: null,
+                testResult: null,
+                iteration: 1,
+                maxIterations: 3,
+                timestamp: new Date().toISOString()
+            });
+
+            // Update URL parameters
+            const newUrl = `/workflow?run=${encodeURIComponent(runId)}&task=${encodeURIComponent(activeTask)}&lang=${encodeURIComponent(activeLanguage)}&mode=${mode}&autoRun=true`;
+            window.history.pushState({}, '', newUrl);
+
+            // Update Banner & Telemetry Context Badges
+            document.getElementById('activeTaskDisplayTitle').textContent = `"${activeTask}"`;
+            document.getElementById('activeTaskLangBadge').textContent = activeLanguage.toUpperCase();
+            document.getElementById('activeRunIdBadge').textContent = `ID: ${runId.substring(0, 18)}`;
+            document.getElementById('telemetryModeBadge').textContent = `MODE: ${mode.toUpperCase()}`;
+            document.getElementById('canvasLangBadge').textContent = `TARGET: ${activeLanguage.toUpperCase()}`;
+
+            resetGraphVisuals();
+
+            // Smoothly auto-scroll visualizer into view
+            document.getElementById('stateGraphSvg')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            if (mode === 'simulation') {
+                if (liveEventSource) {
+                    liveEventSource.close();
+                    liveEventSource = null;
+                }
+                if (playInterval) {
+                    clearInterval(playInterval);
+                    playInterval = null;
+                }
+                currentStepIndex = 0;
+                togglePlaySimulation();
+            } else {
+                runLiveBackendWorkflow(runId, activeTask, activeLanguage, typeof hitlModeParam !== 'undefined' ? hitlModeParam : false);
+            }
         }
 
         // =========================================================================
