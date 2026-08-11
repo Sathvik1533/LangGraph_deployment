@@ -77,48 +77,7 @@
         </div>
     </main>
 
-    <!-- Run Details Modal -->
-    <div id="detailModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(6px); z-index: 2000; align-items: center; justify-content: center; padding: 20px;" onclick="closeDetailModal()">
-        <div class="studio-card" style="width: 100%; max-width: 800px; max-height: 85vh; overflow-y: auto; background: #ffffff;" onclick="event.stopPropagation()">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 16px;">
-                <div>
-                    <h3 style="font-size: 18px; font-weight: 700;" id="modalTaskTitle">Task Details</h3>
-                    <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 4px;" id="modalMeta"></p>
-                </div>
-                <button onclick="closeDetailModal()" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer;" title="Close Modal">
-                    <span class="material-symbols-outlined" style="font-size: 24px;">close</span>
-                </button>
-            </div>
 
-            <!-- Formatted Test Case Status Card -->
-            <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px;">
-                <div style="display: flex; align-items: center; gap: 8px; color: #065f46; font-weight: 700; font-size: 13.5px; margin-bottom: 6px;">
-                    <span class="material-symbols-outlined" style="color: #059669; font-size: 20px;">verified</span>
-                    <span>Test Cases & Assertion Results</span>
-                </div>
-                <div style="color: #047857; font-size: 12.5px; line-height: 1.6;" id="modalTestScenarios">
-                    <div>✓ Scenario 1: Standard input validation & type assertion — <strong>PASSED</strong></div>
-                    <div>✓ Scenario 2: Boundary edge case & limits evaluation — <strong>PASSED</strong></div>
-                    <div>✓ Scenario 3: Exception handling & assertion safety — <strong>PASSED</strong></div>
-                </div>
-            </div>
-
-            <div style="margin-bottom: 20px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                    <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Generated Code</div>
-                    <button class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 3px 10px;" onclick="copyModalCode()">
-                        <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span> Copy Code
-                    </button>
-                </div>
-                <pre id="modalCodeBody" style="background: #0f172a; color: #f8fafc; padding: 18px; border-radius: 10px; font-family: var(--font-mono); font-size: 13.5px; line-height: 1.6; white-space: pre-wrap; margin: 0; max-height: 250px; overflow-y: auto;"></pre>
-            </div>
-
-            <div>
-                <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Sandbox Execution Output</div>
-                <pre id="modalReportBody" style="background: #0f172a; color: #94a3b8; padding: 18px; border-radius: 10px; font-family: var(--font-mono); font-size: 13px; line-height: 1.6; white-space: pre-wrap; margin: 0; max-height: 200px; overflow-y: auto;"></pre>
-            </div>
-        </div>
-    </div>
 
     <script src="/static/js/common.js"></script>
     <script>
@@ -177,24 +136,84 @@
                 return;
             }
 
-            tbody.innerHTML = runs.map(run => `
-                <tr style="border-bottom: 1px solid var(--border-subtle); cursor: pointer;" onclick="openDetailModal('${run.id}')" data-tooltip="Click row to view full source code and test results.">
+            tbody.innerHTML = runs.map(run => {
+                const trId = `run-row-${run.id}`;
+                const detailId = `detail-row-${run.id}`;
+                return `
+                <tr id="${trId}" style="border-bottom: 1px solid var(--border-subtle); cursor: pointer;" onclick="toggleDetails('${run.id}')" data-tooltip="Click row to view full source code and test results.">
                     <td style="padding: 16px 18px; font-weight: 600; color: var(--text-primary);">${run.task}</td>
                     <td style="padding: 16px 18px;">
                         <span class="cyber-badge cyber-badge-indigo">${run.language.toUpperCase()}</span>
                     </td>
                     <td style="padding: 16px 18px;">
                         <span class="cyber-badge ${run.success ? 'cyber-badge-emerald' : 'cyber-badge-amber'}">
-                            ${run.success ? 'PASSED' : 'FAILED'}
+                            ${run.success ? 'SUCCESS' : 'FAILED'}
                         </span>
                     </td>
                     <td style="padding: 16px 18px; font-family: var(--font-mono); color: var(--text-secondary);">${run.iterations} attempt(s)</td>
                     <td style="padding: 16px 18px; color: var(--text-muted); font-size: 13px;">${new Date(run.timestamp).toLocaleString()}</td>
-                    <td style="padding: 16px 18px; text-align: right;">
-                        <button class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 10px;" onclick="event.stopPropagation(); openDetailModal('${run.id}')">View Details</button>
+                    <td style="padding: 16px 18px; text-align: right; white-space: nowrap;">
+                        <button class="cyber-btn cyber-btn-primary" style="font-size: 11.5px; padding: 4px 10px; margin-right: 8px;" onclick="event.stopPropagation(); reuseTask('${run.id}')">Reuse Task</button>
+                        <button class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 10px;" onclick="event.stopPropagation(); toggleDetails('${run.id}')">View Details</button>
                     </td>
                 </tr>
-            `).join('');
+                <tr id="${detailId}" style="display: none; background-color: #f8fafc; border-bottom: 1px solid var(--border-subtle);">
+                    <td colspan="6" style="padding: 20px;">
+                        <div style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 12px;"><strong>Thread ID:</strong> ${run.thread_id || 'active'}</div>
+                        <div style="margin-bottom: 16px;">
+                            <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Generated Code</div>
+                            <pre style="background: #0f172a; color: #f8fafc; padding: 16px; border-radius: 8px; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; white-space: pre-wrap; margin: 0; max-height: 250px; overflow-y: auto;">${run.code ? escapeHtml(run.code) : '// No code output saved.'}</pre>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Test Report</div>
+                            <pre style="background: #0f172a; color: #94a3b8; padding: 16px; border-radius: 8px; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; white-space: pre-wrap; margin: 0; max-height: 200px; overflow-y: auto;">${run.report ? escapeHtml(run.report) : '// No sandbox output saved.'}</pre>
+                        </div>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+
+        function toggleDetails(id) {
+            const detailRow = document.getElementById(`detail-row-${id}`);
+            if (detailRow.style.display === 'none') {
+                detailRow.style.display = 'table-row';
+            } else {
+                detailRow.style.display = 'none';
+            }
+        }
+
+        function reuseTask(id) {
+            const run = fullHistory.find(r => r.id === id);
+            if (!run) return;
+            
+            localStorage.setItem('ai_workflow_current_task', run.task);
+            localStorage.setItem('ai_workflow_current_lang', run.language);
+            localStorage.setItem('langgraph_last_task', run.task);
+            localStorage.setItem('langgraph_last_lang', run.language);
+            
+            if (typeof setCurrentWorkflowRun === 'function') {
+                setCurrentWorkflowRun({ task: run.task, language: run.language });
+            }
+            
+            if (typeof showToast === 'function') {
+                showToast('Task loaded into Workspace');
+            } else {
+                alert('Task loaded into Workspace');
+            }
+            
+            setTimeout(() => {
+                window.location.href = '/generate';
+            }, 500);
         }
 
         function filterHistoryTable() {
@@ -208,36 +227,6 @@
             });
 
             renderTable(filtered);
-        }
-
-        function openDetailModal(id) {
-            const run = fullHistory.find(r => r.id === id);
-            if (!run) return;
-
-            currentModalCode = run.code || '';
-            document.getElementById('modalTaskTitle').textContent = run.task;
-            document.getElementById('modalMeta').textContent = `${run.language.toUpperCase()} • ${run.iterations} attempt(s) • ${new Date(run.timestamp).toLocaleString()} • Thread: ${run.thread_id || 'active'}`;
-            document.getElementById('modalCodeBody').textContent = run.code || '// No code output saved.';
-            document.getElementById('modalReportBody').textContent = run.report || '// No sandbox output saved.';
-
-            const taskLower = run.task.toLowerCase();
-            document.getElementById('modalTestScenarios').innerHTML = `
-                <div>✓ Scenario 1: Standard input verification for "${run.task.slice(0, 40)}" — <strong>PASSED</strong></div>
-                <div>✓ Scenario 2: Boundary edge case & type assertion — <strong>PASSED</strong></div>
-                <div>✓ Scenario 3: Exception handling & assertion safety — <strong>PASSED</strong></div>
-            `;
-
-            document.getElementById('detailModal').style.display = 'flex';
-        }
-
-        function copyModalCode() {
-            if (currentModalCode) {
-                copyToClipboard(currentModalCode);
-            }
-        }
-
-        function closeDetailModal() {
-            document.getElementById('detailModal').style.display = 'none';
         }
 
         function clearHistoryLog() {
