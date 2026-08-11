@@ -285,13 +285,13 @@
                 </div>
             </div>
 
-            <!-- SVG Graph Architecture with Animated Flow Data Orbs -->
+            <!-- SVG Graph Architecture (7-Node LangGraph State Machine) -->
             <div class="svg-scroll-hint">
                 <span class="material-symbols-outlined" style="font-size: 14px;">swipe</span>
-                Swipe horizontally to view full graph
+                Swipe horizontally to view full graph (Click any node to inspect)
             </div>
             <div class="svg-touch-wrapper" style="padding: 10px; display: flex; align-items: center; justify-content: center;">
-                <svg id="stateGraphSvg" width="960" height="240" viewBox="0 0 960 240" style="width: 100%; min-width: 720px; max-width: 960px;">
+                <svg id="stateGraphSvg" width="1020" height="240" viewBox="0 0 1020 240" style="width: 100%; min-width: 780px; max-width: 1020px;">
                     <defs>
                         <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
                             <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
@@ -311,131 +311,299 @@
                         </filter>
                     </defs>
 
-                    <!-- Edges (Connecting Lines) -->
-                    <line id="edgeStartDev" x1="85" y1="130" x2="145" y2="130" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)"/>
-                    <line id="edgeDevReview" x1="275" y1="130" x2="330" y2="130" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)"/>
-                    <line id="edgeReviewTest" x1="450" y1="130" x2="505" y2="130" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)"/>
-                    <line id="edgeTestRoute" x1="635" y1="130" x2="710" y2="130" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)"/>
-                    <line id="edgeRouteEnd" x1="790" y1="130" x2="865" y2="130" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow-emerald)"/>
+                    <!-- Edges (Connecting Lines across 7 Nodes) -->
+                    <line id="edgeStartGuard" x1="75" y1="130" x2="135" y2="130" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)"/>
+                    <line id="edgeGuardDev" x1="255" y1="130" x2="310" y2="130" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)"/>
+                    <line id="edgeDevReview" x1="430" y1="130" x2="480" y2="130" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)"/>
+                    <line id="edgeReviewTest" x1="600" y1="130" x2="650" y2="130" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)"/>
+                    <line id="edgeTestRoute" x1="770" y1="130" x2="825" y2="130" stroke="#94a3b8" stroke-width="2.5" marker-end="url(#arrow)"/>
+                    <line id="edgeRouteEnd" x1="895" y1="130" x2="945" y2="130" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow-emerald)"/>
 
-                    <!-- Conditional Feedback Loop (Back from Router to Developer - Hidden by Default) -->
-                    <path id="edgeFeedbackLoop" d="M 750 90 Q 480 15 210 90" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#arrow-red)" opacity="0"/>
-                    <text id="loopLabel" x="480" y="38" text-anchor="middle" fill="#dc2626" font-size="11.5" font-weight="700" opacity="0">Self-Healing Loop (Traceback Feedback)</text>
+                    <!-- Conditional Feedback Loop (Router ➔ Developer - Hidden by Default) -->
+                    <path id="edgeFeedbackLoop" d="M 860 92 Q 615 15 370 92" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#arrow-red)" opacity="0"/>
+                    <text id="loopLabel" x="615" y="36" text-anchor="middle" fill="#dc2626" font-size="11.5" font-weight="700" opacity="0">Self-Healing Loop (Traceback Feedback)</text>
 
-                    <!-- START Node -->
-                    <g id="nodeSTART" transform="translate(50, 130)" class="node-item" onclick="jumpToStepByName('START')" style="cursor: pointer;" data-tooltip="START Node: Workflow initial payload receiver.">
-                        <circle r="30" fill="#ffffff" stroke="#94a3b8" stroke-width="2.5"/>
-                        <circle r="36" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,4" opacity="0.6"/>
+                    <!-- 1. START Node -->
+                    <g id="nodeSTART" transform="translate(45, 130)" class="node-item selected" onclick="selectInspectorNode('START')" style="cursor: pointer;" data-tooltip="START Node: Workflow initial payload receiver. Click to inspect.">
+                        <circle r="28" fill="#ffffff" stroke="#94a3b8" stroke-width="2.5"/>
+                        <circle r="34" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,4" opacity="0.6"/>
                         <text text-anchor="middle" dy="4" fill="#0f172a" font-size="11" font-weight="800">START</text>
                     </g>
 
-                    <!-- Developer Engine Node -->
-                    <g id="nodeDeveloper" transform="translate(210, 130)" class="node-item" onclick="jumpToStepByName('Developer')" style="cursor: pointer;" data-tooltip="Developer Node: Synthesizes code and incorporates error tracebacks.">
-                        <rect x="-65" y="-34" width="130" height="68" rx="10" fill="#ffffff" stroke="#ea580c" stroke-width="2.5"/>
-                        <text text-anchor="middle" dy="-9" fill="#ea580c" font-size="9.5" font-weight="800" letter-spacing="0.06em">LLM ENGINE</text>
+                    <!-- 2. Guardrail (Security Shield) Node -->
+                    <g id="nodeGuardrail" transform="translate(195, 130)" class="node-item" onclick="selectInspectorNode('guardrail')" style="cursor: pointer;" data-tooltip="Guardrail Node: OWASP prompt injection and safety shield. Click to inspect.">
+                        <rect x="-60" y="-34" width="120" height="68" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="2.5"/>
+                        <text text-anchor="middle" dy="-9" fill="#2563eb" font-size="9" font-weight="800" letter-spacing="0.06em">SAFETY SHIELD</text>
+                        <text text-anchor="middle" dy="11" fill="#0f172a" font-size="13" font-weight="700">Guardrail</text>
+                    </g>
+
+                    <!-- 3. Developer Engine Node -->
+                    <g id="nodeDeveloper" transform="translate(370, 130)" class="node-item" onclick="selectInspectorNode('developer')" style="cursor: pointer;" data-tooltip="Developer Node: Synthesizes code and incorporates error tracebacks. Click to inspect.">
+                        <rect x="-60" y="-34" width="120" height="68" rx="10" fill="#ffffff" stroke="#ea580c" stroke-width="2.5"/>
+                        <text text-anchor="middle" dy="-9" fill="#ea580c" font-size="9" font-weight="800" letter-spacing="0.06em">LLM ENGINE</text>
                         <text text-anchor="middle" dy="11" fill="#0f172a" font-size="13" font-weight="700">Developer</text>
                     </g>
 
-                    <!-- Human Review Gate Node -->
-                    <g id="nodeReviewGate" transform="translate(390, 130)" class="node-item" onclick="jumpToStepByName('HumanReview')" style="cursor: pointer;" data-tooltip="Review Gate: Optional human sign-off before sandbox testing.">
+                    <!-- 4. Human Review Gate Node -->
+                    <g id="nodeReviewGate" transform="translate(540, 130)" class="node-item" onclick="selectInspectorNode('human_review')" style="cursor: pointer;" data-tooltip="Review Gate: Optional human sign-off before sandbox testing. Click to inspect.">
                         <rect x="-60" y="-34" width="120" height="68" rx="10" fill="#ffffff" stroke="#6366f1" stroke-width="2.5"/>
-                        <text text-anchor="middle" dy="-9" fill="#6366f1" font-size="9.5" font-weight="800" letter-spacing="0.06em">GOVERNANCE</text>
+                        <text text-anchor="middle" dy="-9" fill="#6366f1" font-size="9" font-weight="800" letter-spacing="0.06em">GOVERNANCE</text>
                         <text text-anchor="middle" dy="11" fill="#0f172a" font-size="13" font-weight="700">Review Gate</text>
                     </g>
 
-                    <!-- Tester / Sandbox Node -->
-                    <g id="nodeTester" transform="translate(570, 130)" class="node-item" onclick="jumpToStepByName('Tester')" style="cursor: pointer;" data-tooltip="Tester Node: Runs isolated sandbox execution and checks assertions.">
-                        <rect x="-65" y="-34" width="130" height="68" rx="10" fill="#ffffff" stroke="#059669" stroke-width="2.5"/>
-                        <text text-anchor="middle" dy="-9" fill="#059669" font-size="9.5" font-weight="800" letter-spacing="0.06em">SANDBOX</text>
+                    <!-- 5. Tester / Sandbox Node -->
+                    <g id="nodeTester" transform="translate(710, 130)" class="node-item" onclick="selectInspectorNode('tester')" style="cursor: pointer;" data-tooltip="Tester Node: Runs isolated sandbox execution and checks assertions. Click to inspect.">
+                        <rect x="-60" y="-34" width="120" height="68" rx="10" fill="#ffffff" stroke="#059669" stroke-width="2.5"/>
+                        <text text-anchor="middle" dy="-9" fill="#059669" font-size="9" font-weight="800" letter-spacing="0.06em">SANDBOX</text>
                         <text text-anchor="middle" dy="11" fill="#0f172a" font-size="13" font-weight="700">Tester</text>
                     </g>
 
-                    <!-- Router Node -->
-                    <g id="nodeRouter" transform="translate(750, 130)" class="node-item" onclick="jumpToStepByName('Router')" style="cursor: pointer;" data-tooltip="Router Node: Evaluates execution_success and decides route.">
-                        <polygon points="0,-38 40,0 0,38 -40,0" fill="#ffffff" stroke="#d97706" stroke-width="2.5"/>
-                        <text text-anchor="middle" dy="4" fill="#d97706" font-size="10.5" font-weight="800">ROUTER</text>
+                    <!-- 6. Router Node -->
+                    <g id="nodeRouter" transform="translate(860, 130)" class="node-item" onclick="selectInspectorNode('router')" style="cursor: pointer;" data-tooltip="Router Node: Evaluates execution_success and decides route. Click to inspect.">
+                        <polygon points="0,-36 36,0 0,36 -36,0" fill="#ffffff" stroke="#d97706" stroke-width="2.5"/>
+                        <text text-anchor="middle" dy="4" fill="#d97706" font-size="10" font-weight="800">ROUTER</text>
                     </g>
 
-                    <!-- END Node -->
-                    <g id="nodeEND" transform="translate(890, 130)" class="node-item" onclick="jumpToStepByName('END')" style="cursor: pointer;" data-tooltip="END Node: Terminal exit returning validated code.">
-                        <circle r="24" fill="#ffffff" stroke="#059669" stroke-width="2.5"/>
+                    <!-- 7. END Node -->
+                    <g id="nodeEND" transform="translate(975, 130)" class="node-item" onclick="selectInspectorNode('END')" style="cursor: pointer;" data-tooltip="END Node: Terminal exit returning validated code. Click to inspect.">
+                        <circle r="26" fill="#ffffff" stroke="#059669" stroke-width="2.5"/>
                         <text text-anchor="middle" dy="4" fill="#059669" font-size="11" font-weight="800">END</text>
                     </g>
                 </svg>
             </div>
         </div>
 
-        <!-- Live Step Inspector & Streaming Console -->
-        <div class="studio-card" id="inspectorCard" style="background: #0f172a; color: #f8fafc; border: 1px solid #334155; padding: 0; overflow: hidden;">
-            
-            <!-- Inspector Header & Tab Navigation -->
-            <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid #334155; background: #1e293b; flex-wrap: wrap; gap: 12px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <span class="material-symbols-outlined" style="color: #38bdf8; font-size: 24px;" id="nodeInspectorIcon">verified</span>
+        <!-- Live Agent Guardrail Coverage / Active LLM Security Controls Map -->
+        <div class="studio-card" style="margin-bottom: 24px; border: 1.5px solid rgba(37, 99, 235, 0.25); background: linear-gradient(135deg, rgba(37, 99, 235, 0.02) 0%, #ffffff 100%);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="material-symbols-outlined" style="font-size: 24px; color: var(--accent-indigo);">security</span>
                     <div>
-                        <h2 style="font-size: 18px; font-weight: 700; color: #f8fafc; margin: 0;" id="nodeInspectorTitle">START Node</h2>
-                        <div style="font-size: 12px; color: #94a3b8;" id="nodeInspectorSubtitle">Received Initial Payload</div>
+                        <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0;">LIVE AGENT GUARDRAIL COVERAGE</h3>
+                        <p style="font-size: 12px; color: var(--text-muted); margin: 2px 0 0 0;">Zero-Trust pre-execution safety shield attached directly to the Guardrail node in the multi-agent graph.</p>
                     </div>
                 </div>
-
-                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                    <button class="tab-btn active" id="tabBtnLog" onclick="switchInspectorTab('log')">
-                        <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle;">terminal</span>
-                        Execution Log
-                    </button>
-                    <button class="tab-btn" id="tabBtnCode" onclick="switchInspectorTab('code')">
-                        <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle;">code</span>
-                        Active Code
-                    </button>
-                    <button class="tab-btn" id="tabBtnState" onclick="switchInspectorTab('state')">
-                        <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle;">data_object</span>
-                        CrewState JSON
-                    </button>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="cyber-badge cyber-badge-indigo" id="guardrailCoverageLiveBadge" style="font-size: 11px; font-weight: 700;">4 / 4 CONTROLS MONITORED</span>
                 </div>
             </div>
 
-            <!-- Tab Content: Streaming Execution Log -->
-            <div id="tabContentLog" style="padding: 22px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                    <div style="font-size: 12px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
-                        <span class="material-symbols-outlined" style="font-size: 18px;">analytics</span>
-                        AGENT THOUGHT & SANDBOX EXECUTION STREAM
+            <div class="security-controls-grid">
+                <!-- Control 1: Prompt Injection -->
+                <div class="security-control-card waiting" id="cardGuardrailPrompt" onclick="openSecurityControlModal('prompt_injection')" data-tooltip="Click to inspect LLM01: Prompt Injection defense details.">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-weight: 700; font-size: 13px; color: var(--text-primary);">LLM01: Prompt Injection</span>
+                        <span class="cyber-badge" id="badgeGuardrailPrompt" style="font-size: 10.5px; font-weight: 700; background: #e2e8f0; color: #475569;">WAITING</span>
                     </div>
-                    <span class="cyber-badge cyber-badge-indigo" id="logStatusBadge">NOMINAL</span>
+                    <div style="font-size: 11.5px; color: var(--text-muted);">Defends against system prompt leakage and jailbreak overrides.</div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--accent-indigo); padding-top: 6px; border-top: 1px dashed var(--border-subtle);">
+                        <span id="subtextGuardrailPrompt">Scanner: InputGuard AST</span>
+                        <span class="material-symbols-outlined" style="font-size: 14px;">open_in_new</span>
+                    </div>
                 </div>
-                <pre id="streamLogOutput" style="font-family: var(--font-mono); font-size: 13px; color: #cbd5e1; line-height: 1.7; background: #020617; border: 1px solid #1e293b; padding: 18px; border-radius: 10px; margin: 0; min-height: 180px; max-height: 280px; overflow-y: auto; white-space: pre-wrap;"></pre>
+
+                <!-- Control 2: Sensitive Data Leak -->
+                <div class="security-control-card waiting" id="cardGuardrailSensitive" onclick="openSecurityControlModal('sensitive_data')" data-tooltip="Click to inspect LLM02: Sensitive Data Leak prevention details.">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-weight: 700; font-size: 13px; color: var(--text-primary);">LLM02: Sensitive Data Leak</span>
+                        <span class="cyber-badge" id="badgeGuardrailSensitive" style="font-size: 10.5px; font-weight: 700; background: #e2e8f0; color: #475569;">WAITING</span>
+                    </div>
+                    <div style="font-size: 11.5px; color: var(--text-muted);">Redacts credentials, API keys, private tokens, and SSNs.</div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--accent-indigo); padding-top: 6px; border-top: 1px dashed var(--border-subtle);">
+                        <span id="subtextGuardrailSensitive">Scanner: PII & Secret Redactor</span>
+                        <span class="material-symbols-outlined" style="font-size: 14px;">open_in_new</span>
+                    </div>
+                </div>
+
+                <!-- Control 3: Excessive Agency -->
+                <div class="security-control-card waiting" id="cardGuardrailAgency" onclick="openSecurityControlModal('excessive_agency')" data-tooltip="Click to inspect LLM06: Excessive Agency & OS Shield details.">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-weight: 700; font-size: 13px; color: var(--text-primary);">LLM06: Excessive Agency</span>
+                        <span class="cyber-badge" id="badgeGuardrailAgency" style="font-size: 10.5px; font-weight: 700; background: #e2e8f0; color: #475569;">WAITING</span>
+                    </div>
+                    <div style="font-size: 11.5px; color: var(--text-muted);">Constrains runtime to isolated compilation sandbox without host access.</div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--accent-indigo); padding-top: 6px; border-top: 1px dashed var(--border-subtle);">
+                        <span id="subtextGuardrailAgency">Shield: Multi-Lang Sandbox</span>
+                        <span class="material-symbols-outlined" style="font-size: 14px;">open_in_new</span>
+                    </div>
+                </div>
+
+                <!-- Control 4: Unbounded Consumption -->
+                <div class="security-control-card waiting" id="cardGuardrailConsumption" onclick="openSecurityControlModal('unbounded_consumption')" data-tooltip="Click to inspect LLM10: Unbounded Consumption guard details.">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-weight: 700; font-size: 13px; color: var(--text-primary);">LLM10: Unbounded Consumption</span>
+                        <span class="cyber-badge" id="badgeGuardrailConsumption" style="font-size: 10.5px; font-weight: 700; background: #e2e8f0; color: #475569;">WAITING</span>
+                    </div>
+                    <div style="font-size: 11.5px; color: var(--text-muted);">Strict iteration ceiling and token ceiling prevent runaway retry costs.</div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--accent-indigo); padding-top: 6px; border-top: 1px dashed var(--border-subtle);">
+                        <span id="subtextGuardrailConsumption">Boundary: 3 Loop Max Cap</span>
+                        <span class="material-symbols-outlined" style="font-size: 14px;">open_in_new</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dynamic Active-Node Inspector & Multi-Tab Execution Console -->
+        <div class="studio-card" id="inspectorCard" style="background: #0f172a; color: #f8fafc; border: 1px solid #334155; padding: 0; overflow: hidden; margin-bottom: 32px;">
+            
+            <!-- Inspector Header with Dynamic Active-Node Indicator & Live Follow Toggle -->
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid #334155; background: #1e293b; flex-wrap: wrap; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); display: flex; align-items: center; justify-content: center;">
+                        <span class="material-symbols-outlined" style="color: #38bdf8; font-size: 24px;" id="nodeInspectorIcon">play_circle</span>
+                    </div>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <h2 style="font-size: 17.5px; font-weight: 700; color: #f8fafc; margin: 0;" id="nodeInspectorTitle">START Node</h2>
+                            <span class="cyber-badge cyber-badge-indigo" id="nodeInspectorStatusBadge" style="font-size: 11px; font-weight: 700;">INITIALIZING</span>
+                            <span class="cyber-badge" id="nodeInspectorLangBadge" style="font-size: 10.5px; background: #334155; color: #cbd5e1; font-weight: 600;">PYTHON 3.11</span>
+                        </div>
+                        <div style="font-size: 12.5px; color: #94a3b8; margin-top: 2px;" id="nodeInspectorSubtitle">Workflow Initialized • Awaiting Task Specification</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <button class="cyber-btn" id="followLiveToggleBtn" onclick="toggleFollowLive()" style="font-size: 11.5px; padding: 5px 12px; border-radius: var(--radius-pill); background: rgba(5, 150, 105, 0.15); color: #34d399; border: 1px solid rgba(5, 150, 105, 0.4);" data-tooltip="Toggle Follow Live: Automatically follows execution head in real time.">
+                        <span class="material-symbols-outlined" style="font-size: 15px;" id="followLiveIcon">sync_alt</span>
+                        <span id="followLiveLabel">Following Live</span>
+                    </button>
+
+                    <div style="display: flex; gap: 4px; background: #0f172a; padding: 4px; border-radius: 10px; border: 1px solid #334155; flex-wrap: wrap;">
+                        <button class="inspector-tab-btn active" id="tabBtnActiveNode" onclick="switchInspectorTab('node')" data-tooltip="Active Node Log: View isolated thoughts and execution events for the currently selected node.">
+                            <span class="material-symbols-outlined" style="font-size: 15px;">target</span>
+                            <span>Node Log</span>
+                        </button>
+                        <button class="inspector-tab-btn" id="tabBtnTimeline" onclick="switchInspectorTab('timeline')" data-tooltip="Global Timeline: Chronological stream across all execution nodes.">
+                            <span class="material-symbols-outlined" style="font-size: 15px;">timeline</span>
+                            <span>Timeline</span>
+                        </button>
+                        <button class="inspector-tab-btn" id="tabBtnCode" onclick="switchInspectorTab('code')" data-tooltip="Active Code: Candidate code draft generated by the Developer Agent.">
+                            <span class="material-symbols-outlined" style="font-size: 15px;">code_blocks</span>
+                            <span>Active Code</span>
+                        </button>
+                        <button class="inspector-tab-btn" id="tabBtnState" onclick="switchInspectorTab('state')" data-tooltip="CrewState JSON: Live LangGraph channel values.">
+                            <span class="material-symbols-outlined" style="font-size: 15px;">data_object</span>
+                            <span>CrewState</span>
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            <!-- Tab Content: Active Code -->
-            <div id="tabContentCode" style="padding: 22px; display: none;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <!-- Tab 1 Content: Active Node Isolated Log & Descriptors -->
+            <div id="tabContentActiveNode" style="padding: 20px;">
+                <!-- Node Descriptor Card -->
+                <div style="background: #020617; border: 1px solid #1e293b; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <div style="font-size: 11px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.05em;" id="nodeRoleLabel">NODE ROLE: ENTRY POINT</div>
+                        <div style="font-size: 13px; color: #cbd5e1; margin-top: 2px;" id="nodeDescriptionLabel">Receives task specification and validates input channels.</div>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <span class="cyber-badge" id="nodeAttemptBadge" style="background: #1e293b; color: #94a3b8; font-size: 11px;">ATTEMPT: 1 / 3</span>
+                        <span class="cyber-badge" id="nodeTargetLangBadge" style="background: #1e293b; color: #94a3b8; font-size: 11px;">TARGET: PYTHON</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                    <div style="font-size: 11.5px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">terminal</span>
+                        NODE EXECUTION STREAM & THOUGHT LOG
+                    </div>
+                </div>
+                <pre id="nodeSpecificLogOutput" style="font-family: var(--font-mono); font-size: 12.5px; color: #cbd5e1; line-height: 1.7; background: #020617; border: 1px solid #1e293b; padding: 16px; border-radius: 10px; margin: 0; min-height: 160px; max-height: 260px; overflow-y: auto; overflow-x: auto; white-space: pre-wrap;">[00:00.00] 🚀 START Node initialized. Awaiting execution trigger...</pre>
+            </div>
+
+            <!-- Tab 2 Content: Global Chronological Workflow Stream -->
+            <div id="tabContentTimeline" style="padding: 20px; display: none;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                    <div style="font-size: 11.5px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">history_edu</span>
+                        COMPLETE CHRONOLOGICAL WORKFLOW EVENT STREAM
+                    </div>
+                    <span class="cyber-badge cyber-badge-indigo" id="logStatusBadge">LIVE STREAM</span>
+                </div>
+                <pre id="streamLogOutput" style="font-family: var(--font-mono); font-size: 12.5px; color: #cbd5e1; line-height: 1.7; background: #020617; border: 1px solid #1e293b; padding: 16px; border-radius: 10px; margin: 0; min-height: 180px; max-height: 280px; overflow-y: auto; overflow-x: auto; white-space: pre-wrap;"></pre>
+            </div>
+
+            <!-- Tab 3 Content: Active Code Artifact -->
+            <div id="tabContentCode" style="padding: 20px; display: none;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
                     <div style="font-size: 12px; font-weight: 700; color: #34d399; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
                         <span class="material-symbols-outlined" style="font-size: 18px;">code_blocks</span>
                         <span id="workflowCodeFilename">GENERATED SOURCE CODE ARTIFACT</span>
                     </div>
                     <div style="display: flex; gap: 8px;">
-                        <button class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 3px 10px; color: #ffffff;" onclick="copyActiveCode()">
+                        <button class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 12px; color: #ffffff; background: #1e293b; border: 1px solid #334155;" onclick="copyActiveCode()">
                             <span class="material-symbols-outlined" style="font-size: 14px;">content_copy</span> Copy Code
                         </button>
-                        <button class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 3px 10px; color: #ffffff;" onclick="downloadActiveCode()">
+                        <button class="cyber-btn cyber-btn-secondary" style="font-size: 11.5px; padding: 4px 12px; color: #ffffff; background: #1e293b; border: 1px solid #334155;" onclick="downloadActiveCode()">
                             <span class="material-symbols-outlined" style="font-size: 14px;">download</span> Download
                         </button>
                     </div>
                 </div>
-                <pre id="activeCodeOutput" style="font-family: var(--font-mono); font-size: 13.5px; color: #f8fafc; line-height: 1.7; background: #020617; border: 1px solid #1e293b; padding: 18px; border-radius: 10px; margin: 0; min-height: 180px; max-height: 280px; overflow-y: auto; white-space: pre-wrap;"></pre>
+                <pre id="activeCodeOutput" style="font-family: var(--font-mono); font-size: 13px; color: #f8fafc; line-height: 1.7; background: #020617; border: 1px solid #1e293b; padding: 16px; border-radius: 10px; margin: 0; min-height: 180px; max-height: 280px; overflow-y: auto; overflow-x: auto; white-space: pre-wrap;">// Awaiting live generation from Developer Agent...</pre>
             </div>
 
-            <!-- Tab Content: CrewState JSON -->
-            <div id="tabContentState" style="padding: 22px; display: none;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <!-- Tab 4 Content: CrewState JSON -->
+            <div id="tabContentState" style="padding: 20px; display: none;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
                     <div style="font-size: 12px; font-weight: 700; color: #fb923c; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
                         <span class="material-symbols-outlined" style="font-size: 18px;">schema</span>
                         LIVE CREWSTATE PAYLOAD (Channel Values)
                     </div>
                 </div>
-                <pre id="activeStateOutput" style="font-family: var(--font-mono); font-size: 13px; color: #38bdf8; line-height: 1.6; background: #020617; border: 1px solid #1e293b; padding: 18px; border-radius: 10px; margin: 0; min-height: 180px; max-height: 280px; overflow-y: auto; white-space: pre-wrap;"></pre>
+                <pre id="activeStateOutput" style="font-family: var(--font-mono); font-size: 12.5px; color: #38bdf8; line-height: 1.6; background: #020617; border: 1px solid #1e293b; padding: 16px; border-radius: 10px; margin: 0; min-height: 180px; max-height: 280px; overflow-y: auto; overflow-x: auto; white-space: pre-wrap;">{}</pre>
             </div>
 
+        </div>
+
+        <!-- Security Control Details Inspection Modal -->
+        <div class="workshop-origin-modal-backdrop" id="guardrailControlModal" style="display: none;">
+            <div class="workshop-origin-modal" style="max-width: 580px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-subtle);">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span class="material-symbols-outlined" style="font-size: 26px; color: var(--accent-indigo);" id="modalSecurityIcon">security</span>
+                        <div>
+                            <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: #0f172a;" id="modalSecurityTitle">Security Control Inspection</h3>
+                            <div style="font-size: 12px; color: var(--text-muted);" id="modalSecuritySubtitle">OWASP Top 10 for LLM Defense Architecture</div>
+                        </div>
+                    </div>
+                    <button onclick="closeSecurityControlModal()" style="background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 4px;">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px;">
+                    <div>
+                        <div style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">THREAT DEFENSE SCOPE:</div>
+                        <div style="font-size: 13.5px; color: #334155; line-height: 1.5;" id="modalSecurityScope">Defends against adversarial prompt injections and jailbreak attacks.</div>
+                    </div>
+
+                    <div>
+                        <div style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">DETECTION MECHANISM:</div>
+                        <div style="font-size: 13px; color: #475569; font-family: var(--font-mono); background: #f8fafc; border: 1px solid var(--border-subtle); padding: 10px 12px; border-radius: 8px;" id="modalSecurityDetector">InputGuard Regex & Abstract Syntax Tree Scanner</div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px 14px;">
+                            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">CURRENT STATUS:</div>
+                            <div style="font-size: 14px; font-weight: 700; margin-top: 4px;" id="modalSecurityStatus">CLEAN</div>
+                        </div>
+                        <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px 14px;">
+                            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">ACTION TAKEN:</div>
+                            <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 4px;" id="modalSecurityAction">Allowed to Proceed</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">EVALUATION REASON & EVIDENCE:</div>
+                        <div style="font-size: 12.5px; color: #334155; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px 12px;" id="modalSecurityReason">Zero adversarial patterns detected in user prompt.</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end;">
+                    <button onclick="closeSecurityControlModal()" class="cyber-btn cyber-btn-secondary" style="font-size: 12.5px; padding: 8px 18px;">Close</button>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -1171,13 +1339,143 @@
             }
         }
 
+        // =========================================================================
+        // NODE REGISTRY & ACTIVE-NODE INSPECTOR DATA MODEL
+        // =========================================================================
+        const NODE_REGISTRY = {
+            'START': {
+                name: 'START Node',
+                role: 'Workflow Initializer & Intent Normalizer',
+                icon: 'play_circle',
+                color: '#38bdf8',
+                description: 'Entry point of the state graph. Receives user task specification, normalizes prompt phrasing to extract underlying algorithmic intent, and initializes LangGraph CrewState channels.'
+            },
+            'guardrail': {
+                name: 'Guardrail Node',
+                role: 'Zero-Trust Safety & OWASP Defense Shield',
+                icon: 'shield',
+                color: '#2563eb',
+                description: 'Pre-execution safety gate scanning incoming task specifications for prompt injection, sensitive data leak, excessive agency, and rate boundaries before invoking downstream agents.'
+            },
+            'developer': {
+                name: 'Developer Agent',
+                role: 'LLM Code Synthesis & Self-Healing Repair Engine',
+                icon: 'code_blocks',
+                color: '#ea580c',
+                description: 'Synthesizes clean, language-specific production code draft. When invoked during retry loops, inspects compiler traceback error logs to synthesize targeted self-healing bug fixes.'
+            },
+            'human_review': {
+                name: 'Human Review Gate',
+                role: 'Human-in-the-Loop Governance Checkpoint',
+                icon: 'supervisor_account',
+                color: '#6366f1',
+                description: 'Governance interception checkpoint allowing human engineers to review candidate code, edit in-place, request automated agent revisions, or abort untrusted executions.'
+            },
+            'tester': {
+                name: 'Sandbox Tester',
+                role: 'Isolated Sandbox Execution & Assertion Engine',
+                icon: 'fact_check',
+                color: '#059669',
+                description: 'Compiles and executes candidate code in an isolated multi-language runtime sandbox. Runs assertion test suites and captures exact stderr stack traces upon failure.'
+            },
+            'router': {
+                name: 'Router Node',
+                role: 'Conditional State Machine & Feedback Loop Dispatcher',
+                icon: 'alt_route',
+                color: '#d97706',
+                description: 'Evaluates execution_success channel and iteration counter. Routes cleanly to END if tests passed, or triggers the self-healing feedback loop back to Developer.'
+            },
+            'END': {
+                name: 'END Node',
+                role: 'Verified Artifact Packaging & Terminal Delivery',
+                icon: 'verified',
+                color: '#059669',
+                description: 'Terminal exit node. Packages verified source code artifact, test execution report, and telemetry metadata for production delivery.'
+            }
+        };
+
+        // Live Security Controls Data Store (OWASP for LLM)
+        let liveSecurityControls = {
+            prompt_injection: {
+                name: 'LLM01: Prompt Injection Defense',
+                scope: 'Defends against direct prompt injections, system prompt override attempts, and instruction bypass attacks.',
+                detector: 'InputGuard Regex & AST Safety Scanner',
+                status: 'WAITING',
+                action: 'Monitoring incoming prompt',
+                reason: 'Awaiting task execution trigger...'
+            },
+            sensitive_data: {
+                name: 'LLM02: Sensitive Data Leak Prevention',
+                scope: 'Prevents leakage of sensitive credentials, API keys, private tokens, SSNs, and personal identification data.',
+                detector: 'PII & Secret Pattern Redaction Filter',
+                status: 'WAITING',
+                action: 'Monitoring incoming prompt',
+                reason: 'Awaiting task execution trigger...'
+            },
+            excessive_agency: {
+                name: 'LLM06: Excessive Agency & OS Shield',
+                scope: 'Constrains runtime execution to isolated compilation environments without direct host filesystem or socket access.',
+                detector: 'Multi-Lang Sandboxed Process Isolation',
+                status: 'WAITING',
+                action: 'Monitoring execution permissions',
+                reason: 'Awaiting task execution trigger...'
+            },
+            unbounded_consumption: {
+                name: 'LLM10: Unbounded Consumption & Rate Boundary',
+                scope: 'Enforces strict iteration ceiling (max 3 cycles) and token usage caps to prevent runaway recursive costs.',
+                detector: 'LangGraph Max Iteration Guardrail (Cap: 3)',
+                status: 'WAITING',
+                action: 'Monitoring retry counters',
+                reason: 'Awaiting task execution trigger...'
+            }
+        };
+
+        // Stored Execution Information per Node
+        let nodeStore = {
+            'START': { events: [], log: '[00:00.00] 🚀 START Node ready. Awaiting task execution.', code: '', state: null, status: 'IDLE', iteration: 0, time: '' },
+            'guardrail': { events: [], log: '', code: '', state: null, status: 'WAITING', iteration: 0, time: '' },
+            'developer': { events: [], log: '', code: '', state: null, status: 'WAITING', iteration: 0, time: '' },
+            'human_review': { events: [], log: '', code: '', state: null, status: 'WAITING', iteration: 0, time: '' },
+            'tester': { events: [], log: '', code: '', state: null, status: 'WAITING', iteration: 0, time: '' },
+            'router': { events: [], log: '', code: '', state: null, status: 'WAITING', iteration: 0, time: '' },
+            'END': { events: [], log: '', code: '', state: null, status: 'WAITING', iteration: 0, time: '' }
+        };
+
+        let activeExecutionNode = 'START';
+        let selectedInspectorNode = 'START';
+        let followLiveNode = true;
+        let currentInspectorTab = 'node';
+
+        function normalizeNodeKey(rawNode) {
+            if (!rawNode) return 'START';
+            const lower = rawNode.toLowerCase().replace(/[\s_-]/g, '');
+            if (lower === 'start') return 'START';
+            if (lower === 'guardrail' || lower === 'guardrails') return 'guardrail';
+            if (lower === 'developer' || lower === 'developernode') return 'developer';
+            if (lower === 'humanreview' || lower === 'reviewgate' || lower === 'hitl') return 'human_review';
+            if (lower === 'tester' || lower === 'sandboxtester') return 'tester';
+            if (lower === 'router' || lower === 'routernode') return 'router';
+            if (lower === 'end') return 'END';
+            return rawNode;
+        }
+
+        function getSvgNodeId(canonicalKey) {
+            if (canonicalKey === 'human_review') return 'nodeReviewGate';
+            if (canonicalKey === 'guardrail') return 'nodeGuardrail';
+            if (canonicalKey === 'developer') return 'nodeDeveloper';
+            if (canonicalKey === 'tester') return 'nodeTester';
+            if (canonicalKey === 'router') return 'nodeRouter';
+            if (canonicalKey === 'END') return 'nodeEND';
+            return 'nodeSTART';
+        }
+
         function resetGraphVisuals() {
-            ['START', 'Developer', 'ReviewGate', 'Tester', 'Router', 'END'].forEach(k => {
-                const el = document.getElementById('node' + k);
+            ['nodeSTART', 'nodeGuardrail', 'nodeDeveloper', 'nodeReviewGate', 'nodeTester', 'nodeRouter', 'nodeEND'].forEach(id => {
+                const el = document.getElementById(id);
                 if (el) el.classList.remove('node-active', 'node-pass', 'node-fail', 'node-running');
             });
-            ['edgeStartDev', 'edgeDevReview', 'edgeReviewTest', 'edgeTestRoute', 'edgeRouteEnd'].forEach(k => {
-                const edgeEl = document.getElementById(k);
+            ['edgeStartGuard', 'edgeGuardDev', 'edgeDevReview', 'edgeReviewTest', 'edgeTestRoute', 'edgeRouteEnd'].forEach(id => {
+                const edgeEl = document.getElementById(id);
                 if (edgeEl) edgeEl.classList.remove('edge-active');
             });
             const loopEl = document.getElementById('edgeFeedbackLoop');
@@ -1193,18 +1491,23 @@
 
         function highlightLiveNode(nodeName, status) {
             resetGraphVisuals();
-            const nodeKey = nodeName === 'human_review' ? 'ReviewGate' : nodeName;
-            const el = document.getElementById('node' + nodeKey);
+            const canonicalKey = normalizeNodeKey(nodeName);
+            const svgId = getSvgNodeId(canonicalKey);
+            const el = document.getElementById(svgId);
+
             if (el) {
                 el.classList.add('node-active');
-                if (status === 'success' || status === 'completed') el.classList.add('node-pass');
-                else if (status === 'failed') el.classList.add('node-fail');
-                else if (status === 'running') el.classList.add('node-running');
+                if (status === 'success' || status === 'completed' || status === 'PASSED' || status === 'CLEAN') el.classList.add('node-pass');
+                else if (status === 'failed' || status === 'BLOCKED' || status === 'ASSERTION ERROR') el.classList.add('node-fail');
+                else if (status === 'running' || status === 'retrying' || status === 'SCANNING') el.classList.add('node-running');
             }
 
-            if (nodeName === 'START') {
-                document.getElementById('edgeStartDev')?.classList.add('edge-active');
-            } else if (nodeName === 'developer' || nodeName === 'Developer') {
+            if (canonicalKey === 'START') {
+                document.getElementById('edgeStartGuard')?.classList.add('edge-active');
+            } else if (canonicalKey === 'guardrail') {
+                document.getElementById('edgeStartGuard')?.classList.add('edge-active');
+                document.getElementById('edgeGuardDev')?.classList.add('edge-active');
+            } else if (canonicalKey === 'developer') {
                 if (status === 'retrying') {
                     const loopEl = document.getElementById('edgeFeedbackLoop');
                     const loopLabel = document.getElementById('loopLabel');
@@ -1214,13 +1517,15 @@
                     }
                     if (loopLabel) loopLabel.style.opacity = '1';
                 } else {
-                    document.getElementById('edgeStartDev')?.classList.add('edge-active');
+                    document.getElementById('edgeGuardDev')?.classList.add('edge-active');
+                    document.getElementById('edgeDevReview')?.classList.add('edge-active');
                 }
-            } else if (nodeName === 'human_review' || nodeName === 'ReviewGate') {
+            } else if (canonicalKey === 'human_review') {
                 document.getElementById('edgeDevReview')?.classList.add('edge-active');
-            } else if (nodeName === 'tester' || nodeName === 'Tester') {
+            } else if (canonicalKey === 'tester') {
                 document.getElementById('edgeReviewTest')?.classList.add('edge-active');
-            } else if (nodeName === 'router' || nodeName === 'Router') {
+                document.getElementById('edgeTestRoute')?.classList.add('edge-active');
+            } else if (canonicalKey === 'router') {
                 if (status === 'retrying') {
                     const loopEl = document.getElementById('edgeFeedbackLoop');
                     const loopLabel = document.getElementById('loopLabel');
@@ -1232,16 +1537,309 @@
                 } else {
                     document.getElementById('edgeTestRoute')?.classList.add('edge-active');
                 }
-            } else if (nodeName === 'END') {
+            } else if (canonicalKey === 'END') {
                 document.getElementById('edgeRouteEnd')?.classList.add('edge-active');
             }
         }
 
+        function updateInspectorView(nodeKey) {
+            const canonicalKey = normalizeNodeKey(nodeKey);
+            const nodeMeta = NODE_REGISTRY[canonicalKey] || {
+                name: canonicalKey,
+                role: 'Custom Workflow Node',
+                icon: 'view_in_ar',
+                color: '#38bdf8',
+                description: 'LangGraph custom state transformer.'
+            };
+            const stored = nodeStore[canonicalKey] || { log: '', code: '', state: null, status: 'WAITING', iteration: 1 };
+            const langLabelMap = { 'python': 'PYTHON 3.11', 'java': 'JAVA 17', 'cpp': 'C++ 20' };
+            const currentLangUpper = langLabelMap[activeLanguage] || (activeLanguage || 'PYTHON').toUpperCase();
+
+            setElemText('nodeInspectorTitle', nodeMeta.name);
+            setElemText('nodeInspectorSubtitle', `${nodeMeta.role} • ${stored.status}`);
+            const iconEl = document.getElementById('nodeInspectorIcon');
+            if (iconEl) {
+                iconEl.textContent = nodeMeta.icon;
+                iconEl.style.color = nodeMeta.color;
+            }
+
+            const statusBadge = document.getElementById('nodeInspectorStatusBadge');
+            if (statusBadge) {
+                statusBadge.textContent = stored.status;
+                if (stored.status === 'RUNNING' || stored.status === 'SCANNING' || stored.status === 'GENERATING') {
+                    statusBadge.className = 'cyber-badge cyber-badge-indigo';
+                } else if (stored.status === 'SUCCESS' || stored.status === 'CLEAN' || stored.status === 'PASSED' || stored.status === 'VERIFIED') {
+                    statusBadge.className = 'cyber-badge cyber-badge-emerald';
+                } else if (stored.status === 'BLOCKED' || stored.status === 'FAILED') {
+                    statusBadge.className = 'cyber-badge cyber-badge-amber';
+                } else {
+                    statusBadge.className = 'cyber-badge';
+                    statusBadge.style.background = '#334155';
+                    statusBadge.style.color = '#cbd5e1';
+                }
+            }
+
+            setElemText('nodeInspectorLangBadge', currentLangUpper);
+            setElemText('nodeRoleLabel', `ROLE: ${nodeMeta.role.toUpperCase()}`);
+            setElemText('nodeDescriptionLabel', nodeMeta.description);
+            setElemText('nodeAttemptBadge', `ATTEMPT: ${stored.iteration || 1} / 3`);
+            setElemText('nodeTargetLangBadge', `TARGET: ${currentLangUpper}`);
+
+            const nodeLogBox = document.getElementById('nodeSpecificLogOutput');
+            if (nodeLogBox) {
+                nodeLogBox.textContent = stored.log || `[${new Date().toLocaleTimeString()}] ℹ️ No isolated log output recorded yet for ${nodeMeta.name}.`;
+                nodeLogBox.scrollTop = nodeLogBox.scrollHeight;
+            }
+
+            ['nodeSTART', 'nodeGuardrail', 'nodeDeveloper', 'nodeReviewGate', 'nodeTester', 'nodeRouter', 'nodeEND'].forEach(id => {
+                document.getElementById(id)?.classList.remove('selected');
+            });
+            const selectedSvgId = getSvgNodeId(canonicalKey);
+            document.getElementById(selectedSvgId)?.classList.add('selected');
+
+            updateFollowLiveButton();
+        }
+
+        function selectInspectorNode(nodeKey) {
+            const canonicalKey = normalizeNodeKey(nodeKey);
+            selectedInspectorNode = canonicalKey;
+            
+            if (canonicalKey !== activeExecutionNode) {
+                followLiveNode = false;
+            }
+            updateInspectorView(canonicalKey);
+        }
+
+        function toggleFollowLive() {
+            followLiveNode = !followLiveNode;
+            if (followLiveNode) {
+                selectedInspectorNode = activeExecutionNode;
+                updateInspectorView(activeExecutionNode);
+                showToast('▶️ Resumed following live active node', 'info');
+            } else {
+                updateFollowLiveButton();
+                showToast('⏸️ Inspection paused on selected node', 'info');
+            }
+        }
+
+        function updateFollowLiveButton() {
+            const btn = document.getElementById('followLiveToggleBtn');
+            const icon = document.getElementById('followLiveIcon');
+            const label = document.getElementById('followLiveLabel');
+
+            if (followLiveNode) {
+                if (btn) {
+                    btn.style.background = 'rgba(5, 150, 105, 0.15)';
+                    btn.style.color = '#34d399';
+                    btn.style.borderColor = 'rgba(5, 150, 105, 0.4)';
+                }
+                if (icon) icon.textContent = 'sync_alt';
+                if (label) label.textContent = 'Following Live';
+            } else {
+                if (btn) {
+                    btn.style.background = 'rgba(234, 88, 12, 0.15)';
+                    btn.style.color = '#fb923c';
+                    btn.style.borderColor = 'rgba(234, 88, 12, 0.4)';
+                }
+                if (icon) icon.textContent = 'pause';
+                if (label) label.textContent = `Viewing: ${NODE_REGISTRY[selectedInspectorNode]?.name || selectedInspectorNode}`;
+            }
+        }
+
+        function switchInspectorTab(tabKey) {
+            currentInspectorTab = tabKey;
+            ['tabBtnActiveNode', 'tabBtnTimeline', 'tabBtnCode', 'tabBtnState'].forEach(id => {
+                document.getElementById(id)?.classList.remove('active');
+            });
+            ['tabContentActiveNode', 'tabContentTimeline', 'tabContentCode', 'tabContentState'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+
+            if (tabKey === 'node') {
+                document.getElementById('tabBtnActiveNode')?.classList.add('active');
+                document.getElementById('tabContentActiveNode') && (document.getElementById('tabContentActiveNode').style.display = 'block');
+            } else if (tabKey === 'timeline') {
+                document.getElementById('tabBtnTimeline')?.classList.add('active');
+                document.getElementById('tabContentTimeline') && (document.getElementById('tabContentTimeline').style.display = 'block');
+            } else if (tabKey === 'code') {
+                document.getElementById('tabBtnCode')?.classList.add('active');
+                document.getElementById('tabContentCode') && (document.getElementById('tabContentCode').style.display = 'block');
+            } else if (tabKey === 'state') {
+                document.getElementById('tabBtnState')?.classList.add('active');
+                document.getElementById('tabContentState') && (document.getElementById('tabContentState').style.display = 'block');
+            }
+        }
+
+        function renderSecurityControlCards() {
+            const controlKeys = ['prompt_injection', 'sensitive_data', 'excessive_agency', 'unbounded_consumption'];
+            const idMap = {
+                prompt_injection: { card: 'cardGuardrailPrompt', badge: 'badgeGuardrailPrompt', sub: 'subtextGuardrailPrompt' },
+                sensitive_data: { card: 'cardGuardrailSensitive', badge: 'badgeGuardrailSensitive', sub: 'subtextGuardrailSensitive' },
+                excessive_agency: { card: 'cardGuardrailAgency', badge: 'badgeGuardrailAgency', sub: 'subtextGuardrailAgency' },
+                unbounded_consumption: { card: 'cardGuardrailConsumption', badge: 'badgeGuardrailConsumption', sub: 'subtextGuardrailConsumption' }
+            };
+
+            let cleanCount = 0;
+            let blockedCount = 0;
+
+            controlKeys.forEach(k => {
+                const ctrl = liveSecurityControls[k];
+                const dom = idMap[k];
+                const cardEl = document.getElementById(dom.card);
+                const badgeEl = document.getElementById(dom.badge);
+                const subEl = document.getElementById(dom.sub);
+
+                if (cardEl && badgeEl && ctrl) {
+                    cardEl.classList.remove('waiting', 'scanning', 'clean', 'blocked');
+                    const statusUpper = (ctrl.status || 'WAITING').toUpperCase();
+                    badgeEl.textContent = statusUpper;
+
+                    if (statusUpper === 'CLEAN' || statusUpper === 'PASSED') {
+                        cardEl.classList.add('clean');
+                        cleanCount++;
+                    } else if (statusUpper === 'BLOCKED' || statusUpper === 'FAILED') {
+                        cardEl.classList.add('blocked');
+                        blockedCount++;
+                    } else if (statusUpper === 'SCANNING' || statusUpper === 'SCANNING...') {
+                        cardEl.classList.add('scanning');
+                    } else {
+                        cardEl.classList.add('waiting');
+                    }
+
+                    if (subEl && ctrl.reason) {
+                        subEl.textContent = ctrl.reason.length > 36 ? ctrl.reason.substring(0, 34) + '...' : ctrl.reason;
+                    }
+                }
+            });
+
+            const coverageBadge = document.getElementById('guardrailCoverageLiveBadge');
+            if (coverageBadge) {
+                if (blockedCount > 0) {
+                    coverageBadge.textContent = `${blockedCount} BLOCKED / THREAT INTERCEPTED`;
+                    coverageBadge.className = 'cyber-badge cyber-badge-amber';
+                } else if (cleanCount === 4) {
+                    coverageBadge.textContent = '4 / 4 CONTROLS VERIFIED CLEAN';
+                    coverageBadge.className = 'cyber-badge cyber-badge-emerald';
+                } else {
+                    coverageBadge.textContent = '4 / 4 CONTROLS MONITORED';
+                    coverageBadge.className = 'cyber-badge cyber-badge-indigo';
+                }
+            }
+        }
+
+        function openSecurityControlModal(controlKey) {
+            const ctrl = liveSecurityControls[controlKey];
+            if (!ctrl) return;
+
+            setElemText('modalSecurityTitle', ctrl.name);
+            setElemText('modalSecurityScope', ctrl.scope || 'OWASP Top 10 for LLMs security guardrail check.');
+            setElemText('modalSecurityDetector', ctrl.detector || 'InputGuard Abstract Syntax Tree Safety Engine');
+            setElemText('modalSecurityStatus', ctrl.status || 'WAITING');
+            setElemText('modalSecurityAction', ctrl.action || 'Allowed to Proceed');
+            setElemText('modalSecurityReason', ctrl.reason || 'Zero security violations detected in user task prompt.');
+
+            const statusEl = document.getElementById('modalSecurityStatus');
+            if (statusEl) {
+                if (ctrl.status === 'CLEAN' || ctrl.status === 'PASSED') {
+                    statusEl.style.color = '#059669';
+                } else if (ctrl.status === 'BLOCKED') {
+                    statusEl.style.color = '#dc2626';
+                } else {
+                    statusEl.style.color = '#6366f1';
+                }
+            }
+
+            const modal = document.getElementById('guardrailControlModal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function closeSecurityControlModal() {
+            const modal = document.getElementById('guardrailControlModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function copyActiveCode() {
+            const code = document.getElementById('activeCodeOutput').textContent;
+            if (code && !code.startsWith('// Awaiting') && !code.startsWith('// No code')) {
+                copyToClipboard(code);
+                showToast('Clean source code copied to clipboard!', 'success');
+            } else {
+                showToast('No code available to copy at this step.', 'warning');
+            }
+        }
+
+        function downloadActiveCode() {
+            const code = document.getElementById('activeCodeOutput').textContent;
+            if (code && !code.startsWith('// Awaiting') && !code.startsWith('// No code')) {
+                const filename = generateArtifactFilename(activeTask, activeLanguage);
+                downloadFile(code, filename);
+                showToast(`Downloaded ${filename} successfully!`, 'success');
+            } else {
+                showToast('No code available to download at this step.', 'warning');
+            }
+        }
+
+        function applyCustomTask() {
+            const input = document.getElementById('canvasTaskInput');
+            const btn = document.getElementById('updateTaskBtn');
+            const icon = document.getElementById('updateTaskIcon');
+            const text = document.getElementById('updateTaskText');
+            const badge = document.getElementById('taskUpdatedBadge');
+
+            const rawTask = input ? input.value.trim() : '';
+            if (!rawTask) {
+                showToast('Please enter a task description before updating', 'warning');
+                if (input) input.focus();
+                return;
+            }
+
+            activeTask = rawTask;
+            activeLanguage = getActiveLanguage();
+
+            if (btn) btn.disabled = true;
+            if (icon) icon.className = 'material-symbols-outlined spin';
+            if (text) text.textContent = 'Syncing Task...';
+
+            setTimeout(() => {
+                localStorage.setItem('ai_workflow_current_task', activeTask);
+                localStorage.setItem('ai_workflow_current_lang', activeLanguage);
+                localStorage.setItem('langgraph_last_task', activeTask);
+                localStorage.setItem('langgraph_last_lang', activeLanguage);
+
+                setCurrentWorkflowRun({
+                    runId: 'run_' + Date.now(),
+                    task: activeTask,
+                    language: activeLanguage,
+                    status: 'IDLE',
+                    currentNode: 'START',
+                    generatedCode: null,
+                    testResult: null,
+                    iteration: 0,
+                    timestamp: new Date().toISOString()
+                });
+
+                document.getElementById('canvasLangBadge').textContent = `TARGET: ${activeLanguage.toUpperCase()}`;
+
+                if (btn) btn.disabled = false;
+                if (icon) icon.className = 'material-symbols-outlined';
+                if (text) text.textContent = 'UPDATE TASK';
+
+                if (badge) {
+                    badge.style.display = 'inline-block';
+                    setTimeout(() => {
+                        badge.style.display = 'none';
+                    }, 3500);
+                }
+
+                resetCurrentScenario();
+                showToast(`✅ TASK UPDATED: ${activeTask} (${activeLanguage.toUpperCase()})`, 'success');
+            }, 300);
+        }
+
         function renderCurrentStep() {
-            // Guard: Don't render scenario steps if no task is specified
             if (!activeTask || !activeTask.trim()) {
                 setElemText('simStepStatus', 'Enter a task and click LIVE or SIMULATION to begin');
-                setElemText('graphLoopBadge', 'READY');
                 return;
             }
             const steps = getScenarioSteps(currentScenario, activeTask, activeLanguage);
@@ -1252,95 +1850,48 @@
             
             const step = steps[currentStepIndex];
             const totalSteps = steps.length;
-            
-            // 1. Dynamic Step Badge & Status
-            const stepBadge = document.getElementById('graphLoopBadge');
-            if (stepBadge) {
-                stepBadge.textContent = `STEP ${currentStepIndex + 1} / ${totalSteps}`;
+            const canonical = normalizeNodeKey(step.node);
+
+            setElemText('simStepStatus', `Simulation Step ${currentStepIndex + 1} of ${totalSteps}: ${step.title}`);
+            setElemText('telemetryAgentBadge', `AGENT: ${canonical.toUpperCase()}`);
+            setElemText('telemetryIterationBadge', `ITERATION: ${step.state?.iterations || 1} / 3`);
+
+            highlightLiveNode(canonical, step.statusBadge || 'success');
+
+            nodeStore[canonical] = {
+                log: step.log || '',
+                code: step.code || '',
+                state: step.state || {},
+                status: step.statusBadge || 'SIMULATED',
+                iteration: step.state?.iterations || 1,
+                time: new Date().toLocaleTimeString()
+            };
+
+            if (canonical === 'guardrail') {
+                liveSecurityControls.prompt_injection.status = 'CLEAN';
+                liveSecurityControls.sensitive_data.status = 'CLEAN';
+                liveSecurityControls.excessive_agency.status = 'CLEAN';
+                liveSecurityControls.unbounded_consumption.status = 'CLEAN';
+                renderSecurityControlCards();
             }
-            
-            const statusText = document.getElementById('simStepStatus');
-            if (statusText) {
-                statusText.textContent = `Step ${currentStepIndex + 1} of ${totalSteps}: ${step.title}`;
+
+            activeExecutionNode = canonical;
+            if (followLiveNode) {
+                selectedInspectorNode = canonical;
+                updateInspectorView(canonical);
             }
-            
-            const lockEl = document.getElementById('liveAgentLock');
-            if (lockEl) {
-                lockEl.textContent = `SIMULATION: ${step.node.toUpperCase()}`;
-            }
-            
-            // 2. Highlight SVG Graph Nodes & Edges
-            resetGraphVisuals();
-            const nodeEl = document.getElementById('node' + step.node);
-            if (nodeEl) {
-                nodeEl.classList.add('node-active');
-                if (step.nodeClass) {
-                    nodeEl.classList.add(step.nodeClass);
-                }
-            }
-            
-            if (step.activeEdges && step.activeEdges.length > 0) {
-                step.activeEdges.forEach(eId => {
-                    document.getElementById(eId)?.classList.add('edge-active');
-                });
-            }
-            
-            if (step.loopEdge) {
-                const loopEl = document.getElementById('edgeFeedbackLoop');
-                if (loopEl) {
-                    loopEl.classList.add('edge-loop-active');
-                    const loopLbl = document.getElementById('loopLabel');
-                    if (loopLbl) loopLbl.style.opacity = '1';
-                }
-            }
-            
-            // 3. Laser Animation
-            animateLaserPacket(step);
-            
-            // 4. Inspector Header & Tabs
-            setElemText('nodeInspectorTitle', step.title);
-            setElemText('nodeInspectorSubtitle', step.subtitle);
-            setElemText('logStatusBadge', step.statusBadge || 'ACTIVE');
-            
-            // 5. Update Tab Contents
+
             const logBox = document.getElementById('streamLogOutput');
             if (logBox) {
-                logBox.textContent = step.log || '';
+                logBox.textContent += `\n[SIMULATION] [${canonical.toUpperCase()}] ${step.title}\n${step.log}\n`;
                 logBox.scrollTop = logBox.scrollHeight;
             }
-            
-            const codeBox = document.getElementById('activeCodeOutput');
-            if (codeBox) {
-                codeBox.textContent = step.code || '// No code output at this step.';
-            }
 
-            const codeFilenameLabel = document.getElementById('workflowCodeFilename');
-            if (codeFilenameLabel) {
-                const fn = generateArtifactFilename(activeTask, activeLanguage);
-                codeFilenameLabel.textContent = `SOURCE ARTIFACT: ${fn}`;
+            if (step.code) {
+                setElemText('activeCodeOutput', step.code);
             }
-            
-            const stateBox = document.getElementById('activeStateOutput');
-            if (stateBox) {
-                stateBox.textContent = JSON.stringify(step.state || {}, null, 2);
-            }
-        }
-
-        function nextSimStep() {
-            const steps = getScenarioSteps(currentScenario, activeTask, activeLanguage);
-            if (currentStepIndex < steps.length - 1) {
-                currentStepIndex++;
-                renderCurrentStep();
-            } else {
-                if (playInterval) togglePlaySimulation();
-                showToast('🎉 Scenario simulation completed!', 'success');
-            }
-        }
-
-        function prevSimStep() {
-            if (currentStepIndex > 0) {
-                currentStepIndex--;
-                renderCurrentStep();
+            if (step.state) {
+                setElemText('activeStateOutput', JSON.stringify(step.state, null, 2));
             }
         }
 
@@ -1400,191 +1951,6 @@
             }
         }
 
-        function jumpToStepByName(nodeName) {
-            const steps = getScenarioSteps(currentScenario, activeTask, activeLanguage);
-            const idx = steps.findIndex(s => s.node === nodeName);
-            if (idx !== -1) {
-                currentStepIndex = idx;
-                renderCurrentStep();
-            }
-        }
-
-        function switchInspectorTab(tabKey) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('tabContentLog').style.display = 'none';
-            document.getElementById('tabContentCode').style.display = 'none';
-            document.getElementById('tabContentState').style.display = 'none';
-
-            if (tabKey === 'log') {
-                document.getElementById('tabBtnLog').classList.add('active');
-                document.getElementById('tabContentLog').style.display = 'block';
-            } else if (tabKey === 'code') {
-                document.getElementById('tabBtnCode').classList.add('active');
-                document.getElementById('tabContentCode').style.display = 'block';
-            } else if (tabKey === 'state') {
-                document.getElementById('tabBtnState').classList.add('active');
-                document.getElementById('tabContentState').style.display = 'block';
-            }
-        }
-
-        function copyActiveCode() {
-            const code = document.getElementById('activeCodeOutput').textContent;
-            if (code && !code.startsWith('// No code')) {
-                copyToClipboard(code);
-                showToast('Clean source code copied to clipboard!', 'success');
-            } else {
-                showToast('No code available to copy at this step.', 'warning');
-            }
-        }
-
-        function downloadActiveCode() {
-            const code = document.getElementById('activeCodeOutput').textContent;
-            if (code && !code.startsWith('// No code')) {
-                const filename = generateArtifactFilename(activeTask, activeLanguage);
-                downloadFile(code, filename);
-                showToast(`Downloaded ${filename} successfully!`, 'success');
-            } else {
-                showToast('No code available to download at this step.', 'warning');
-            }
-        }
-
-        function updateCustomTask(val) {
-            if (val && val.trim()) {
-                activeTask = val.trim();
-                localStorage.setItem('langgraph_last_task', activeTask);
-            }
-        }
-
-        function applyCustomTask() {
-            const input = document.getElementById('canvasTaskInput');
-            const btn = document.getElementById('updateTaskBtn');
-            const icon = document.getElementById('updateTaskIcon');
-            const text = document.getElementById('updateTaskText');
-            const badge = document.getElementById('taskUpdatedBadge');
-
-            const rawTask = input ? input.value.trim() : '';
-            if (!rawTask) {
-                showToast('Please enter a task description before updating', 'warning');
-                if (input) input.focus();
-                return;
-            }
-
-            activeTask = rawTask;
-            activeLanguage = getActiveLanguage();
-
-            // 1. Show short loading state
-            if (btn) btn.disabled = true;
-            if (icon) icon.className = 'material-symbols-outlined spin';
-            if (text) text.textContent = 'Syncing Task...';
-
-            setTimeout(() => {
-                // 2. Persist to ALL storage locations (unified + legacy keys)
-                localStorage.setItem('ai_workflow_current_task', activeTask);
-                localStorage.setItem('ai_workflow_current_lang', activeLanguage);
-                localStorage.setItem('langgraph_last_task', activeTask);
-                localStorage.setItem('langgraph_last_lang', activeLanguage);
-
-                // 3. Update unified state (single source of truth)
-                setCurrentWorkflowRun({
-                    runId: 'run_' + Date.now(),
-                    task: activeTask,
-                    language: activeLanguage,
-                    status: 'IDLE',
-                    currentNode: 'START',
-                    generatedCode: null,
-                    testResult: null,
-                    iteration: 0,
-                    timestamp: new Date().toISOString()
-                });
-
-                // 4. Update target badge
-                document.getElementById('canvasLangBadge').textContent = `TARGET: ${activeLanguage.toUpperCase()}`;
-
-                // 5. Reset button
-                if (btn) btn.disabled = false;
-                if (icon) icon.className = 'material-symbols-outlined';
-                if (text) text.textContent = 'UPDATE TASK';
-
-                // 6. Show TASK UPDATED badge
-                if (badge) {
-                    badge.style.display = 'inline-block';
-                    setTimeout(() => {
-                        badge.style.display = 'none';
-                    }, 3500);
-                }
-
-                // 7. Reset current scenario with new task
-                resetCurrentScenario();
-                showToast(`✅ TASK UPDATED: ${activeTask} (${activeLanguage.toUpperCase()})`, 'success');
-            }, 300);
-        }
-
-        function setPresetTask(taskStr) {
-            const input = document.getElementById('canvasTaskInput');
-            if (input) input.value = taskStr;
-            activeTask = taskStr;
-            applyCustomTask();
-        }
-
-        function toggleCustomSelect(trigger, e) {
-            if (e) e.stopPropagation();
-            const wrapper = trigger.closest('.custom-select-wrapper');
-            document.querySelectorAll('.custom-select-wrapper').forEach(w => {
-                if (w !== wrapper) w.classList.remove('open');
-            });
-            wrapper.classList.toggle('open');
-        }
-
-        function selectCanvasOption(opt, val, label, e) {
-            if (e) e.stopPropagation();
-            const wrapper = opt.closest('.custom-select-wrapper');
-            const hidden = wrapper.querySelector('input[type="hidden"]');
-            const valSpan = wrapper.querySelector('.custom-select-value');
-
-            wrapper.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
-            opt.classList.add('selected');
-
-            if (hidden) hidden.value = val;
-            if (valSpan) valSpan.textContent = label;
-
-            wrapper.classList.remove('open');
-            activeLanguage = val;
-            applyCustomTask();
-        }
-
-        function extractTaskIntent(rawTask) {
-            if (!rawTask) return "General Code Implementation";
-            let intent = rawTask.trim();
-            const patterns = [
-                /^write\s+(?:a|an)\s+(?:python|java|c\+\+|cpp|javascript|typescript|c)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which)\s+/i,
-                /^write\s+(?:a|an)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which)\s+/i,
-                /^create\s+(?:a|an)\s+(?:python|java|c\+\+|cpp|javascript|typescript|c)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i,
-                /^create\s+(?:a|an)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i,
-                /^implement\s+(?:a|an)\s+(?:python|java|c\+\+|cpp|javascript|typescript|c)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i,
-                /^implement\s+(?:a|an)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i,
-                /^build\s+(?:a|an)\s+(?:python|java|c\+\+|cpp|javascript|typescript|c)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i,
-                /^build\s+(?:a|an)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i
-            ];
-            for (const pat of patterns) {
-                if (pat.test(intent)) {
-                    intent = intent.replace(pat, '');
-                    break;
-                }
-            }
-            intent = intent.replace(/\s+(?:in|using|with)\s+(?:python|java|c\+\+|cpp|javascript|typescript|c)\b/gi, '');
-            intent = intent.trim();
-            if (intent) {
-                intent = intent.charAt(0).toUpperCase() + intent.slice(1);
-            }
-            return intent || "General Code Implementation";
-        }
-
-        function getActiveLanguage() {
-            const hidden = document.getElementById('canvasLangSelect');
-            if (hidden && hidden.value) return hidden.value.toLowerCase();
-            return activeLanguage || 'python';
-        }
-
         let isExecutionPaused = false;
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -1594,41 +1960,34 @@
                 setActiveNav('workflow');
             }
 
-            // ============================================================
-            // URL ROUTE & RUN CONTEXT PARSER
-            // ============================================================
             const urlParams = new URLSearchParams(window.location.search);
-            const queryRunId = urlParams.get('run');
+            const queryRunId = urlParams.get('run') || urlParams.get('runId') || urlParams.get('id');
             const queryTask = urlParams.get('task');
-            const queryLang = urlParams.get('lang');
+            const queryLang = urlParams.get('lang') || urlParams.get('language');
             const queryIntent = urlParams.get('intent');
             const queryMode = urlParams.get('mode') || 'live';
             const autoRun = urlParams.get('autoRun') === 'true';
             const hitlModeParam = urlParams.get('hitl') === 'true';
 
             const currentRun = getCurrentWorkflowRun();
-            const savedTask = localStorage.getItem('ai_workflow_current_task') || localStorage.getItem('langgraph_last_task');
-            const savedLang = localStorage.getItem('ai_workflow_current_lang') || localStorage.getItem('langgraph_last_lang');
 
-            // Pick authoritative task specification
-            if (queryTask && queryTask.trim()) {
-                activeTask = queryTask.trim();
-            } else if (currentRun && currentRun.task && currentRun.task.trim()) {
-                activeTask = currentRun.task.trim();
-            } else if (savedTask && savedTask.trim()) {
-                activeTask = savedTask.trim();
+            if (queryTask) {
+                activeTask = queryTask;
+            } else if (currentRun && currentRun.task) {
+                activeTask = currentRun.task;
             } else {
-                activeTask = "Write a Python function that reverses a string and create tests for it.";
+                activeTask = localStorage.getItem('ai_workflow_current_task') || localStorage.getItem('langgraph_last_task') || '';
             }
 
-            // Pick authoritative target language (Authoritative from selector / query)
-            if (queryLang && queryLang.trim()) {
-                activeLanguage = queryLang.trim().toLowerCase();
-            } else if (currentRun && (currentRun.target_language || currentRun.language)) {
-                activeLanguage = (currentRun.target_language || currentRun.language).toLowerCase();
-            } else if (savedLang && savedLang.trim()) {
-                activeLanguage = savedLang.trim().toLowerCase();
+            if (queryLang) {
+                activeLanguage = queryLang.toLowerCase();
+            } else if (currentRun && currentRun.language) {
+                activeLanguage = currentRun.language.toLowerCase();
             } else {
+                activeLanguage = localStorage.getItem('ai_workflow_current_lang') || localStorage.getItem('langgraph_last_lang') || 'python';
+            }
+
+            if (!['python', 'java', 'cpp'].includes(activeLanguage)) {
                 activeLanguage = 'python';
             }
 
@@ -1636,7 +1995,6 @@
             const artifactFilename = generateArtifactFilename(taskIntent || activeTask, activeLanguage);
             const activeRunId = queryRunId || (currentRun ? currentRun.runId : ('run_' + Date.now()));
 
-            // Update Task Context Banner
             const titleEl = document.getElementById('activeTaskDisplayTitle');
             const intentEl = document.getElementById('activeTaskIntentDisplay');
             const langBadge = document.getElementById('activeTaskLangBadge');
@@ -1654,7 +2012,6 @@
             if (artifactBadge) artifactBadge.textContent = artifactFilename;
             if (runIdBadge) runIdBadge.textContent = `ID: ${activeRunId.substring(0, 18)}`;
 
-            // Populate input field & custom language dropdown
             const taskInput = document.getElementById('canvasTaskInput');
             if (taskInput && activeTask) taskInput.value = activeTask;
 
@@ -1665,11 +2022,12 @@
                 valSpan.textContent = labelMap[activeLanguage] || activeLanguage.toUpperCase();
             }
 
-            // Update Telemetry Ribbon
             setElemText('telemetryModeBadge', `MODE: ${queryMode.toUpperCase()}`);
             setElemText('canvasLangBadge', `TARGET: ${labelMap[activeLanguage] || activeLanguage.toUpperCase()}`);
 
-            // Auto-scroll ONCE if autoRun is active
+            renderSecurityControlCards();
+            updateInspectorView('START');
+
             if (autoRun) {
                 setTimeout(() => {
                     document.getElementById('stateGraphSvg')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1677,27 +2035,17 @@
 
                 runLiveBackendWorkflow(activeRunId, activeTask, activeLanguage, hitlModeParam, queryMode);
             } else if (currentRun && currentRun.generatedCode) {
-                // Restore completed or saved run context from passive storage
                 if (currentRun.generatedCode) setElemText('activeCodeOutput', currentRun.generatedCode);
                 if (currentRun.testResult) setElemText('streamLogOutput', `[RESTORED RUN: ${activeRunId}]\nTask: ${currentRun.task}\nLanguage: ${currentRun.language}\nStatus: ${currentRun.status}\n\n[REPORT]\n${currentRun.testResult}`);
                 setElemText('activeStateOutput', JSON.stringify(currentRun, null, 2));
 
                 setElemText('telemetryStatusBadge', `STATUS: ${currentRun.status || 'COMPLETED'}`);
-                if (currentRun.status === 'SUCCESS' || currentRun.status === 'COMPLETED') {
-                    highlightLiveNode('END', 'success');
-                } else {
-                    renderCurrentStep();
-                }
             } else if (activeTask) {
                 renderCurrentStep();
             }
         });
 
-        // =========================================================================
-        // EXECUTION CONTROLS: PAUSE, RESUME, STOP, RESET
-        // =========================================================================
         function togglePauseResumeExecution() {
-            const btn = document.getElementById('pauseResumeBtn');
             const icon = document.getElementById('pauseResumeIcon');
             const text = document.getElementById('pauseResumeText');
             const badge = document.getElementById('telemetryStatusBadge');
@@ -1721,39 +2069,6 @@
                 }
                 showToast('▶️ Resuming execution', 'info');
             }
-        }
-
-        function stopActiveWorkflowRun() {
-            if (liveEventSource) {
-                liveEventSource.close();
-                liveEventSource = null;
-            }
-            if (playInterval) {
-                clearInterval(playInterval);
-                playInterval = null;
-            }
-
-            resetGraphVisuals();
-
-            const btn = document.getElementById('liveApiRunBtn');
-            const simBtn = document.getElementById('simPlayBtn');
-            if (btn) btn.disabled = false;
-            if (simBtn) simBtn.disabled = false;
-
-            const badge = document.getElementById('telemetryStatusBadge');
-            if (badge) {
-                badge.textContent = 'STATUS: STOPPED';
-                badge.className = 'cyber-badge cyber-badge-amber';
-            }
-
-            setElemText('simStepStatus', 'Execution stopped by user.');
-            const logBox = document.getElementById('streamLogOutput');
-            if (logBox) {
-                logBox.textContent += `\n[${new Date().toLocaleTimeString()}] 🛑 [STOP] Execution run cancelled by user.\n`;
-                logBox.scrollTop = logBox.scrollHeight;
-            }
-            
-            showToast('🛑 Active workflow run stopped', 'warning');
         }
 
         function launchNewRunFromPipeline(mode) {
@@ -1795,11 +2110,9 @@
                 timestamp: new Date().toISOString()
             });
 
-            // Update URL parameters
             const newUrl = `/workflow?run=${encodeURIComponent(runId)}&task=${encodeURIComponent(activeTask)}&intent=${encodeURIComponent(taskIntent)}&lang=${encodeURIComponent(activeLanguage)}&mode=${mode}&autoRun=true`;
             window.history.pushState({}, '', newUrl);
 
-            // Update Banner & Telemetry Context Badges
             setElemText('activeTaskDisplayTitle', `"${activeTask}"`);
             setElemText('activeTaskIntentDisplay', taskIntent);
             const labelMap = { 'python': 'PYTHON 3.11', 'java': 'JAVA 17', 'cpp': 'C++ 20' };
@@ -1810,19 +2123,10 @@
             setElemText('canvasLangBadge', `TARGET: ${labelMap[activeLanguage] || activeLanguage.toUpperCase()}`);
 
             resetGraphVisuals();
-
-            // Smoothly auto-scroll visualizer into view
             document.getElementById('stateGraphSvg')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
             runLiveBackendWorkflow(runId, activeTask, activeLanguage, typeof hitlModeParam !== 'undefined' ? hitlModeParam : false, mode);
         }
-
-        // =========================================================================
-        // REAL-TIME SERVER-SENT EVENTS (SSE) LIVE AUTHORITATIVE ENGINE
-        // =========================================================================
-        let liveEventSource = null;
-        let activeLiveThreadId = null;
-        let liveEventCount = 0;
 
         async function runLiveBackendWorkflow(overrideRunId, overrideTask, overrideLang, overrideHitl, overrideMode) {
             const btn = document.getElementById('liveApiRunBtn');
@@ -1843,12 +2147,10 @@
                 return;
             }
 
-            // Minimize tour if open so it never covers execution
             if (typeof minimizeTourForExecution === 'function') {
                 minimizeTourForExecution();
             }
 
-            // Stop simulation timer if running
             if (playInterval) {
                 clearInterval(playInterval);
                 playInterval = null;
@@ -1866,6 +2168,22 @@
             liveEventCount = 0;
             isExecutionPaused = false;
             
+            Object.keys(nodeStore).forEach(k => {
+                nodeStore[k] = { events: [], log: '', code: '', state: null, status: 'WAITING', iteration: 1, time: '' };
+            });
+            nodeStore['START'] = { events: [], log: `[${new Date().toLocaleTimeString()}] 🚀 START Node received payload.\n• Task: "${inputTask}"\n• Target Language: ${labelMap[lang] || lang.toUpperCase()}`, code: '', state: null, status: 'INITIALIZING', iteration: 1, time: '' };
+
+            Object.keys(liveSecurityControls).forEach(k => {
+                liveSecurityControls[k].status = 'WAITING';
+                liveSecurityControls[k].reason = 'Awaiting guardrail scan...';
+            });
+            renderSecurityControlCards();
+
+            activeExecutionNode = 'START';
+            selectedInspectorNode = 'START';
+            followLiveNode = true;
+            updateInspectorView('START');
+
             setElemText('telemetryModeBadge', `MODE: ${modeVal.toUpperCase()}`);
             setElemText('telemetryStatusBadge', 'STATUS: RUNNING');
             const teleStatusBadge = document.getElementById('telemetryStatusBadge');
@@ -1896,7 +2214,7 @@
                 liveEventSource = new EventSource(streamUrl);
 
                 liveEventSource.onmessage = (event) => {
-                    if (isExecutionPaused) return; // Honor Pause control
+                    if (isExecutionPaused) return;
                     try {
                         const data = JSON.parse(event.data);
                         handleLiveSseMessage(data, btn, simBtn, origHtml, inputTask, lang, runId, modeVal);
@@ -1930,31 +2248,60 @@
 
         function handleLiveSseMessage(data, btn, simBtn, origHtml, task, lang, runId, modeVal) {
             liveEventCount++;
-            
-            // 1. Highlight Visual Graph Node (Event-Driven)
+            const canonicalNode = normalizeNodeKey(data.node);
+            const timeStr = data.timestamp || new Date().toLocaleTimeString();
+            const nodeUpper = canonicalNode.toUpperCase();
+
             if (data.node) {
-                highlightLiveNode(data.node, data.status);
+                highlightLiveNode(canonicalNode, data.status);
             }
 
-            // 2. Dynamic Telemetry Ribbon & Agent Lock
-            const nodeNameUpper = (data.node || 'NODE').toUpperCase();
-            setElemText('telemetryAgentBadge', `AGENT: ${nodeNameUpper}`);
+            setElemText('telemetryAgentBadge', `AGENT: ${nodeUpper}`);
             setElemText('telemetryIterationBadge', `ITERATION: ${data.iteration || 1} / 3`);
 
             if (data.message) {
                 setElemText('simStepStatus', `[${modeVal.toUpperCase()}] ${data.message}`);
             }
 
-            // 3. Append to Real Execution Log
-            const timeStr = data.timestamp || new Date().toLocaleTimeString();
-            const logLine = `[${timeStr}] [${nodeNameUpper}] ${data.message || ''}\n`;
+            if (data.event === 'node_start' && canonicalNode === 'guardrail') {
+                Object.keys(liveSecurityControls).forEach(k => {
+                    liveSecurityControls[k].status = 'SCANNING...';
+                    liveSecurityControls[k].reason = 'Active InputGuard AST scanning in progress...';
+                });
+                renderSecurityControlCards();
+            }
+
+            if (data.security_controls) {
+                Object.keys(data.security_controls).forEach(k => {
+                    if (liveSecurityControls[k]) {
+                        liveSecurityControls[k] = { ...liveSecurityControls[k], ...data.security_controls[k] };
+                    }
+                });
+                renderSecurityControlCards();
+            } else if (canonicalNode === 'guardrail' && (data.status === 'CLEAN' || data.status === 'PASSED' || data.event === 'node_complete')) {
+                Object.keys(liveSecurityControls).forEach(k => {
+                    liveSecurityControls[k].status = 'CLEAN';
+                    liveSecurityControls[k].reason = 'Zero adversarial patterns or sensitive data detected.';
+                });
+                renderSecurityControlCards();
+            }
+
+            if (!nodeStore[canonicalNode]) {
+                nodeStore[canonicalNode] = { events: [], log: '', code: '', state: null, status: 'WAITING', iteration: data.iteration || 1 };
+            }
+            nodeStore[canonicalNode].status = data.status || 'RUNNING';
+            nodeStore[canonicalNode].iteration = data.iteration || 1;
+            nodeStore[canonicalNode].time = timeStr;
+
+            const logLine = `[${timeStr}] [${nodeUpper}] ${data.message || ''}\n`;
+            nodeStore[canonicalNode].log = (nodeStore[canonicalNode].log || '') + logLine;
+
             const logBox = document.getElementById('streamLogOutput');
             if (logBox) {
                 logBox.textContent += logLine;
                 logBox.scrollTop = logBox.scrollHeight;
             }
 
-            // 4. Update Active Code (Clean source code only) & Dynamic Artifact Badge
             if (data.task_intent) {
                 setElemText('activeTaskIntentDisplay', data.task_intent);
             }
@@ -1965,11 +2312,12 @@
             }
             if (data.code) {
                 const cleanCode = data.code.replace(/^```[a-zA-Z]*\n?/gm, '').replace(/```$/gm, '').trim();
+                nodeStore[canonicalNode].code = cleanCode;
                 setElemText('activeCodeOutput', cleanCode);
             }
 
-            // 5. Update State Snapshot
             if (data.state) {
+                nodeStore[canonicalNode].state = data.state;
                 setElemText('activeStateOutput', JSON.stringify(data.state, null, 2));
             }
 
@@ -1977,7 +2325,31 @@
                 activeLiveThreadId = data.thread_id;
             }
 
-            // 6. Check for Human-in-the-Loop Interception
+            activeExecutionNode = canonicalNode;
+            if (followLiveNode) {
+                selectedInspectorNode = canonicalNode;
+                updateInspectorView(canonicalNode);
+            }
+
+            if (data.event === 'guardrail_block' || data.status === 'BLOCKED') {
+                if (liveEventSource) {
+                    liveEventSource.close();
+                    liveEventSource = null;
+                }
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origHtml;
+                }
+                if (simBtn) simBtn.disabled = false;
+
+                highlightLiveNode('guardrail', 'failed');
+                setElemText('telemetryStatusBadge', 'STATUS: BLOCKED BY GUARDRAIL');
+                const tBadge = document.getElementById('telemetryStatusBadge');
+                if (tBadge) tBadge.className = 'cyber-badge cyber-badge-amber';
+                showToast(`🛡️ Execution halted: ${data.message || 'Blocked by security guardrail'}`, 'warning');
+                return;
+            }
+
             if (data.event === 'human_review_required') {
                 if (liveEventSource) {
                     liveEventSource.close();
@@ -1989,7 +2361,7 @@
                 }
                 if (simBtn) simBtn.disabled = false;
 
-                highlightLiveNode('ReviewGate', 'running');
+                highlightLiveNode('human_review', 'running');
                 setElemText('telemetryStatusBadge', 'STATUS: Awaiting Human Sign-off');
                 const tBadge = document.getElementById('telemetryStatusBadge');
                 if (tBadge) tBadge.className = 'cyber-badge cyber-badge-indigo';
@@ -2000,7 +2372,6 @@
                 return;
             }
 
-            // 7. Check for Workflow Completion or Error
             if (data.event === 'workflow_complete' || data.event === 'error') {
                 if (liveEventSource) {
                     liveEventSource.close();
@@ -2028,7 +2399,6 @@
                     showToast(`⚠️ Workflow completed with test issues.`, 'warning');
                 }
 
-                // Automatically save run to persistent history
                 saveRunToHistory({
                     id: runId,
                     thread_id: runId,
@@ -2044,28 +2414,9 @@
             }
         }
 
-        // =========================================================================
-        // HUMAN-IN-THE-LOOP (HITL) WORKFLOW MODAL HANDLERS
-        // =========================================================================
-        function openWorkflowHitlModal(code, threadId) {
-            activeLiveThreadId = threadId;
-            const modal = document.getElementById('workflowHitlModal');
-            const codeInput = document.getElementById('workflowHitlCodeInput');
-            const feedbackInput = document.getElementById('workflowHitlFeedbackInput');
-            
-            if (codeInput) codeInput.value = code || '';
-            if (feedbackInput) feedbackInput.value = '';
-            if (modal) modal.style.display = 'flex';
-        }
-
         function closeWorkflowHitlModal() {
             const modal = document.getElementById('workflowHitlModal');
             if (modal) modal.style.display = 'none';
-        }
-
-        function setElemText(id, text) {
-            const el = document.getElementById(id);
-            if (el) el.textContent = text;
         }
 
         async function submitWorkflowHitlAction(action) {
@@ -2110,8 +2461,7 @@
                 const timeStr = new Date().toLocaleTimeString();
 
                 if (action === 'abort') {
-                    // Action 1: ABORT
-                    highlightLiveNode('ReviewGate', 'failed');
+                    highlightLiveNode('human_review', 'failed');
                     setElemText('telemetryAgentBadge', 'AGENT: HUMAN_REVIEW (ABORTED)');
                     setElemText('telemetryStatusBadge', 'STATUS: Workflow Aborted');
                     setElemText('simStepStatus', 'LIVE: Workflow Aborted');
@@ -2143,8 +2493,7 @@
                     showToast('🛑 Workflow execution aborted by human reviewer', 'warning');
 
                 } else if (action === 'reject') {
-                    // Action 2: REQUEST CHANGES
-                    highlightLiveNode('Developer', 'running');
+                    highlightLiveNode('developer', 'running');
                     setElemText('telemetryAgentBadge', 'AGENT: DEVELOPER (REVISING)');
                     setElemText('telemetryStatusBadge', 'STATUS: Reviewer Requested Changes → Developer Revising');
                     setElemText('simStepStatus', `LIVE: Reviewer Requested Changes → Developer Revising`);
@@ -2165,23 +2514,20 @@
 
                     showToast('🔄 Developer Agent revised code based on your feedback! Re-opening review modal...', 'info');
 
-                    // Re-open review modal with newly revised code draft
                     setTimeout(() => {
                         openWorkflowHitlModal(result.code || editedCode, activeLiveThreadId);
                     }, 600);
 
                 } else {
-                    // Action 3 & 4: APPROVE or EDIT & APPROVE
                     const activeCode = result.code || editedCode;
                     const isEdit = action === 'edit';
 
-                    // Step A: Mark ReviewGate Completed ➔ Start Tester Node
-                    highlightLiveNode('ReviewGate', 'success');
+                    highlightLiveNode('human_review', 'success');
                     setElemText('telemetryStatusBadge', 'STATUS: Human Approved → Testing');
                     setElemText('simStepStatus', 'LIVE: Human Approved → Testing');
 
                     setTimeout(() => {
-                        highlightLiveNode('Tester', 'running');
+                        highlightLiveNode('tester', 'running');
                         setElemText('telemetryAgentBadge', 'AGENT: TESTER (SANDBOX)');
                         setElemText('telemetryStatusBadge', 'STATUS: Human Approved → Testing');
 
@@ -2198,7 +2544,6 @@
                             codeOutput.textContent = activeCode.replace(/^```[a-zA-Z]*\n?/gm, '').replace(/```$/gm, '').trim();
                         }
 
-                        // Step B: Complete Tester ➔ Router ➔ END
                         setTimeout(() => {
                             const isSuccess = !!result.success;
                             if (isSuccess) {

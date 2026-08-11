@@ -1014,17 +1014,53 @@ async def stream_workflow_events(
         await asyncio.sleep(0.3)
         
         # 3. Input Guardrails
-        yield f"data: {json.dumps({'event': 'node_start', 'node': 'guardrail', 'status': 'running', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 0, 'message': 'Input Guardrails: Scanning for Prompt Injection, Sensitive Data, and Code Safety...' })}\n\n"
+        yield f"data: {json.dumps({'event': 'node_start', 'node': 'guardrail', 'status': 'running', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 0, 'message': 'Input Guardrails: Scanning for Prompt Injection, Sensitive Data, and Code Safety...', 'controls_status': 'SCANNING'})}\n\n"
         await asyncio.sleep(0.25)
         
         input_report = InputGuard.scan_all(task_text)
         guardrail_stats.record_input_scan(input_report)
         
+        # Build individual control breakdown from scan results
+        prompt_res = next((r for r in input_report.results if "Prompt Injection" in r.scanner), None)
+        sensitive_res = next((r for r in input_report.results if "Sensitive" in r.scanner or "PII" in r.scanner or "Pattern" in r.scanner), None)
+        content_res = next((r for r in input_report.results if "Content" in r.scanner or "Topic" in r.scanner), None)
+        
+        controls = {
+            "prompt_injection": {
+                "name": "LLM01: Prompt Injection Defense",
+                "status": "BLOCKED" if (prompt_res and not prompt_res.passed) else "CLEAN",
+                "reason": (prompt_res.reason if prompt_res and not prompt_res.passed else "Zero prompt injection or jailbreak patterns detected."),
+                "detector": "InputGuard Regex & AST Scanner",
+                "action": ("Halted at Security Shield before model invocation" if prompt_res and not prompt_res.passed else "Payload approved for Developer Agent")
+            },
+            "sensitive_data": {
+                "name": "LLM02: Sensitive Data Leak Prevention",
+                "status": "BLOCKED" if (sensitive_res and not sensitive_res.passed) else "CLEAN",
+                "reason": (sensitive_res.reason if sensitive_res and not sensitive_res.passed else "No credentials, private keys, or PII detected."),
+                "detector": "PII & Secret Pattern Redactor",
+                "action": ("Halted before model invocation" if sensitive_res and not sensitive_res.passed else "Payload approved for Developer Agent")
+            },
+            "excessive_agency": {
+                "name": "LLM06: Excessive Agency & OS Shield",
+                "status": "CLEAN",
+                "reason": "Agent constrained within isolated multi-language compiler sandbox.",
+                "detector": "Multi-Language Sandbox Envelope",
+                "action": "Restricted execution sandbox active"
+            },
+            "unbounded_consumption": {
+                "name": "LLM10: Unbounded Consumption & Rate Boundary",
+                "status": "CLEAN",
+                "reason": f"Iteration ceiling enforced at {max_it} self-healing loops.",
+                "detector": "Rate Limiter & Loop Ceiling Guard",
+                "action": "Iteration bounds active"
+            }
+        }
+        
         if not input_report.passed:
             blocked_msg = f"Guardrail Intercept: {input_report.reason} (Blocked by {input_report.blocked_by})"
             state["code"] = f"// GUARDRAIL BLOCKED: {input_report.reason}"
             state["report"] = f"### 🛡️ Input Guardrail Alert\n{input_report.reason}\n\nBlocked by: {input_report.blocked_by}"
-            yield f"data: {json.dumps({'event': 'guardrail_block', 'node': 'guardrail', 'status': 'failed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 0, 'error': input_report.reason, 'message': blocked_msg, 'state': {'code': state['code'], 'report': state['report'], 'execution_success': False}})}\n\n"
+            yield f"data: {json.dumps({'event': 'guardrail_block', 'node': 'guardrail', 'status': 'failed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 0, 'error': input_report.reason, 'message': blocked_msg, 'security_controls': controls, 'state': {'code': state['code'], 'report': state['report'], 'execution_success': False}})}\n\n"
             yield f"data: {json.dumps({'event': 'workflow_complete', 'node': 'END', 'status': 'failed', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 0, 'thread_id': tid, 'code': state['code'], 'report': state['report'], 'execution_success': False, 'message': 'Workflow terminated safely by security shield.'})}\n\n"
             save_run_to_disk({
                 "id": tid,
@@ -1043,7 +1079,7 @@ async def stream_workflow_events(
             })
             return
             
-        yield f"data: {json.dumps({'event': 'node_complete', 'node': 'guardrail', 'status': 'success', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 0, 'message': 'Input Guardrails passed all security checks cleanly.'})}\n\n"
+        yield f"data: {json.dumps({'event': 'node_complete', 'node': 'guardrail', 'status': 'success', 'timestamp': time.strftime('%H:%M:%S'), 'iteration': 0, 'security_controls': controls, 'message': 'Input Guardrails passed all security checks cleanly.'})}\n\n"
         await asyncio.sleep(0.3)
         
         # 4. Developer Node (Iteration 1)
