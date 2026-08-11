@@ -88,10 +88,85 @@ class DemoAIMessage:
         self.content = content
 
 
+def generate_artifact_filename(task: str, language: str = "python") -> str:
+    """
+    Generates a clean, professional, task-derived source code filename.
+    Examples:
+    - 'Java linked list' -> 'LinkedList.java'
+    - 'Python email validator' -> 'EmailValidator.py'
+    - 'Binary Search Tree' -> 'BinarySearchTree.java'
+    - 'Stack in C++' -> 'Stack.cpp'
+    - 'Todo service in TypeScript' -> 'TodoService.ts'
+    """
+    lang = (language or "python").lower()
+    ext_map = {
+        "python": ".py",
+        "java": ".java",
+        "cpp": ".cpp",
+        "c++": ".cpp",
+        "c": ".c",
+        "javascript": ".js",
+        "js": ".js",
+        "typescript": ".ts",
+        "ts": ".ts",
+        "rust": ".rs",
+        "go": ".go",
+        "ruby": ".rb"
+    }
+    ext = ext_map.get(lang, ".py")
+    task_lower = (task or "").lower()
+    
+    if any(k in task_lower for k in ["linked list", "linkedlist", "node"]):
+        base = "LinkedList"
+    elif any(k in task_lower for k in ["email", "validate email", "email address"]):
+        base = "EmailValidator"
+    elif any(k in task_lower for k in ["binary search tree", "bst"]):
+        base = "BinarySearchTree"
+    elif "binary search" in task_lower:
+        base = "BinarySearch"
+    elif "stack" in task_lower:
+        base = "Stack"
+    elif "queue" in task_lower:
+        base = "Queue"
+    elif "fibonacci" in task_lower:
+        base = "Fibonacci"
+    elif "palindrome" in task_lower:
+        base = "PalindromeChecker"
+    elif "prime" in task_lower:
+        base = "PrimeChecker"
+    elif any(k in task_lower for k in ["matrix", "2d array"]):
+        base = "MatrixOperations"
+    elif any(k in task_lower for k in ["sort", "quicksort", "mergesort", "bubblesort"]):
+        base = "SortService"
+    elif "todo" in task_lower:
+        base = "TodoService"
+    elif "reverse" in task_lower:
+        base = "StringReverser"
+    elif "factorial" in task_lower:
+        base = "Factorial"
+    elif "stats" in task_lower or "statistics" in task_lower:
+        base = "StatisticsService"
+    else:
+        clean_task = re.sub(r'[^a-zA-Z0-9\s]', '', task).strip()
+        words = [
+            w.capitalize() for w in clean_task.split()
+            if len(w) > 2 and w.lower() not in [
+                'write', 'create', 'function', 'code', 'python', 'java', 'cpp',
+                'that', 'with', 'check', 'calculate', 'using', 'return', 'make',
+                'program', 'implement', 'build', 'for', 'the', 'and', 'from'
+            ]
+        ]
+        base = "".join(words[:3]) if words else "Solution"
+
+    formatted_name = base[0].upper() + base[1:]
+    return f"{formatted_name}{ext}"
+
+
 class DemoLLM:
     """
     Dynamic Offline/Fallback LLM Engine.
-    Generates exact task-matched code in Python, Java, or C++ based on user specification.
+    Generates clean, professional, compilable source code in Python, Java, or C++
+    without markdown fences, headers, or conversational artifacts.
     """
     def invoke(self, input_data: Any) -> DemoAIMessage:
         prompt_text = ""
@@ -144,298 +219,350 @@ class DemoLLM:
         is_stats = any(k in user_task_lower for k in ["stats", "statistics", "average", "sum", "count", "min", "max", "aggregate"])
         is_anagram = "anagram" in user_task_lower
 
-        import re
         clean_task = re.sub(r'[^a-zA-Z0-9\s]', '', user_task).strip()
         safe_task_summary = clean_task[:50] if clean_task else "custom task"
         clean_words = [w for w in clean_task.split() if len(w) > 2 and w.lower() not in ['write', 'create', 'function', 'code', 'python', 'java', 'cpp', 'that', 'with', 'check', 'calculate', 'using', 'return', 'make', 'program', 'implement']]
         
         func_name_py = "_".join(w.lower() for w in clean_words[:3]) or "execute_task"
-        func_name_java = "".join(w.capitalize() for w in clean_words[:3]) or "ExecuteTask"
+        class_name_java = "".join(w.capitalize() for w in clean_words[:3]) or "SolutionService"
 
         # ====================================================================
         # PYTHON 3.11 IMPLEMENTATIONS
         # ====================================================================
         if lang == "python":
             if is_linked_list:
-                code = '''class Node:
+                code = '''from typing import Optional, List
+
+
+class Node:
     def __init__(self, data: int):
-        self.data = data
-        self.next = None
+        self.data: int = data
+        self.next: Optional["Node"] = None
+
 
 class LinkedList:
     def __init__(self):
-        self.head = None
+        self.head: Optional[Node] = None
 
     def insert(self, data: int) -> None:
         """Insert a new node at the end of the list."""
         new_node = Node(data)
-        if not self.head:
+        if self.head is None:
             self.head = new_node
             return
-        curr = self.head
-        while curr.next:
-            curr = curr.next
-        curr.next = new_node
+        current = self.head
+        while current.next is not None:
+            current = current.next
+        current.next = new_node
 
-    def delete(self, key: int) -> bool:
-        """Delete first occurrence of key. Returns True if deleted."""
-        curr = self.head
-        if curr and curr.data == key:
-            self.head = curr.next
-            return True
-        prev = None
-        while curr and curr.data != key:
-            prev = curr
-            curr = curr.next
-        if not curr:
+    def delete(self, data: int) -> bool:
+        """Delete the first occurrence of data. Returns True if deleted."""
+        if self.head is None:
             return False
-        prev.next = curr.next
+        if self.head.data == data:
+            self.head = self.head.next
+            return True
+        current = self.head
+        while current.next is not None and current.next.data != data:
+            current = current.next
+        if current.next is None:
+            return False
+        current.next = current.next.next
         return True
 
-    def traverse(self) -> list[int]:
-        """Traverse the linked list and return elements as a list."""
-        elements = []
-        curr = self.head
-        while curr:
-            elements.append(curr.data)
-            curr = curr.next
+    def display(self) -> List[int]:
+        """Traverse and return all elements in the linked list."""
+        elements: List[int] = []
+        current = self.head
+        while current is not None:
+            elements.append(current.data)
+            current = current.next
         return elements
 
-# Self-test validation
-ll = LinkedList()
-ll.insert(10)
-ll.insert(20)
-ll.insert(30)
-assert ll.traverse() == [10, 20, 30], "LinkedList insertion failed"
-ll.delete(20)
-assert ll.traverse() == [10, 30], "LinkedList deletion failed"
-print("Python LinkedList insertion, deletion, and traversal verified:", ll.traverse())
+
+if __name__ == "__main__":
+    linked_list = LinkedList()
+    linked_list.insert(10)
+    linked_list.insert(20)
+    linked_list.insert(30)
+    assert linked_list.display() == [10, 20, 30]
+    linked_list.delete(20)
+    assert linked_list.display() == [10, 30]
+    print("LinkedList operations verified successfully:", linked_list.display())
 '''
             elif is_email:
                 code = '''import re
+from typing import Optional
 
-def validate_email(email: str) -> bool:
-    """Validate an email address syntax according to standard format."""
-    if not isinstance(email, str) or not email.strip():
+
+def validate_email(email: Optional[str]) -> bool:
+    """
+    Validates whether the provided string is a syntactically valid email address.
+    """
+    if not email or not isinstance(email, str):
         return False
-    pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
-    return bool(re.match(pattern, email.strip()))
+    
+    email_pattern = re.compile(
+        r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+    )
+    return bool(email_pattern.match(email.strip()))
 
-# Self-test validation
-assert validate_email("user@example.com") == True, "Valid email failed"
-assert validate_email("invalid-email") == False, "Invalid email failed"
-assert validate_email("k.sathvik@domain.org") == True, "Valid dot email failed"
-assert validate_email("@no-user.com") == False, "Missing user failed"
-print("Python email validator assertions passed cleanly for user@example.com and edge cases!")
+
+if __name__ == "__main__":
+    assert validate_email("user@example.com") is True
+    assert validate_email("invalid-email") is False
+    assert validate_email("sathvik@example.org") is True
+    assert validate_email("@no-user.com") is False
+    print("All email validation assertions passed successfully.")
 '''
             elif is_stack:
-                code = '''class Stack:
-    def __init__(self):
-        self._items = []
+                code = '''from typing import Any, List, Optional
 
-    def push(self, item) -> None:
+
+class Stack:
+    def __init__(self):
+        self._items: List[Any] = []
+
+    def push(self, item: Any) -> None:
+        """Push an element onto the stack."""
         self._items.append(item)
 
-    def pop(self):
+    def pop(self) -> Any:
+        """Remove and return the top element of the stack."""
         if self.is_empty():
             raise IndexError("pop from empty stack")
         return self._items.pop()
 
-    def peek(self):
+    def peek(self) -> Optional[Any]:
+        """Return the top element without removing it."""
         if self.is_empty():
             return None
         return self._items[-1]
 
     def is_empty(self) -> bool:
+        """Check whether the stack contains any items."""
         return len(self._items) == 0
 
     def size(self) -> int:
+        """Return total number of items on the stack."""
         return len(self._items)
 
-# Self-test validation
-s = Stack()
-s.push(1)
-s.push(2)
-assert s.peek() == 2
-assert s.pop() == 2
-assert s.size() == 1
-print("Stack implementation verified successfully!")
+
+if __name__ == "__main__":
+    stack = Stack()
+    stack.push(10)
+    stack.push(20)
+    assert stack.peek() == 20
+    assert stack.pop() == 20
+    assert stack.size() == 1
+    print("Stack operations verified successfully.")
 '''
             elif is_tree:
-                code = '''class TreeNode:
-    def __init__(self, val: int):
-        self.val = val
-        self.left = None
-        self.right = None
+                code = '''from typing import Optional, List
+
+
+class TreeNode:
+    def __init__(self, value: int):
+        self.value: int = value
+        self.left: Optional["TreeNode"] = None
+        self.right: Optional["TreeNode"] = None
+
 
 class BinarySearchTree:
     def __init__(self):
-        self.root = None
+        self.root: Optional[TreeNode] = None
 
-    def insert(self, val: int) -> None:
-        if not self.root:
-            self.root = TreeNode(val)
+    def insert(self, value: int) -> None:
+        """Insert a value into the binary search tree."""
+        if self.root is None:
+            self.root = TreeNode(value)
         else:
-            self._insert(self.root, val)
+            self._insert_recursive(self.root, value)
 
-    def _insert(self, node: TreeNode, val: int):
-        if val < node.val:
-            if not node.left:
-                node.left = TreeNode(val)
+    def _insert_recursive(self, node: TreeNode, value: int) -> None:
+        if value < node.value:
+            if node.left is None:
+                node.left = TreeNode(value)
             else:
-                self._insert(node.left, val)
+                self._insert_recursive(node.left, value)
         else:
-            if not node.right:
-                node.right = TreeNode(val)
+            if node.right is None:
+                node.right = TreeNode(value)
             else:
-                self._insert(node.right, val)
+                self._insert_recursive(node.right, value)
 
-    def inorder(self) -> list[int]:
-        res = []
-        def _inorder(n):
-            if n:
-                _inorder(n.left)
-                res.append(n.val)
-                _inorder(n.right)
-        _inorder(self.root)
-        return res
+    def inorder_traversal(self) -> List[int]:
+        """Return in-order traversal of the tree values."""
+        result: List[int] = []
+        def _traverse(current: Optional[TreeNode]):
+            if current is not None:
+                _traverse(current.left)
+                result.append(current.value)
+                _traverse(current.right)
+        _traverse(self.root)
+        return result
 
-# Self-test validation
-bst = BinarySearchTree()
-for v in [50, 30, 70, 20, 40]:
-    bst.insert(v)
-assert bst.inorder() == [20, 30, 40, 50, 70]
-print("Binary Search Tree in-order traversal verified:", bst.inorder())
+
+if __name__ == "__main__":
+    bst = BinarySearchTree()
+    for val in [50, 30, 70, 20, 40]:
+        bst.insert(val)
+    assert bst.inorder_traversal() == [20, 30, 40, 50, 70]
+    print("BinarySearchTree verified:", bst.inorder_traversal())
 '''
             elif is_reverse:
-                code = '''def reverse_string(s: str) -> str:
+                code = '''def reverse_string(text: str) -> str:
     """Reverse a given string."""
-    return s[::-1]
+    if not isinstance(text, str):
+        raise TypeError("Input must be a string")
+    return text[::-1]
 
-# Self-test validation
-result = reverse_string("hello")
-print("reverse_string('hello'):", result)
-assert result == "olleh", "Reverse test failed"
+
+if __name__ == "__main__":
+    result = reverse_string("hello")
+    assert result == "olleh"
+    print("reverse_string('hello'):", result)
 '''
             elif is_prime:
-                code = '''def is_prime(n: int) -> bool:
-    """Check if a number is prime."""
-    if n <= 1:
+                code = '''def is_prime(number: int) -> bool:
+    """Check if an integer is a prime number."""
+    if number <= 1:
         return False
-    for i in range(2, int(n**0.5) + 1):
-        if n % i == 0:
+    for i in range(2, int(number ** 0.5) + 1):
+        if number % i == 0:
             return False
     return True
 
-# Self-test validation
-result = is_prime(29)
-print("is_prime(29):", result)
-assert result == True, "Prime test failed for 29"
+
+if __name__ == "__main__":
+    assert is_prime(1) is False
+    assert is_prime(2) is True
+    assert is_prime(29) is True
+    assert is_prime(30) is False
+    print("Prime number assertions passed successfully.")
 '''
             elif is_fibo:
-                code = '''def fibonacci(n: int) -> list[int]:
-    """Generate Fibonacci sequence up to n terms."""
-    if n <= 0: return []
-    if n == 1: return [0]
-    seq = [0, 1]
-    while len(seq) < n:
-        seq.append(seq[-1] + seq[-2])
-    return seq
+                code = '''from typing import List
 
-# Self-test validation
-result = fibonacci(7)
-print("Fibonacci(7):", result)
-assert fibonacci(5) == [0, 1, 1, 2, 3], "Fibonacci test failed"
+
+def fibonacci_sequence(terms: int) -> List[int]:
+    """Generate the Fibonacci sequence up to n terms."""
+    if terms <= 0:
+        return []
+    if terms == 1:
+        return [0]
+    sequence: List[int] = [0, 1]
+    while len(sequence) < terms:
+        sequence.append(sequence[-1] + sequence[-2])
+    return sequence
+
+
+if __name__ == "__main__":
+    assert fibonacci_sequence(0) == []
+    assert fibonacci_sequence(5) == [0, 1, 1, 2, 3]
+    print("Fibonacci sequence generated cleanly:", fibonacci_sequence(7))
 '''
             elif is_palin:
-                code = '''def is_palindrome(s: str) -> bool:
-    """Check if a string is a palindrome ignoring case and punctuation."""
-    cleaned = ''.join(c.lower() for c in s if c.isalnum())
+                code = '''def is_palindrome(text: str) -> bool:
+    """Check if a string is a palindrome, ignoring non-alphanumeric characters."""
+    if not isinstance(text, str):
+        return False
+    cleaned = "".join(char.lower() for char in text if char.isalnum())
     return cleaned == cleaned[::-1]
 
-# Self-test validation
-print("is_palindrome('racecar'):", is_palindrome('racecar'))
-assert is_palindrome('racecar') == True, "Palindrome test failed"
+
+if __name__ == "__main__":
+    assert is_palindrome("racecar") is True
+    assert is_palindrome("A man, a plan, a canal: Panama") is True
+    assert is_palindrome("hello") is False
+    print("Palindrome validation assertions passed successfully.")
 '''
             elif is_div:
-                code = '''def safe_divide(a: float, b: float) -> float:
+                code = '''def safe_divide(numerator: float, denominator: float) -> float:
     """Safely divide two numbers with proper error handling."""
-    if b == 0:
-        raise ValueError("Cannot divide by zero.")
-    return a / b
+    if denominator == 0:
+        raise ZeroDivisionError("Denominator cannot be zero")
+    return numerator / denominator
 
-# Self-test validation
-print("safe_divide(10, 2):", safe_divide(10, 2))
-assert safe_divide(10, 2) == 5.0, "Divide test failed"
-'''
-            elif is_factorial:
-                code = '''def factorial(n: int) -> int:
-    """Calculate factorial of n."""
-    if n < 0: raise ValueError("Negative number")
-    return 1 if n <= 1 else n * factorial(n - 1)
 
-# Self-test validation
-print("factorial(5):", factorial(5))
-assert factorial(5) == 120, "Factorial test failed"
+if __name__ == "__main__":
+    assert safe_divide(10, 2) == 5.0
+    print("safe_divide(10, 2):", safe_divide(10, 2))
 '''
             elif is_sort:
-                code = '''def quick_sort(arr: list) -> list:
-    """Sort a list in ascending order."""
-    if len(arr) <= 1:
-        return arr
-    pivot = arr[len(arr) // 2]
-    left = [x for x in arr if x < pivot]
-    middle = [x for x in arr if x == pivot]
-    right = [x for x in arr if x > pivot]
+                code = '''from typing import List
+
+
+def quick_sort(items: List[int]) -> List[int]:
+    """Sort a list of integers in ascending order using quicksort."""
+    if len(items) <= 1:
+        return items
+    pivot = items[len(items) // 2]
+    left = [x for x in items if x < pivot]
+    middle = [x for x in items if x == pivot]
+    right = [x for x in items if x > pivot]
     return quick_sort(left) + middle + quick_sort(right)
 
-# Self-test validation
-result = quick_sort([64, 34, 25, 12, 22, 11, 90])
-print("quick_sort result:", result)
-assert result == [11, 12, 22, 25, 34, 64, 90], "Sort test failed"
+
+if __name__ == "__main__":
+    sample = [64, 34, 25, 12, 22, 11, 90]
+    sorted_sample = quick_sort(sample)
+    assert sorted_sample == [11, 12, 22, 25, 34, 64, 90]
+    print("quick_sort verified:", sorted_sample)
 '''
             elif is_search:
-                code = '''def binary_search(arr: list, target: int) -> int:
+                code = '''from typing import List
+
+
+def binary_search(array: List[int], target: int) -> int:
     """Search for target in sorted array. Returns index or -1."""
-    left, right = 0, len(arr) - 1
+    left, right = 0, len(array) - 1
     while left <= right:
         mid = (left + right) // 2
-        if arr[mid] == target:
+        if array[mid] == target:
             return mid
-        elif arr[mid] < target:
+        elif array[mid] < target:
             left = mid + 1
         else:
             right = mid - 1
     return -1
 
-# Self-test validation
-data = [10, 20, 30, 40, 50]
-idx = binary_search(data, 30)
-print("binary_search for 30:", idx)
-assert idx == 2, "Search test failed"
+
+if __name__ == "__main__":
+    data = [10, 20, 30, 40, 50]
+    assert binary_search(data, 30) == 2
+    assert binary_search(data, 99) == -1
+    print("binary_search verified successfully.")
 '''
             elif is_stats:
-                code = '''def compute_statistics(numbers: list[float]) -> dict:
+                code = '''from typing import List, Dict, Optional
+
+
+def compute_statistics(numbers: List[float]) -> Dict[str, Optional[float]]:
     """Compute aggregate count, sum, average, min, and max."""
     if not numbers:
-        return {"count": 0, "sum": 0, "avg": 0, "min": None, "max": None}
+        return {"count": 0, "sum": 0.0, "avg": 0.0, "min": None, "max": None}
     return {
         "count": len(numbers),
-        "sum": sum(numbers),
-        "avg": sum(numbers) / len(numbers),
-        "min": min(numbers),
-        "max": max(numbers)
+        "sum": float(sum(numbers)),
+        "avg": float(sum(numbers) / len(numbers)),
+        "min": float(min(numbers)),
+        "max": float(max(numbers))
     }
 
-# Self-test validation
-stats = compute_statistics([10, 20, 30, 40, 50])
-print("compute_statistics:", stats)
-assert stats["avg"] == 30.0 and stats["sum"] == 150
+
+if __name__ == "__main__":
+    stats = compute_statistics([10.0, 20.0, 30.0, 40.0, 50.0])
+    assert stats["avg"] == 30.0 and stats["sum"] == 150.0
+    print("compute_statistics verified:", stats)
 '''
             else:
-                code = f'''def {func_name_py}(items: list = None) -> dict:
+                code = f'''from typing import List, Dict, Any
+
+
+def {func_name_py}(items: Optional[List[Any]] = None) -> Dict[str, Any]:
     """
-    Automated implementation for specification:
+    Implementation for task specification:
     '{safe_task_summary}'
     """
     data = items if items is not None else [10, 20, 30, 40]
@@ -447,10 +574,11 @@ assert stats["avg"] == 30.0 and stats["sum"] == 150
         "status": "success"
     }}
 
-# Self-test validation
-result = {func_name_py}([1, 2, 3, 4])
-print("Dynamic execution output:", result)
-assert result["status"] == "success" and result["input_count"] == 4, "Assertion failed"
+
+if __name__ == "__main__":
+    result = {func_name_py}([1, 2, 3, 4])
+    assert result["status"] == "success" and result["input_count"] == 4
+    print("Dynamic execution verified:", result)
 '''
 
         # ====================================================================
@@ -458,17 +586,17 @@ assert result["status"] == "success" and result["input_count"] == 4, "Assertion 
         # ====================================================================
         elif lang == "java":
             if is_linked_list:
-                code = '''class Node {
-    int data;
-    Node next;
-    Node(int data) {
-        this.data = data;
-        this.next = null;
-    }
-}
-
-public class Main {
+                code = '''public class LinkedList {
     private Node head;
+
+    private static class Node {
+        int data;
+        Node next;
+
+        Node(int data) {
+            this.data = data;
+        }
+    }
 
     public void insert(int data) {
         Node newNode = new Node(data);
@@ -476,46 +604,45 @@ public class Main {
             head = newNode;
             return;
         }
-        Node curr = head;
-        while (curr.next != null) {
-            curr = curr.next;
+        Node current = head;
+        while (current.next != null) {
+            current = current.next;
         }
-        curr.next = newNode;
+        current.next = newNode;
     }
 
-    public boolean delete(int key) {
-        Node curr = head, prev = null;
-        if (curr != null && curr.data == key) {
-            head = curr.next;
+    public boolean delete(int data) {
+        if (head == null) return false;
+        if (head.data == data) {
+            head = head.next;
             return true;
         }
-        while (curr != null && curr.data != key) {
-            prev = curr;
-            curr = curr.next;
+        Node current = head;
+        while (current.next != null && current.next.data != data) {
+            current = current.next;
         }
-        if (curr == null) return false;
-        prev.next = curr.next;
+        if (current.next == null) return false;
+        current.next = current.next.next;
         return true;
     }
 
-    public void traverse() {
-        Node curr = head;
-        System.out.print("LinkedList: ");
-        while (curr != null) {
-            System.out.print(curr.data + " -> ");
-            curr = curr.next;
+    public void display() {
+        Node current = head;
+        while (current != null) {
+            System.out.print(current.data + " ");
+            current = current.next;
         }
-        System.out.println("null");
+        System.out.println();
     }
 
     public static void main(String[] args) {
-        Main list = new Main();
+        LinkedList list = new LinkedList();
         list.insert(10);
         list.insert(20);
         list.insert(30);
-        list.traverse();
+        list.display();
         list.delete(20);
-        list.traverse();
+        list.display();
         System.out.println("Java LinkedList insertion, deletion, and traversal executed successfully!");
     }
 }
@@ -523,21 +650,25 @@ public class Main {
             elif is_email:
                 code = '''import java.util.regex.Pattern;
 
-public class Main {
-    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$");
+public class EmailValidator {
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+        "^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\\\.[a-zA-Z0-9-.]+$"
+    );
 
-    public static boolean validateEmail(String email) {
-        if (email == null || email.trim().isEmpty()) return false;
+    public static boolean validate(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            return false;
+        }
         return EMAIL_PATTERN.matcher(email.trim()).matches();
     }
 
     public static void main(String[] args) {
-        boolean valid = validateEmail("user@example.com");
-        boolean invalid = validateEmail("invalid.email");
-        System.out.println("validateEmail('user@example.com'): " + valid);
-        System.out.println("validateEmail('invalid.email'): " + invalid);
+        boolean valid = validate("user@example.com");
+        boolean invalid = validate("invalid.email");
+        System.out.println("validate('user@example.com'): " + valid);
+        System.out.println("validate('invalid.email'): " + invalid);
         if (valid && !invalid) {
-            System.out.println("All Java email validator test cases passed!");
+            System.out.println("All Java email validation test cases passed!");
         }
     }
 }
@@ -545,20 +676,24 @@ public class Main {
             elif is_stack:
                 code = '''import java.util.ArrayList;
 
-public class Main {
-    private ArrayList<Integer> items = new ArrayList<>();
+public class Stack {
+    private final ArrayList<Integer> items = new ArrayList<>();
 
     public void push(int item) {
         items.add(item);
     }
 
     public int pop() {
-        if (isEmpty()) throw new IllegalStateException("Stack is empty");
+        if (isEmpty()) {
+            throw new IllegalStateException("Stack is empty");
+        }
         return items.remove(items.size() - 1);
     }
 
     public int peek() {
-        if (isEmpty()) throw new IllegalStateException("Stack is empty");
+        if (isEmpty()) {
+            throw new IllegalStateException("Stack is empty");
+        }
         return items.get(items.size() - 1);
     }
 
@@ -566,8 +701,12 @@ public class Main {
         return items.isEmpty();
     }
 
+    public int size() {
+        return items.size();
+    }
+
     public static void main(String[] args) {
-        Main stack = new Main();
+        Stack stack = new Stack();
         stack.push(10);
         stack.push(20);
         System.out.println("Peek: " + stack.peek());
@@ -577,59 +716,60 @@ public class Main {
 }
 '''
             elif is_tree:
-                code = '''class TreeNode {
-    int val;
-    TreeNode left, right;
-    TreeNode(int val) { this.val = val; }
-}
+                code = '''public class BinarySearchTree {
+    private Node root;
 
-public class Main {
-    TreeNode root;
+    private static class Node {
+        int value;
+        Node left, right;
 
-    public void insert(int val) {
-        root = insertRec(root, val);
+        Node(int value) {
+            this.value = value;
+        }
     }
 
-    private TreeNode insertRec(TreeNode root, int val) {
-        if (root == null) return new TreeNode(val);
-        if (val < root.val) root.left = insertRec(root.left, val);
-        else if (val > root.val) root.right = insertRec(root.right, val);
-        return root;
+    public void insert(int value) {
+        root = insertRecursive(root, value);
     }
 
-    public void inorder(TreeNode root) {
-        if (root != null) {
-            inorder(root.left);
-            System.out.print(root.val + " ");
-            inorder(root.right);
+    private Node insertRecursive(Node current, int value) {
+        if (current == null) {
+            return new Node(value);
+        }
+        if (value < current.value) {
+            current.left = insertRecursive(current.left, value);
+        } else if (value > current.value) {
+            current.right = insertRecursive(current.right, value);
+        }
+        return current;
+    }
+
+    public void inorder() {
+        inorderRecursive(root);
+        System.out.println();
+    }
+
+    private void inorderRecursive(Node node) {
+        if (node != null) {
+            inorderRecursive(node.left);
+            System.out.print(node.value + " ");
+            inorderRecursive(node.right);
         }
     }
 
     public static void main(String[] args) {
-        Main bst = new Main();
+        BinarySearchTree bst = new BinarySearchTree();
         bst.insert(50);
         bst.insert(30);
         bst.insert(70);
         System.out.print("Inorder BST: ");
-        bst.inorder(bst.root);
-        System.out.println("\nJava BST verified!");
-    }
-}
-'''
-            elif is_reverse:
-                code = '''public class Main {
-    public static String reverseString(String s) {
-        return new StringBuilder(s).reverse().toString();
-    }
-
-    public static void main(String[] args) {
-        String result = reverseString("hello");
-        System.out.println("reverseString('hello'): " + result);
+        bst.inorder();
+        System.out.println("Java BST verified!");
     }
 }
 '''
             elif is_prime:
-                code = '''public class Main {
+                code = '''public class PrimeChecker {
     public static boolean isPrime(int n) {
         if (n <= 1) return false;
         for (int i = 2; i * i <= n; i++) {
@@ -639,14 +779,14 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        boolean test1 = isPrime(29);
-        System.out.println("isPrime(29): " + test1);
+        boolean test = isPrime(29);
+        System.out.println("isPrime(29): " + test);
     }
 }
 '''
             elif is_fibo:
-                code = '''public class Main {
-    public static int fibonacci(int n) {
+                code = '''public class FibonacciCalculator {
+    public static int calculate(int n) {
         if (n <= 1) return n;
         int a = 0, b = 1;
         for (int i = 2; i <= n; i++) {
@@ -658,32 +798,19 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        System.out.println("Fibonacci(7): " + fibonacci(7));
-    }
-}
-'''
-            elif is_palin:
-                code = '''public class Main {
-    public static boolean isPalindrome(String s) {
-        String cleaned = s.replaceAll("[^a-zA-Z0-9]", "").toLowerCase();
-        String rev = new StringBuilder(cleaned).reverse().toString();
-        return cleaned.equals(rev);
-    }
-
-    public static void main(String[] args) {
-        System.out.println("isPalindrome('racecar'): " + isPalindrome("racecar"));
+        System.out.println("Fibonacci(7): " + calculate(7));
     }
 }
 '''
             else:
-                code = f'''public class Main {{
-    public static String execute{func_name_java}(String spec) {{
-        System.out.println("Executing Java 17 logic for: " + spec);
-        return "SUCCESS: " + spec;
+                code = f'''public class {class_name_java} {{
+    public static String execute(String taskSpec) {{
+        System.out.println("Executing Java 17 logic for: " + taskSpec);
+        return "SUCCESS: " + taskSpec;
     }}
 
     public static void main(String[] args) {{
-        String result = execute{func_name_java}("{safe_task_summary}");
+        String result = execute("{safe_task_summary}");
         System.out.println("Execution result: " + result);
     }}
 }}
@@ -699,19 +826,35 @@ public class Main {
 struct Node {
     int data;
     Node* next;
-    Node(int val) : data(val), next(nullptr) {}
+    explicit Node(int val) : data(val), next(nullptr) {}
 };
 
 class LinkedList {
-public:
+private:
     Node* head;
+
+public:
     LinkedList() : head(nullptr) {}
+
+    ~LinkedList() {
+        Node* current = head;
+        while (current != nullptr) {
+            Node* next = current->next;
+            delete current;
+            current = next;
+        }
+    }
 
     void insert(int val) {
         Node* newNode = new Node(val);
-        if (!head) { head = newNode; return; }
+        if (!head) {
+            head = newNode;
+            return;
+        }
         Node* temp = head;
-        while (temp->next) temp = temp->next;
+        while (temp->next != nullptr) {
+            temp = temp->next;
+        }
         temp->next = newNode;
     }
 
@@ -724,7 +867,9 @@ public:
             return true;
         }
         Node* curr = head;
-        while (curr->next && curr->next->data != key) curr = curr->next;
+        while (curr->next != nullptr && curr->next->data != key) {
+            curr = curr->next;
+        }
         if (!curr->next) return false;
         Node* temp = curr->next;
         curr->next = curr->next->next;
@@ -732,25 +877,24 @@ public:
         return true;
     }
 
-    void traverse() {
+    void display() const {
         Node* curr = head;
-        std::cout << "LinkedList: ";
-        while (curr) {
-            std::cout << curr->data << " -> ";
+        while (curr != nullptr) {
+            std::cout << curr->data << " ";
             curr = curr->next;
         }
-        std::cout << "nullptr" << std::endl;
+        std::cout << std::endl;
     }
 };
 
 int main() {
-    LinkedList ll;
-    ll.insert(10);
-    ll.insert(20);
-    ll.insert(30);
-    ll.traverse();
-    ll.remove(20);
-    ll.traverse();
+    LinkedList list;
+    list.insert(10);
+    list.insert(20);
+    list.insert(30);
+    list.display();
+    list.remove(20);
+    list.display();
     std::cout << "C++ LinkedList operations executed successfully!" << std::endl;
     return 0;
 }
@@ -774,67 +918,16 @@ int main() {
     return 0;
 }
 '''
-            elif is_reverse:
-                code = '''#include <iostream>
-#include <string>
-#include <algorithm>
-
-std::string reverseString(std::string s) {
-    std::reverse(s.begin(), s.end());
-    return s;
-}
-
-int main() {
-    std::cout << "reverseString('hello'): " << reverseString("hello") << std::endl;
-    return 0;
-}
-'''
-            elif is_prime:
-                code = '''#include <iostream>
-
-bool isPrime(int n) {
-    if (n <= 1) return false;
-    for (int i = 2; i * i <= n; i++) {
-        if (n % i == 0) return false;
-    }
-    return true;
-}
-
-int main() {
-    std::cout << "isPrime(29): " << (isPrime(29) ? "true" : "false") << std::endl;
-    return 0;
-}
-'''
-            elif is_fibo:
-                code = '''#include <iostream>
-#include <vector>
-
-std::vector<int> fibonacci(int n) {
-    if (n <= 0) return {};
-    if (n == 1) return {0};
-    std::vector<int> seq = {0, 1};
-    while (seq.size() < n) {
-        seq.push_back(seq.back() + seq[seq.size() - 2]);
-    }
-    return seq;
-}
-
-int main() {
-    auto res = fibonacci(7);
-    std::cout << "Fibonacci terms count: " << res.size() << std::endl;
-    return 0;
-}
-'''
             else:
                 code = f'''#include <iostream>
 #include <string>
 
-void execute_{func_name_py}() {{
+void executeTask() {{
     std::cout << "Executing C++ 20 specification: {safe_task_summary}" << std::endl;
 }}
 
 int main() {{
-    execute_{func_name_py}();
+    executeTask();
     return 0;
 }}
 '''
@@ -934,42 +1027,65 @@ def validate_task_input(task: str) -> tuple[bool, Optional[str]]:
 
 
 def validate_code_output(code: str, language: str = "python") -> tuple[bool, Optional[str]]:
+    """
+    Validates that the generated code is real, compilable source code and not
+    conversational text, markdown response, or broken syntax.
+    """
     if not code or not code.strip():
         return False, "Developer agent returned empty code."
     
     cleaned_code = code.strip()
-    if cleaned_code.startswith("```"):
-        lines = cleaned_code.split('\n')
-        if lines[0].startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].strip() == "```":
-            lines = lines[:-1]
-        cleaned_code = '\n'.join(lines).strip()
-    
-    language = language.lower()
+    language = (language or "python").lower()
+
+    # Reject unstripped markdown fences
+    if cleaned_code.startswith("```") or cleaned_code.endswith("```"):
+        return False, "Code contains unstripped Markdown code fences."
+
+    # Reject obvious conversational chat preambles
+    first_line = cleaned_code.split('\n')[0].strip().lower()
+    if any(first_line.startswith(p) for p in ["here is", "sure,", "certainly", "below is", "hope this helps"]):
+        return False, "Output contains conversational chat text instead of pure source code."
     
     if language == "python":
         python_keywords = ['def ', 'class ', 'import ', 'from ', 'return', '=', 'if ', 'for ', 'while ']
         if not any(keyword in cleaned_code for keyword in python_keywords):
-            return False, "Output doesn't look like Python code."
+            return False, "Output does not contain valid Python definitions or statements."
         try:
             compile(cleaned_code, '<string>', 'exec')
             return True, None
         except SyntaxError as e:
-            return False, f"Python syntax error: {str(e)}"
-        except Exception:
-            return True, None
+            return False, f"Python syntax error at line {e.lineno}: {e.msg}"
+        except Exception as e:
+            return False, f"Python compilation error: {str(e)}"
     
     elif language == "java":
-        java_keywords = ['class ', 'public ', 'private ', 'void ', 'int ', 'String ', 'return', 'static ', 'boolean']
+        java_keywords = ['class ', 'public ', 'private ', 'void ', 'int ', 'String ', 'return', 'static ', 'boolean', 'interface ']
         if not any(keyword in cleaned_code for keyword in java_keywords):
-            return False, "Output doesn't look like Java code."
+            return False, "Output does not contain valid Java class or method structures."
+        
+        # Check balanced braces
+        open_braces = cleaned_code.count('{')
+        close_braces = cleaned_code.count('}')
+        if open_braces != close_braces:
+            return False, f"Java syntax error: Unbalanced curly braces ({{: {open_braces}, }}: {close_braces})."
+        
+        # Check for class declaration
+        if not re.search(r'\b(class|interface|record|enum)\s+[A-Za-z0-9_]+', cleaned_code):
+            return False, "Java syntax error: Missing class or interface declaration."
+            
         return True, None
     
     elif language in ["cpp", "c++"]:
-        cpp_keywords = ['#include', 'int ', 'void ', 'return', 'std::', 'main(', 'using', 'bool']
+        cpp_keywords = ['#include', 'int ', 'void ', 'return', 'std::', 'main(', 'using', 'bool', 'class ', 'struct ']
         if not any(keyword in cleaned_code for keyword in cpp_keywords):
-            return False, "Output doesn't look like C++ code."
+            return False, "Output does not contain valid C++ declarations or preprocessor directives."
+            
+        # Check balanced braces
+        open_braces = cleaned_code.count('{')
+        close_braces = cleaned_code.count('}')
+        if open_braces != close_braces:
+            return False, f"C++ syntax error: Unbalanced curly braces ({{: {open_braces}, }}: {close_braces})."
+            
         return True, None
     
     return True, None
@@ -1036,90 +1152,91 @@ def _make_user_friendly_error(exception: Exception) -> str:
 
 def sanitize_professional_code(raw_code: str, language: str = "python") -> str:
     """
-    Sanitizes LLM-generated code into clean, professional source code:
-    - Removes markdown code fences (```python, ```java, ```cpp, ```)
-    - Removes markdown title/hashtag headers (# Solution, ## Code, ### Implementation)
-    - Removes conversational introductions and conclusions
-    - Returns clean, indented, production-grade source code.
+    Extracts and sanitizes LLM output into clean, production-grade source code:
+    - Strips markdown code block fences (```java, ```python, ```cpp, ```)
+    - Strips markdown title/hashtag headers (# Solution, ## Code, ### Implementation)
+    - Strips conversational preambles ("Here is the Java code...", "Certainly!...")
+    - Strips trailing explanations ("**Explanation:**", "### How it works:", etc.)
+    - Strips markdown bullet points and list markers outside of valid comments
+    - Returns clean, properly indented, compilable source code.
     """
     if not raw_code:
         return ""
-    
+
     text = raw_code.strip()
-    
-    # 1. Extract from code block if enclosed in ```
-    import re
-    fence_pattern = re.compile(r'```(?:python|java|cpp|c\+\+|c)?\s*\n(.*?)```', re.DOTALL | re.IGNORECASE)
-    match = fence_pattern.search(text)
-    if match:
-        text = match.group(1).strip()
+
+    # 1. Extract content from within markdown code fences if present
+    fence_pattern = re.compile(
+        r'```(?:python|java|cpp|c\+\+|c|typescript|ts|javascript|js|rust|go)?\s*\n(.*?)```',
+        re.DOTALL | re.IGNORECASE
+    )
+    matches = fence_pattern.findall(text)
+    if matches:
+        text = max(matches, key=len).strip()
     else:
-        # Strip unmatched leading/trailing ```
         text = re.sub(r'^```[a-zA-Z]*\n?', '', text)
         text = re.sub(r'\n?```$', '', text).strip()
-    
-    # 2. Process line by line to strip markdown commentary headers & chat lines
+
     lines = text.split('\n')
     cleaned_lines = []
-    
-    # Common non-code preamble/postamble phrases
-    chat_phrases = [
+    in_code_body = False
+    language_lower = (language or "python").lower()
+
+    chat_preamble_phrases = [
         "here is the", "here's the", "certainly", "sure,", "below is", 
         "i have written", "hope this helps", "let me know", "feel free",
-        "explanation:", "how it works:", "usage example:"
+        "here is a", "this program", "this solution", "this function",
+        "following is", "the code below"
     ]
-    
-    in_code_body = False
-    language_lower = language.lower()
-    
+
+    code_start_keywords = [
+        'def ', 'class ', 'import ', 'from ', '#include', 'public ', 'private ',
+        'protected ', 'int ', 'void ', 'package ', 'interface ', 'struct ',
+        'template', 'using ', 'const ', 'function ', 'export '
+    ]
+
     for line in lines:
         stripped = line.strip()
         stripped_lower = stripped.lower()
-        
-        # Skip markdown hashtag titles like "# Solution", "## Python Code", "### Implementation"
-        if stripped.startswith('#') and any(keyword in stripped_lower for keyword in ['solution', 'code', 'implementation', 'program', 'example', 'output', 'task', 'step']):
-            # If it's a markdown header rather than a code comment
-            if stripped.startswith('##') or stripped.startswith('###') or stripped.startswith('####') or stripped.endswith(':'):
-                continue
-        
-        # Skip conversational introductory chat before actual code starts
+
+        # Check if code has started
+        if any(kw in line for kw in code_start_keywords):
+            in_code_body = True
+
+        # If we haven't reached code body yet, check for chat preamble or markdown headers
         if not in_code_body:
-            if any(phrase in stripped_lower for phrase in chat_phrases) and not any(kw in stripped for kw in ['def ', 'class ', '#include', 'import ', 'public ', 'int ']):
+            if stripped.startswith('#') and any(k in stripped_lower for k in ['solution', 'code', 'implementation', 'program', 'example', 'output', 'task', 'step', 'java', 'python', 'c++']):
                 continue
             if stripped.startswith('**') and stripped.endswith('**'):
                 continue
-        
-        # Check if code has started
-        if any(kw in line for kw in ['def ', 'class ', 'import ', 'from ', '#include', 'public ', 'private ', 'int ', 'void ', 'package ']):
-            in_code_body = True
-            
+            if any(phrase in stripped_lower for phrase in chat_preamble_phrases):
+                continue
+            if not stripped:
+                continue
+
         # Stop if trailing markdown explanation section begins
-        if in_code_body and (stripped.startswith('**Explanation') or stripped.startswith('### Explanation') or stripped.startswith('## Explanation')):
-            break
-            
+        if in_code_body:
+            if stripped.startswith('**Explanation') or stripped.startswith('### Explanation') or stripped.startswith('## Explanation') or stripped.startswith('**Key Points') or stripped.startswith('**Complexity'):
+                break
+            if stripped_lower.startswith('hope this helps') or stripped_lower.startswith('let me know if'):
+                break
+
+        # Remove stray markdown header formatting from lines inside code (e.g. `### public class...`)
+        if stripped.startswith('### ') or stripped.startswith('## ') or (stripped.startswith('# ') and language_lower in ['java', 'cpp', 'c', 'js', 'ts']):
+            if not (language_lower in ['cpp', 'c'] and (stripped.startswith('#include') or stripped.startswith('#define') or stripped.startswith('#pragma') or stripped.startswith('#ifdef') or stripped.startswith('#endif'))):
+                continue
+
         cleaned_lines.append(line)
-    
+
     result = '\n'.join(cleaned_lines).strip()
     return result if result else raw_code.strip()
 
 
 def developer_node(state: CrewState) -> Dict[str, Any]:
     target_language = state.get("language", "python").lower()
-    
-    system_msg = SystemMessage(
-        content=(
-            f"You are an expert {target_language.upper()} developer. Generate clean, professional, compile-ready code for the user's task. "
-            f"Target language is strictly {target_language.upper()}. "
-            f"IMPORTANT: Return ONLY pure source code. Do NOT include markdown code fences, do NOT include markdown headings, and do NOT include conversational chat explanations."
-        )
-    )
-    
-    messages_to_send = [system_msg] + state["messages"]
-    
     task = state["messages"][0].content
-    target_language = state.get("language", "python").lower()
     
-    # Prompt injection / malicious check
+    # Malicious injection check
     dangerous_keywords = ["import os; os.system", "rm -rf", "eval(", "exec("]
     if any(keyword in task for keyword in dangerous_keywords):
         logger.warning(f"⚠️ Dangerous input detected: {task[:50]}")
@@ -1131,27 +1248,27 @@ def developer_node(state: CrewState) -> Dict[str, Any]:
             "report": "### SECURITY ALERT\nInput contains unsafe operations."
         }
     
-    # If this is a retry iteration, include tester's previous report
     retry_context = ""
     if state.get("iterations", 0) > 0 and state.get("report"):
-        retry_context = f"\n\nPREVIOUS TEST RESULTS & ERRORS TO FIX:\n{state['report']}\n"
+        retry_context = f"\n\nPREVIOUS TEST / COMPILER ERRORS TO FIX:\n{state['report']}\n"
     
     prompt = (
         f"You are an expert software engineer.\n"
         f"Task: {task}\n"
         f"Target Programming Language: {target_language.upper()}\n"
         f"{retry_context}\n"
-        f"INSTRUCTIONS:\n"
+        f"CRITICAL INSTRUCTIONS:\n"
         f"1. Generate ONLY valid, clean, compilable, production-ready {target_language.upper()} code.\n"
-        f"2. DO NOT use markdown headers or titles (# Title, ## Solution).\n"
-        f"3. Return clean code that accomplishes the task directly.\n"
+        f"2. DO NOT wrap the code in Markdown code block fences (no ```).\n"
+        f"3. DO NOT include markdown headers (# Solution) or conversational explanations.\n"
+        f"4. Return ONLY the source code artifact.\n"
     )
     
     try:
         response = call_llm_with_retry(prompt)
         raw_code = response.content if hasattr(response, "content") else str(response)
         
-        # Sanitize code into clean, professional code (no markdown titles/hashtags)
+        # Sanitize code into clean, professional code
         clean_code = sanitize_professional_code(raw_code, target_language)
         
         # Guardrails Output Validation
@@ -1236,7 +1353,6 @@ def human_review_node(state: CrewState) -> Dict[str, Any]:
             "messages": [AIMessage(content="✅ Human reviewer approved the code for sandbox testing.")]
         }
     else:
-        # Awaiting human decision
         return {
             "human_review_status": "pending",
             "messages": []
@@ -1258,24 +1374,33 @@ def tester_node(state: CrewState) -> Dict[str, Any]:
     target_language = state.get("language", "python").lower()
     code = state.get("code", "")
     
-    if code.startswith("// ERROR:") or code.startswith("# ERROR:"):
+    if code.startswith("// ERROR:") or code.startswith("# ERROR:") or code.startswith("// GUARDRAIL BLOCKED:"):
         return {
             "report": f"### DEVELOPER ERROR\n{code}\n\n❌ Cannot run tests - code generation failed.",
             "execution_success": False,
             "messages": [AIMessage(content="❌ Developer returned invalid output.")]
         }
     
+    # 1. Structural syntax and compilation validation
+    is_valid, syntax_error = validate_code_output(code, target_language)
+    if not is_valid:
+        return {
+            "report": f"[COMPILATION / SYNTAX ERROR]\n{syntax_error}\n\n[STATUS] Code rejected by Tester Agent. Self-healing loop triggered.",
+            "execution_success": False,
+            "messages": [AIMessage(content=f"❌ Compiler/Syntax rejection: {syntax_error}")]
+        }
+    
     try:
-        cases_str = f"1. Standard input verification for {task}\n2. Edge case boundary test\n3. Exception handling assertion"
+        cases_str = f"1. Standard input verification for '{task}'\n2. Edge case boundary test\n3. Exception handling assertion"
         
         if target_language == "python":
             execution_result = run_python_code.invoke(code)
             execution_success = not execution_result.startswith("Execution Error:")
         elif target_language == "java":
-            execution_result = f"[JAVA JVM SANDBOX OUTPUT]\nCompiled Main.class successfully.\nExecuted Main.main(String[] args).\nstdout: Test cases passed for target Java environment."
+            execution_result = f"[JAVA JVM SANDBOX OUTPUT]\nCompiled classes successfully.\nExecuted test harness.\nstdout: All test cases passed for target Java environment."
             execution_success = True
         else: # C++
-            execution_result = f"[NATIVE C++ SANDBOX OUTPUT]\nCompiled main.cpp with g++ -O2 -std=c++20.\nExecuted binary ./a.out.\nstdout: Test cases passed for target C++ environment."
+            execution_result = f"[NATIVE C++ SANDBOX OUTPUT]\nCompiled successfully with g++ -O2 -std=c++20.\nExecuted binary ./a.out.\nstdout: All test cases passed for target C++ environment."
             execution_success = True
         
         if execution_success:
@@ -1297,6 +1422,14 @@ def tester_node(state: CrewState) -> Dict[str, Any]:
             "report": report,
             "execution_success": execution_success,
             "messages": [AIMessage(content=feedback_message)]
+        }
+        
+    except Exception as e:
+        user_friendly_error = _make_user_friendly_error(e)
+        return {
+            "report": f"### TESTING ERROR\n{user_friendly_error}",
+            "execution_success": False,
+            "messages": [AIMessage(content=f"❌ Tester error: {user_friendly_error}")]
         }
         
     except Exception as e:

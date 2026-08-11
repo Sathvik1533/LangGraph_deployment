@@ -245,11 +245,64 @@ function downloadFile(content, filename) {
 const LANGUAGE_EXT = {
     'python': '.py',
     'java': '.java',
-    'cpp': '.cpp'
+    'cpp': '.cpp',
+    'c++': '.cpp',
+    'c': '.c',
+    'javascript': '.js',
+    'js': '.js',
+    'typescript': '.ts',
+    'ts': '.ts'
 };
 
 function getFileExtension(lang) {
     return LANGUAGE_EXT[lang.toLowerCase()] || '.txt';
+}
+
+function generateArtifactFilename(task, language) {
+    const lang = (language || 'python').toLowerCase();
+    const ext = LANGUAGE_EXT[lang] || '.py';
+    const taskLower = (task || '').toLowerCase();
+
+    let base = 'Solution';
+    if (taskLower.includes('linked list') || taskLower.includes('linkedlist') || taskLower.includes('node')) {
+        base = 'LinkedList';
+    } else if (taskLower.includes('email') || taskLower.includes('validate email')) {
+        base = 'EmailValidator';
+    } else if (taskLower.includes('binary search tree') || taskLower.includes('bst')) {
+        base = 'BinarySearchTree';
+    } else if (taskLower.includes('binary search')) {
+        base = 'BinarySearch';
+    } else if (taskLower.includes('stack')) {
+        base = 'Stack';
+    } else if (taskLower.includes('queue')) {
+        base = 'Queue';
+    } else if (taskLower.includes('fibonacci')) {
+        base = 'Fibonacci';
+    } else if (taskLower.includes('palindrome')) {
+        base = 'PalindromeChecker';
+    } else if (taskLower.includes('prime')) {
+        base = 'PrimeChecker';
+    } else if (taskLower.includes('matrix') || taskLower.includes('2d array')) {
+        base = 'MatrixOperations';
+    } else if (taskLower.includes('sort') || taskLower.includes('quicksort') || taskLower.includes('mergesort')) {
+        base = 'SortService';
+    } else if (taskLower.includes('todo')) {
+        base = 'TodoService';
+    } else if (taskLower.includes('reverse')) {
+        base = 'StringReverser';
+    } else if (taskLower.includes('factorial')) {
+        base = 'Factorial';
+    } else if (taskLower.includes('stats') || taskLower.includes('statistics')) {
+        base = 'StatisticsService';
+    } else {
+        const cleanTask = task.replace(/[^a-zA-Z0-9\s]/g, '').trim();
+        const stopWords = ['write', 'create', 'function', 'code', 'python', 'java', 'cpp', 'that', 'with', 'check', 'calculate', 'using', 'return', 'make', 'program', 'implement', 'build', 'for', 'the', 'and', 'from'];
+        const words = cleanTask.split(/\s+/).filter(w => w.length > 2 && !stopWords.includes(w.toLowerCase())).map(w => w.charAt(0).toUpperCase() + w.slice(1));
+        base = words.slice(0, 3).join('') || 'Solution';
+    }
+
+    const formattedName = base.charAt(0).toUpperCase() + base.slice(1);
+    return `${formattedName}${ext}`;
 }
 
 // Command Palette (Cmd + K) Controller

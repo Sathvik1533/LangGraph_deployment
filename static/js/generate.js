@@ -2,12 +2,81 @@
 
 let currentResponseData = null;
 
-const LANG_FILENAME_MAP = {
-    'python': 'solution_code.py',
-    'java': 'Solution.java',
-    'cpp': 'main.cpp',
-    'c++': 'main.cpp'
-};
+function generateArtifactFilename(task, language) {
+    const lang = (language || 'python').toLowerCase();
+    const extMap = {
+        'python': '.py',
+        'java': '.java',
+        'cpp': '.cpp',
+        'c++': '.cpp',
+        'c': '.c',
+        'javascript': '.js',
+        'js': '.js',
+        'typescript': '.ts',
+        'ts': '.ts'
+    };
+    const ext = extMap[lang] || '.py';
+    const taskLower = (task || '').toLowerCase();
+
+    let base = 'Solution';
+    if (taskLower.includes('linked list') || taskLower.includes('linkedlist') || taskLower.includes('node')) {
+        base = 'LinkedList';
+    } else if (taskLower.includes('email') || taskLower.includes('validate email')) {
+        base = 'EmailValidator';
+    } else if (taskLower.includes('binary search tree') || taskLower.includes('bst')) {
+        base = 'BinarySearchTree';
+    } else if (taskLower.includes('binary search')) {
+        base = 'BinarySearch';
+    } else if (taskLower.includes('stack')) {
+        base = 'Stack';
+    } else if (taskLower.includes('queue')) {
+        base = 'Queue';
+    } else if (taskLower.includes('fibonacci')) {
+        base = 'Fibonacci';
+    } else if (taskLower.includes('palindrome')) {
+        base = 'PalindromeChecker';
+    } else if (taskLower.includes('prime')) {
+        base = 'PrimeChecker';
+    } else if (taskLower.includes('matrix') || taskLower.includes('2d array')) {
+        base = 'MatrixOperations';
+    } else if (taskLower.includes('sort') || taskLower.includes('quicksort') || taskLower.includes('mergesort')) {
+        base = 'SortService';
+    } else if (taskLower.includes('todo')) {
+        base = 'TodoService';
+    } else if (taskLower.includes('reverse')) {
+        base = 'StringReverser';
+    } else if (taskLower.includes('factorial')) {
+        base = 'Factorial';
+    } else if (taskLower.includes('stats') || taskLower.includes('statistics')) {
+        base = 'StatisticsService';
+    } else {
+        const cleanTask = task.replace(/[^a-zA-Z0-9\s]/g, '').trim();
+        const stopWords = ['write', 'create', 'function', 'code', 'python', 'java', 'cpp', 'that', 'with', 'check', 'calculate', 'using', 'return', 'make', 'program', 'implement', 'build', 'for', 'the', 'and', 'from'];
+        const words = cleanTask.split(/\s+/).filter(w => w.length > 2 && !stopWords.includes(w.toLowerCase())).map(w => w.charAt(0).toUpperCase() + w.slice(1));
+        base = words.slice(0, 3).join('') || 'Solution';
+    }
+
+    const formattedName = base.charAt(0).toUpperCase() + base.slice(1);
+    return `${formattedName}${ext}`;
+}
+
+function updateCodeEditorHeader() {
+    const taskInput = document.getElementById('taskInput');
+    const languageSelect = document.getElementById('languageSelect');
+    const codeTabHeader = document.querySelector('.code-editor-header span') || document.getElementById('codeEditorHeaderLabel');
+    if (!codeTabHeader) return;
+
+    const task = taskInput ? taskInput.value.trim() : '';
+    const lang = languageSelect ? languageSelect.value : 'python';
+    
+    if (currentResponseData && currentResponseData.filename) {
+        codeTabHeader.textContent = currentResponseData.filename;
+    } else if (task) {
+        codeTabHeader.textContent = generateArtifactFilename(task, lang);
+    } else {
+        codeTabHeader.textContent = generateArtifactFilename('', lang);
+    }
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Load Navbar
@@ -34,11 +103,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Hide inline alert on input
+    // Hide inline alert on input and update tab header
     taskInput?.addEventListener('input', () => {
         const alert = document.getElementById('taskInlineAlert');
         if (alert) alert.style.display = 'none';
         localStorage.setItem('langgraph_last_task', taskInput.value.trim());
+        updateCodeEditorHeader();
     });
 
     // Language Change Listener to Update Tab Header Filename
@@ -46,11 +116,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     languageSelect?.addEventListener('change', () => {
         const lang = languageSelect.value || 'python';
         localStorage.setItem('langgraph_last_lang', lang);
-        const codeTabHeader = document.querySelector('.code-editor-header span');
-        if (codeTabHeader) {
-            codeTabHeader.textContent = LANG_FILENAME_MAP[lang.toLowerCase()] || 'solution_code.txt';
-        }
+        updateCodeEditorHeader();
     });
+
+    updateCodeEditorHeader();
 
     // Bind Form Submission
     const generateBtn = document.getElementById('generateBtn');
@@ -66,18 +135,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Bind Copy & Download
+    // Bind Copy & Download - STRICTLY copies clean source code with generated filename
     document.getElementById('copyCodeBtn')?.addEventListener('click', () => {
         if (currentResponseData && currentResponseData.code) {
-            copyToClipboard(currentResponseData.code);
+            // Strip any accidental markdown before copying
+            const cleanCode = currentResponseData.code
+                .replace(/^```[a-zA-Z]*\n?/gm, '')
+                .replace(/```$/gm, '')
+                .trim();
+            copyToClipboard(cleanCode);
+            showToast('Clean source code copied to clipboard!', 'success');
+        } else {
+            showToast('No code generated yet to copy.', 'warning');
         }
     });
 
     document.getElementById('downloadCodeBtn')?.addEventListener('click', () => {
         if (currentResponseData && currentResponseData.code) {
+            const task = document.getElementById('taskInput')?.value || 'Task';
             const lang = document.getElementById('languageSelect')?.value || 'python';
-            const ext = getFileExtension(lang);
-            downloadFile(currentResponseData.code, `solution${ext}`);
+            const filename = currentResponseData.filename || generateArtifactFilename(task, lang);
+            const cleanCode = currentResponseData.code
+                .replace(/^```[a-zA-Z]*\n?/gm, '')
+                .replace(/```$/gm, '')
+                .trim();
+            downloadFile(cleanCode, filename);
+            showToast(`Downloaded ${filename} successfully!`, 'success');
+        } else {
+            showToast('No code generated yet to download.', 'warning');
         }
     });
 });
@@ -120,9 +205,7 @@ async function handleGenerate() {
     localStorage.setItem('langgraph_last_lang', language);
 
     // Update code tab filename
-    if (codeTabHeader) {
-        codeTabHeader.textContent = LANG_FILENAME_MAP[language.toLowerCase()] || 'solution_code.txt';
-    }
+    updateCodeEditorHeader();
 
     // UI Loading State
     generateBtn.disabled = true;
@@ -518,9 +601,7 @@ async function handleConvert(targetLang) {
     if (valSpan) valSpan.textContent = langLabels[targetLang] || targetLang;
 
     // Update code tab filename
-    if (codeTabHeader) {
-        codeTabHeader.textContent = LANG_FILENAME_MAP[targetLang.toLowerCase()] || 'solution_code.txt';
-    }
+    updateCodeEditorHeader();
 
     // Show converting status
     statusBanner.style.display = 'flex';

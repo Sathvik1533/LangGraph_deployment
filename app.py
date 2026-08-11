@@ -41,7 +41,7 @@ import uuid
 from collections import defaultdict, deque
 import os
 
-from agent import agent, CrewState, _circuit_breaker_open, _circuit_breaker_failures
+from agent import agent, CrewState, _circuit_breaker_open, _circuit_breaker_failures, generate_artifact_filename
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
 from guardrails import InputGuard, OutputGuard, guardrail_stats
 
@@ -227,7 +227,8 @@ class HITLActionRequest(BaseModel):
 class AgentResponse(BaseModel):
     """Response model with full execution details"""
     success: bool = Field(description="Whether the agent workflow completed successfully")
-    code: Optional[str] = Field(None, description="Generated Python code")
+    code: Optional[str] = Field(None, description="Generated clean source code")
+    filename: Optional[str] = Field(None, description="Dynamic clean source code artifact filename")
     report: Optional[str] = Field(None, description="Detailed execution report with test results")
     execution_success: bool = Field(False, description="Whether the code executed without errors")
     iterations: int = Field(0, description="Number of self-correction iterations")
@@ -520,6 +521,9 @@ async def invoke_agent(request: TaskRequest, req: Request):
         redis_url = os.getenv("REDIS_URL", "").strip()
         checkpointed = bool(redis_url) or request.hitl_mode
         
+        # Calculate dynamic, professional filename
+        artifact_filename = generate_artifact_filename(request.task, request.language or "python")
+
         # ====================================================================
         # HUMAN-IN-THE-LOOP (HITL) GATE INTERCEPTION
         # ====================================================================
@@ -537,6 +541,7 @@ async def invoke_agent(request: TaskRequest, req: Request):
                 "task": request.task,
                 "language": request.language or "python",
                 "code": draft_code,
+                "filename": artifact_filename,
                 "max_iterations": request.max_iterations,
                 "iterations": 1,
                 "status": "awaiting_human_review",
@@ -548,6 +553,7 @@ async def invoke_agent(request: TaskRequest, req: Request):
             return AgentResponse(
                 success=True,
                 code=draft_code,
+                filename=artifact_filename,
                 report=(
                     "⏸️ [HUMAN-IN-THE-LOOP GATE ACTIVE]\n"
                     "Execution paused after Developer Agent drafted code.\n"
@@ -584,6 +590,7 @@ async def invoke_agent(request: TaskRequest, req: Request):
                 return AgentResponse(
                     success=False,
                     code=f"// GUARDRAIL BLOCKED: {output_report.reason}",
+                    filename=artifact_filename,
                     report=f"### 🛡️ Output Guardrail Alert\n{output_report.reason}\n\nBlocked by: {output_report.blocked_by}\nSeverity: {output_report.severity.value}",
                     execution_success=False,
                     iterations=result.get("iterations", 0),
@@ -601,6 +608,7 @@ async def invoke_agent(request: TaskRequest, req: Request):
         return AgentResponse(
             success=result.get("execution_success", False),
             code=result.get("code"),
+            filename=artifact_filename,
             report=result.get("report"),
             execution_success=result.get("execution_success", False),
             iterations=result.get("iterations", 0),
@@ -619,6 +627,7 @@ async def invoke_agent(request: TaskRequest, req: Request):
         
         # Convert to user-friendly error
         user_friendly_error = _make_user_friendly_error(e)
+        fallback_filename = generate_artifact_filename(request.task, request.language or "python")
         
         # Graceful Degradation (Production Pattern)
         if "result" in locals() and result and result.get("code"):
@@ -626,6 +635,7 @@ async def invoke_agent(request: TaskRequest, req: Request):
             return AgentResponse(
                 success=False,
                 code=result.get("code"),
+                filename=fallback_filename,
                 report=result.get("report", f"### ERROR\n{user_friendly_error}"),
                 execution_success=False,
                 iterations=result.get("iterations", 0),
@@ -658,14 +668,16 @@ async def handle_hitl_action(req_body: HITLActionRequest):
     
     session = hitl_sessions.get(req_body.thread_id)
     target_lang = req_body.language or (session.get("language") if session else "python")
+    task_desc = session.get("task", "Code Generation") if session else "Code Generation"
+    artifact_filename = generate_artifact_filename(task_desc, target_lang)
     
     if not session and req_body.action != "abort":
-        # Fallback if session expired: create mock context
         session = {
             "thread_id": req_body.thread_id,
-            "task": "Task execution",
+            "task": task_desc,
             "language": target_lang,
             "code": req_body.edited_code or "",
+            "filename": artifact_filename,
             "iterations": 1,
             "max_iterations": 3
         }
@@ -679,6 +691,7 @@ async def handle_hitl_action(req_body: HITLActionRequest):
         return AgentResponse(
             success=False,
             code=session.get("code") if session else None,
+            filename=artifact_filename,
             report="🛑 [WORKFLOW ABORTED]\nHuman reviewer cancelled execution at the review gate.",
             execution_success=False,
             iterations=session.get("iterations", 1) if session else 1,
@@ -715,6 +728,7 @@ async def handle_hitl_action(req_body: HITLActionRequest):
         return AgentResponse(
             success=True,
             code=revised_code,
+            filename=artifact_filename,
             report=f"🔄 [REVISED BY AI BASED ON HUMAN FEEDBACK]\nReviewer Feedback Applied: \"{feedback_text}\"\nPlease review the updated draft.",
             execution_success=False,
             iterations=session["iterations"],
@@ -771,6 +785,7 @@ async def handle_hitl_action(req_body: HITLActionRequest):
         return AgentResponse(
             success=is_success,
             code=final_code,
+            filename=artifact_filename,
             report=test_result.get("report", "Verification complete."),
             execution_success=is_success,
             iterations=session.get("iterations", 1),
