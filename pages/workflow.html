@@ -2463,7 +2463,19 @@
             liveEventCount++;
 
             const canonicalNode = normalizeNodeKey(data.node);
-            const timeStr = data.timestamp || new Date().toLocaleTimeString();
+            let timeStr = new Date().toLocaleTimeString();
+            if (data.timestamp) {
+                try {
+                    const parsed = new Date(data.timestamp);
+                    if (!isNaN(parsed.getTime())) {
+                        timeStr = parsed.toLocaleTimeString();
+                    } else {
+                        timeStr = data.timestamp;
+                    }
+                } catch (e) {
+                    timeStr = data.timestamp;
+                }
+            }
             const nodeUpper = canonicalNode.toUpperCase();
             const labelMap = { 'python': 'PYTHON 3.11', 'java': 'JAVA 17', 'cpp': 'C++ 20' };
 
@@ -2632,12 +2644,32 @@
                     setElemText('telemetryStatusBadge', 'STATUS: Tests Passed');
                     const tBadge = document.getElementById('telemetryStatusBadge');
                     if (tBadge) tBadge.className = 'cyber-badge cyber-badge-emerald';
+
+                    setElemText('simStepStatus', 'WORKFLOW COMPLETED SUCCESSFULLY');
+                    setElemText('traceGuardrailDecision', '✅ APPROVED (PASS): Security scanners passed all checks.');
+                    setElemText('traceDeveloperInput', '🚀 APPROVED: Task payload synthesized & verified.');
+                    setElemText('inputTraceBadge', 'PAYLOAD: APPROVED & VERIFIED AT END');
+                    const tb = document.getElementById('inputTraceBadge');
+                    if (tb) tb.className = 'cyber-badge cyber-badge-emerald';
+
+                    if (data.filename) {
+                        setElemText('activeArtifactBadge', data.filename);
+                        setElemText('workflowCodeFilename', `SOURCE ARTIFACT: ${data.filename}`);
+                    }
+
+                    if (followLiveNode) {
+                        selectedInspectorNode = 'end';
+                        updateInspectorView('end');
+                    }
+
                     showToast(`🎉 Execution Completed Successfully!`, 'success');
                 } else {
                     highlightLiveNode('END', 'failed');
                     setElemText('telemetryStatusBadge', 'STATUS: COMPLETED (FAILED)');
                     const tBadge = document.getElementById('telemetryStatusBadge');
                     if (tBadge) tBadge.className = 'cyber-badge cyber-badge-amber';
+
+                    setElemText('simStepStatus', 'WORKFLOW COMPLETED WITH ISSUES');
                     showToast(`⚠️ Workflow completed with test issues.`, 'warning');
                 }
 

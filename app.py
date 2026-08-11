@@ -1136,7 +1136,7 @@ async def stream_workflow_events(
                     "event": "paused",
                     "node": node_name,
                     "status": "paused",
-                    "timestamp": time.strftime("%H:%M:%S"),
+                    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                     "thread_id": tid,
                     "message": f"Workflow execution paused at {node_name} node."
                 }
@@ -1155,7 +1155,7 @@ async def stream_workflow_events(
                 "event": event_type,
                 "node": node,
                 "status": status,
-                "timestamp": time.strftime("%H:%M:%S"),
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "task": task_text,
                 "task_intent": task_intent_val,
                 "language": target_lang,
