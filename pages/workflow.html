@@ -99,43 +99,53 @@
                 <p class="page-subtitle">Real-time dynamic visualization of LangGraph state routing, sandbox assertions, defect trapping, and self-healing feedback loops.</p>
             </div>
 
-            <!-- Playback & Speed Controls -->
-            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-                <button id="liveApiRunBtn" class="cyber-btn cyber-btn-primary" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); border-color: #059669;" onclick="runLiveBackendWorkflow()" data-tooltip="LIVE API: Sends task to backend /generate endpoint and animates actual execution results.">
+            <!-- Playback & Execution Controls Toolbar -->
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                <button id="liveApiRunBtn" class="cyber-btn cyber-btn-primary" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); border-color: #059669;" onclick="runLiveBackendWorkflow()" data-tooltip="LIVE API: Sends task to backend /stream SSE endpoint for real multi-agent execution.">
                     <span class="material-symbols-outlined" style="font-size: 18px;">bolt</span>
                     <span>LIVE: Execute API</span>
                 </button>
-                <button id="simPlayBtn" class="cyber-btn cyber-btn-primary" onclick="togglePlaySimulation()" data-tooltip="SIMULATION: Play animated state machine demonstration with step-by-step telemetry.">
+                
+                <button id="simPlayBtn" class="cyber-btn cyber-btn-primary" onclick="togglePlaySimulation()" data-tooltip="SIMULATION: Runs deterministic step-by-step state machine simulation.">
                     <span class="material-symbols-outlined" id="simPlayIcon">play_circle</span>
                     <span id="simPlayText">SIMULATION: Play</span>
                 </button>
-                
-                <!-- Speed Selector -->
-                <div style="display: flex; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 2px 4px; align-items: center; gap: 4px;">
-                    <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); padding-left: 6px;">SPEED:</span>
-                    <button class="speed-btn active" id="speed1x" onclick="setSimSpeed(1, this)" style="border: none; background: transparent; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 12px; cursor: pointer; color: var(--accent-indigo);">1x</button>
-                    <button class="speed-btn" id="speed2x" onclick="setSimSpeed(0.5, this)" style="border: none; background: transparent; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 12px; cursor: pointer; color: var(--text-muted);">2x</button>
-                    <button class="speed-btn" id="speedSlow" onclick="setSimSpeed(2, this)" style="border: none; background: transparent; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 12px; cursor: pointer; color: var(--text-muted);">0.5x</button>
-                </div>
 
-                <!-- Sound FX Toggle -->
-                <button id="soundToggleBtn" class="cyber-btn cyber-btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="toggleSoundFX()" data-tooltip="Toggle Audio Feedback: Play subtle audio chimes on state transitions.">
-                    <span class="material-symbols-outlined" id="soundIcon" style="font-size: 16px;">volume_up</span>
-                    <span id="soundText">Sound ON</span>
+                <!-- Pause / Resume Control -->
+                <button id="pauseResumeBtn" class="cyber-btn cyber-btn-secondary" onclick="togglePauseResumeExecution()" data-tooltip="Pause/Resume: Temporarily halt or resume active workflow event processing.">
+                    <span class="material-symbols-outlined" id="pauseResumeIcon">pause_circle</span>
+                    <span id="pauseResumeText">Pause</span>
                 </button>
 
-                <button class="cyber-btn cyber-btn-secondary" onclick="prevSimStep()" data-tooltip="Previous Step: Step back one node.">
+                <!-- Real STOP Control -->
+                <button id="stopRunBtn" class="cyber-btn cyber-btn-secondary" style="border-color: #fca5a5; color: #dc2626; background: #fef2f2;" onclick="stopActiveWorkflowRun()" data-tooltip="STOP: Terminate and cancel current execution run immediately.">
+                    <span class="material-symbols-outlined" style="font-size: 18px; color: #dc2626;">stop_circle</span>
+                    <span>Stop</span>
+                </button>
+
+                <!-- Step Backward / Forward -->
+                <button class="cyber-btn cyber-btn-secondary" onclick="prevSimStep()" data-tooltip="Previous Step: Rewind to previous execution trace snapshot.">
                     <span class="material-symbols-outlined">skip_previous</span>
-                    Back
+                    <span>Back</span>
                 </button>
-                <button class="cyber-btn cyber-btn-secondary" onclick="nextSimStep()" data-tooltip="Next Step: Step forward to the next node.">
+                
+                <button class="cyber-btn cyber-btn-secondary" onclick="nextSimStep()" data-tooltip="Next Step: Advance to next execution trace snapshot.">
                     <span class="material-symbols-outlined">skip_next</span>
-                    Next
+                    <span>Next</span>
                 </button>
-                <button class="cyber-btn cyber-btn-secondary" onclick="resetCurrentScenario()" data-tooltip="Reset: Restart current scenario from Step 1.">
+                
+                <button class="cyber-btn cyber-btn-secondary" onclick="resetCurrentScenario()" data-tooltip="Reset: Clear execution state and return graph to clean IDLE state.">
                     <span class="material-symbols-outlined">restart_alt</span>
-                    Reset
+                    <span>Reset</span>
                 </button>
+
+                <!-- Speed Selector -->
+                <div style="display: flex; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 2px 6px; align-items: center; gap: 4px;">
+                    <span style="font-size: 10.5px; font-weight: 700; color: var(--text-muted); padding-left: 4px;">SPEED:</span>
+                    <button class="speed-btn active" id="speed1x" onclick="setSimSpeed(1, this)" style="border: none; background: transparent; font-size: 11px; font-weight: 700; padding: 4px 6px; border-radius: 12px; cursor: pointer; color: var(--accent-indigo);">1x</button>
+                    <button class="speed-btn" id="speed2x" onclick="setSimSpeed(0.5, this)" style="border: none; background: transparent; font-size: 11px; font-weight: 700; padding: 4px 6px; border-radius: 12px; cursor: pointer; color: var(--text-muted);">2x</button>
+                    <button class="speed-btn" id="speedSlow" onclick="setSimSpeed(2, this)" style="border: none; background: transparent; font-size: 11px; font-weight: 700; padding: 4px 6px; border-radius: 12px; cursor: pointer; color: var(--text-muted);">0.5x</button>
+                </div>
             </div>
         </header>
 
@@ -233,18 +243,34 @@
             </div>
         </div>
 
+        <!-- Current Task Context Banner (Exact User Specification) -->
+        <div id="pipelineTaskContextBanner" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #ffffff; border-radius: var(--radius-md); padding: 14px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; border: 1px solid #334155; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span class="material-symbols-outlined" style="color: #38bdf8; font-size: 24px;">terminal</span>
+                <div>
+                    <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">EXECUTING USER TASK SPECIFICATION:</div>
+                    <div style="font-size: 14.5px; font-weight: 700; color: #38bdf8;" id="activeTaskDisplayTitle">"Write a function to check if a number is prime"</div>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="cyber-badge cyber-badge-indigo" id="activeTaskLangBadge">JAVA 17</span>
+                <span class="cyber-badge cyber-badge-terracotta" id="activeRunIdBadge">ID: run_1786449000_a1b2</span>
+            </div>
+        </div>
+
         <!-- Supercharged Visual State Canvas with Live Traveling Packets -->
         <div class="studio-card" style="margin-bottom: 24px; position: relative; background: #ffffff; border: 1px solid #cbd5e1; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);">
             
-            <!-- Real-Time Telemetry Ribbon -->
+            <!-- Explicit Telemetry Ribbon -->
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 10px 16px;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span class="cyber-badge cyber-badge-indigo" id="graphSchemaBadge">SCHEMA: StateGraph(CrewState)</span>
-                    <span class="cyber-badge cyber-badge-terracotta" id="graphLoopBadge">STEP 1 / 8</span>
-                    <span class="cyber-badge cyber-badge-emerald" id="liveAgentLock">AGENT: START</span>
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <span class="cyber-badge cyber-badge-indigo" id="telemetryModeBadge">MODE: LIVE</span>
+                    <span class="cyber-badge cyber-badge-emerald" id="telemetryStatusBadge">STATUS: IDLE</span>
+                    <span class="cyber-badge cyber-badge-terracotta" id="telemetryAgentBadge">AGENT: START</span>
+                    <span class="cyber-badge" id="telemetryIterationBadge" style="background: #e2e8f0; color: #334155; font-weight: 700;">ITERATION: 0 / 3</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="font-size: 13.5px; font-weight: 700; color: #0f172a;" id="simStepStatus">Step 1 of 8: START Node (Workflow Initialized)</span>
+                    <span style="font-size: 13.5px; font-weight: 700; color: #0f172a;" id="simStepStatus">Enter a task specification and click LIVE or SIMULATION to begin</span>
                 </div>
             </div>
 
@@ -1474,6 +1500,8 @@
             applyCustomTask();
         }
 
+        let isExecutionPaused = false;
+
         document.addEventListener('DOMContentLoaded', async () => {
             const navbarRes = await fetch('/templates/navigation.html');
             if (navbarRes.ok) {
@@ -1482,24 +1510,49 @@
             }
 
             // ============================================================
-            // TASK SYNCHRONIZATION — Single Source of Truth
-            // Priority: 1) getCurrentWorkflowRun()  2) localStorage keys  3) empty
+            // URL ROUTE & RUN CONTEXT PARSER
             // ============================================================
+            const urlParams = new URLSearchParams(window.location.search);
+            const queryRunId = urlParams.get('run');
+            const queryTask = urlParams.get('task');
+            const queryLang = urlParams.get('lang');
+            const queryMode = urlParams.get('mode') || 'live';
+            const autoRun = urlParams.get('autoRun') === 'true';
+            const hitlModeParam = urlParams.get('hitl') === 'true';
+
             const currentRun = getCurrentWorkflowRun();
             const savedTask = localStorage.getItem('ai_workflow_current_task') || localStorage.getItem('langgraph_last_task');
             const savedLang = localStorage.getItem('ai_workflow_current_lang') || localStorage.getItem('langgraph_last_lang');
 
-            // Pick the most recent source
-            if (currentRun && currentRun.task && currentRun.task.trim()) {
+            // Pick authoritative task & language
+            if (queryTask && queryTask.trim()) {
+                activeTask = queryTask.trim();
+            } else if (currentRun && currentRun.task && currentRun.task.trim()) {
                 activeTask = currentRun.task.trim();
-                activeLanguage = (currentRun.language || 'python').toLowerCase();
             } else if (savedTask && savedTask.trim()) {
                 activeTask = savedTask.trim();
-                activeLanguage = (savedLang || 'python').toLowerCase();
             }
-            // If activeTask is still empty, leave it — the user must enter a task
 
-            // Populate UI fields
+            if (queryLang) {
+                activeLanguage = queryLang.toLowerCase();
+            } else if (currentRun && currentRun.language) {
+                activeLanguage = currentRun.language.toLowerCase();
+            } else if (savedLang) {
+                activeLanguage = savedLang.toLowerCase();
+            }
+
+            const activeRunId = queryRunId || (currentRun ? currentRun.runId : ('run_' + Date.now()));
+
+            // Update Task Context Banner
+            const titleEl = document.getElementById('activeTaskDisplayTitle');
+            const langBadge = document.getElementById('activeTaskLangBadge');
+            const runIdBadge = document.getElementById('activeRunIdBadge');
+
+            if (titleEl) titleEl.textContent = activeTask ? `"${activeTask}"` : '"No task specified — enter a task to begin"';
+            if (langBadge) langBadge.textContent = activeLanguage.toUpperCase();
+            if (runIdBadge) runIdBadge.textContent = `ID: ${activeRunId.substring(0, 18)}`;
+
+            // Populate input field
             const taskInput = document.getElementById('canvasTaskInput');
             if (taskInput && activeTask) taskInput.value = activeTask;
 
@@ -1511,65 +1564,120 @@
                 valSpan.textContent = labelMap[activeLanguage] || activeLanguage.toUpperCase();
             }
 
+            // Update Telemetry Ribbon
+            document.getElementById('telemetryModeBadge').textContent = `MODE: ${queryMode.toUpperCase()}`;
             document.getElementById('canvasLangBadge').textContent = `TARGET: ${activeLanguage.toUpperCase()}`;
 
-            // ============================================================
-            // LIVE RUN STATE — If a recent run exists, reflect it
-            // ============================================================
-            if (currentRun && currentRun.generatedCode && (Date.now() - (currentRun.timestamp ? new Date(currentRun.timestamp).getTime() : 0) < 600000)) {
-                if (currentRun.generatedCode) {
-                    document.getElementById('activeCodeOutput').textContent = currentRun.generatedCode;
+            // Auto-scroll ONCE if autoRun is active
+            if (autoRun) {
+                setTimeout(() => {
+                    document.getElementById('stateGraphSvg')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
+
+                if (queryMode === 'simulation') {
+                    togglePlaySimulation();
+                } else {
+                    runLiveBackendWorkflow(activeRunId, activeTask, activeLanguage, hitlModeParam);
                 }
-                if (currentRun.testResult) {
-                    document.getElementById('streamLogOutput').textContent = `[LIVE RUN]\nTask: ${currentRun.task}\nLanguage: ${currentRun.language}\nStatus: ${currentRun.status}\nIterations: ${currentRun.iteration || 1}\n\n[TEST REPORT]\n${currentRun.testResult}`;
-                }
+            } else if (currentRun && currentRun.generatedCode) {
+                // Restore completed or saved run context from passive storage
+                if (currentRun.generatedCode) document.getElementById('activeCodeOutput').textContent = currentRun.generatedCode;
+                if (currentRun.testResult) document.getElementById('streamLogOutput').textContent = `[RESTORED RUN: ${activeRunId}]\nTask: ${currentRun.task}\nLanguage: ${currentRun.language}\nStatus: ${currentRun.status}\n\n[REPORT]\n${currentRun.testResult}`;
                 document.getElementById('activeStateOutput').textContent = JSON.stringify(currentRun, null, 2);
-                
-                if (currentRun.status === 'SUCCESS') {
+
+                document.getElementById('telemetryStatusBadge').textContent = `STATUS: ${currentRun.status || 'COMPLETED'}`;
+                if (currentRun.status === 'SUCCESS' || currentRun.status === 'COMPLETED') {
                     highlightLiveNode('END', 'success');
-                    document.getElementById('simStepStatus').textContent = `LIVE: Tests Passed (${currentRun.iteration || 1} attempt(s))`;
-                    document.getElementById('graphLoopBadge').textContent = `RUN: COMPLETE ✓`;
-                } else if (currentRun.status === 'PAUSED_FOR_REVIEW') {
-                    highlightLiveNode('ReviewGate', 'running');
-                    document.getElementById('simStepStatus').textContent = `LIVE: Paused for Human Review`;
-                    document.getElementById('graphLoopBadge').textContent = `HITL: REVIEW REQUIRED`;
                 } else {
                     renderCurrentStep();
                 }
-            } else {
-                // No live run — show default simulation state
-                if (activeTask) {
-                    renderCurrentStep();
-                } else {
-                    // No task set at all — show a helpful initial state
-                    document.getElementById('simStepStatus').textContent = 'Enter a task and click LIVE or SIMULATION to begin';
-                    document.getElementById('graphLoopBadge').textContent = 'READY';
-                    document.getElementById('streamLogOutput').textContent = '// Waiting for task specification...\n// Enter a task above and click "LIVE: Execute API" for real backend execution\n// or "SIMULATION: Play" for a deterministic walkthrough.';
-                    document.getElementById('activeCodeOutput').textContent = '// No code generated yet. Start a workflow to see generated code here.';
-                    document.getElementById('activeStateOutput').textContent = JSON.stringify({ status: 'IDLE', task: null, language: activeLanguage }, null, 2);
-                }
+            } else if (activeTask) {
+                renderCurrentStep();
             }
         });
 
         // =========================================================================
-        // REAL-TIME SERVER-SENT EVENTS (SSE) LIVE EXECUTION ENGINE
+        // EXECUTION CONTROLS: PAUSE, RESUME, STOP, RESET
+        // =========================================================================
+        function togglePauseResumeExecution() {
+            const btn = document.getElementById('pauseResumeBtn');
+            const icon = document.getElementById('pauseResumeIcon');
+            const text = document.getElementById('pauseResumeText');
+            const badge = document.getElementById('telemetryStatusBadge');
+
+            isExecutionPaused = !isExecutionPaused;
+
+            if (isExecutionPaused) {
+                if (icon) icon.textContent = 'play_arrow';
+                if (text) text.textContent = 'Resume';
+                if (badge) {
+                    badge.textContent = 'STATUS: PAUSED';
+                    badge.className = 'cyber-badge cyber-badge-amber';
+                }
+                showToast('⏸️ Execution paused (resumable)', 'info');
+            } else {
+                if (icon) icon.textContent = 'pause_circle';
+                if (text) text.textContent = 'Pause';
+                if (badge) {
+                    badge.textContent = 'STATUS: RUNNING';
+                    badge.className = 'cyber-badge cyber-badge-emerald';
+                }
+                showToast('▶️ Resuming execution', 'info');
+            }
+        }
+
+        function stopActiveWorkflowRun() {
+            if (liveEventSource) {
+                liveEventSource.close();
+                liveEventSource = null;
+            }
+            if (playInterval) {
+                clearInterval(playInterval);
+                playInterval = null;
+            }
+
+            const btn = document.getElementById('liveApiRunBtn');
+            const simBtn = document.getElementById('simPlayBtn');
+            if (btn) btn.disabled = false;
+            if (simBtn) simBtn.disabled = false;
+
+            const badge = document.getElementById('telemetryStatusBadge');
+            if (badge) {
+                badge.textContent = 'STATUS: STOPPED';
+                badge.className = 'cyber-badge cyber-badge-amber';
+            }
+
+            document.getElementById('simStepStatus').textContent = 'Workflow execution stopped by user.';
+            document.getElementById('streamLogOutput').textContent += `\n[${new Date().toLocaleTimeString()}] 🛑 [STOP] Execution run cancelled by user.\n`;
+            
+            showToast('🛑 Active workflow run stopped', 'warning');
+        }
+
+        // =========================================================================
+        // REAL-TIME SERVER-SENT EVENTS (SSE) LIVE AUTHORITATIVE ENGINE
         // =========================================================================
         let liveEventSource = null;
         let activeLiveThreadId = null;
         let liveEventCount = 0;
 
-        async function runLiveBackendWorkflow() {
+        async function runLiveBackendWorkflow(overrideRunId, overrideTask, overrideLang, overrideHitl) {
             const btn = document.getElementById('liveApiRunBtn');
             const simBtn = document.getElementById('simPlayBtn');
-            const origHtml = btn.innerHTML;
+            const origHtml = btn ? btn.innerHTML : '';
 
-            const inputTask = (document.getElementById('canvasTaskInput')?.value || activeTask).trim();
-            const lang = activeLanguage || 'python';
-            const hitlMode = (currentScenario === 'hitl_gate');
+            const inputTask = (overrideTask || document.getElementById('canvasTaskInput')?.value || activeTask).trim();
+            const lang = overrideLang || activeLanguage || 'python';
+            const hitlMode = overrideHitl || (currentScenario === 'hitl_gate');
+            const runId = overrideRunId || `run_${Date.now()}`;
 
             if (!inputTask) {
                 showToast('Please enter a task specification first', 'warning');
                 return;
+            }
+
+            // Minimize tour if open so it never covers execution
+            if (typeof minimizeTourForExecution === 'function') {
+                minimizeTourForExecution();
             }
 
             // Stop simulation if running
@@ -1580,23 +1688,35 @@
                 document.getElementById('simPlayText').textContent = 'SIMULATION: Play';
             }
 
-            btn.disabled = true;
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span class="material-symbols-outlined spin" style="font-size: 18px;">sync</span><span>RUNNING...</span>`;
+            }
             if (simBtn) simBtn.disabled = true;
-            btn.innerHTML = `<span class="material-symbols-outlined spin" style="font-size: 18px;">sync</span><span>RUNNING...</span>`;
 
             resetGraphVisuals();
             liveEventCount = 0;
+            isExecutionPaused = false;
             
-            document.getElementById('simStepStatus').textContent = `LIVE: START Node (Workflow Initialized)`;
-            document.getElementById('graphLoopBadge').textContent = `STEP 1 — START`;
-            document.getElementById('streamLogOutput').textContent = `[${new Date().toLocaleTimeString()}] 🚀 Initiating Live LangGraph SSE Stream...\n[${new Date().toLocaleTimeString()}] 📋 Task: "${inputTask}" | Language: ${lang.toUpperCase()} | HITL: ${hitlMode ? 'ENABLED' : 'OFF'}\n`;
+            document.getElementById('telemetryModeBadge').textContent = 'MODE: LIVE';
+            document.getElementById('telemetryStatusBadge').textContent = 'STATUS: RUNNING';
+            document.getElementById('telemetryStatusBadge').className = 'cyber-badge cyber-badge-emerald';
+            document.getElementById('telemetryAgentBadge').textContent = 'AGENT: START';
+            document.getElementById('telemetryIterationBadge').textContent = 'ITERATION: 1 / 3';
+
+            document.getElementById('activeTaskDisplayTitle').textContent = `"${inputTask}"`;
+            document.getElementById('activeTaskLangBadge').textContent = lang.toUpperCase();
+            document.getElementById('activeRunIdBadge').textContent = `ID: ${runId.substring(0, 18)}`;
+
+            document.getElementById('simStepStatus').textContent = `LIVE: Initializing workflow for task: "${inputTask.substring(0, 35)}..."`;
+            document.getElementById('streamLogOutput').textContent = `[${new Date().toLocaleTimeString()}] 🚀 Initiating Live SSE Event Stream...\n[${new Date().toLocaleTimeString()}] 📋 Run ID: ${runId} | Task: "${inputTask}" | Language: ${lang.toUpperCase()}\n`;
             document.getElementById('activeCodeOutput').textContent = '// Awaiting live generation from Developer Agent...';
-            document.getElementById('activeStateOutput').textContent = '{\n  "status": "RUNNING"\n}';
+            document.getElementById('activeStateOutput').textContent = JSON.stringify({ runId, task: inputTask, language: lang, status: 'RUNNING' }, null, 2);
             
-            showToast('🚀 Live LangGraph execution started...', 'info');
+            showToast(`🚀 Live execution started (ID: ${runId.substring(0, 10)})`, 'info');
 
             try {
-                const streamUrl = `/stream?task=${encodeURIComponent(inputTask)}&language=${encodeURIComponent(lang)}&max_iterations=3&hitl_mode=${hitlMode}`;
+                const streamUrl = `/stream?task=${encodeURIComponent(inputTask)}&language=${encodeURIComponent(lang)}&max_iterations=3&hitl_mode=${hitlMode}&thread_id=${encodeURIComponent(runId)}`;
                 
                 if (liveEventSource) {
                     liveEventSource.close();
@@ -1605,9 +1725,10 @@
                 liveEventSource = new EventSource(streamUrl);
 
                 liveEventSource.onmessage = (event) => {
+                    if (isExecutionPaused) return; // Honor Pause control
                     try {
                         const data = JSON.parse(event.data);
-                        handleLiveSseMessage(data, btn, simBtn, origHtml, inputTask, lang);
+                        handleLiveSseMessage(data, btn, simBtn, origHtml, inputTask, lang, runId);
                     } catch (err) {
                         console.error('SSE JSON parse error:', err, event.data);
                     }
@@ -1619,49 +1740,53 @@
                         liveEventSource.close();
                         liveEventSource = null;
                     }
-                    btn.disabled = false;
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = origHtml;
+                    }
                     if (simBtn) simBtn.disabled = false;
-                    btn.innerHTML = origHtml;
                 };
 
             } catch (error) {
                 showToast(`Failed to start live stream: ${error.message}`, 'error');
-                btn.disabled = false;
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origHtml;
+                }
                 if (simBtn) simBtn.disabled = false;
-                btn.innerHTML = origHtml;
             }
         }
 
-        function handleLiveSseMessage(data, btn, simBtn, origHtml, task, lang) {
+        function handleLiveSseMessage(data, btn, simBtn, origHtml, task, lang, runId) {
             liveEventCount++;
             
-            // 1. Highlight Visual Graph Node
+            // 1. Highlight Visual Graph Node (Event-Driven)
             if (data.node) {
                 highlightLiveNode(data.node, data.status);
             }
 
-            // 2. Dynamic Step & Status
+            // 2. Dynamic Telemetry Ribbon & Agent Lock
             const nodeNameUpper = (data.node || 'NODE').toUpperCase();
-            document.getElementById('graphLoopBadge').textContent = `STEP ${liveEventCount} — ${nodeNameUpper}`;
+            document.getElementById('telemetryAgentBadge').textContent = `AGENT: ${nodeNameUpper}`;
+            document.getElementById('telemetryIterationBadge').textContent = `ITERATION: ${data.iteration || 1} / 3`;
 
             if (data.message) {
                 document.getElementById('simStepStatus').textContent = `LIVE: ${data.message}`;
-            }
-            if (data.node) {
-                const lockEl = document.getElementById('liveAgentLock');
-                if (lockEl) lockEl.textContent = `AGENT: ${nodeNameUpper} (${(data.status || 'ACTIVE').toUpperCase()})`;
             }
 
             // 3. Append to Real Execution Log
             const timeStr = data.timestamp || new Date().toLocaleTimeString();
             const logLine = `[${timeStr}] [${nodeNameUpper}] ${data.message || ''}\n`;
             const logBox = document.getElementById('streamLogOutput');
-            logBox.textContent += logLine;
-            logBox.scrollTop = logBox.scrollHeight;
+            if (logBox) {
+                logBox.textContent += logLine;
+                logBox.scrollTop = logBox.scrollHeight;
+            }
 
-            // 4. Update Active Code
+            // 4. Update Active Code (Clean source code only)
             if (data.code) {
-                document.getElementById('activeCodeOutput').textContent = data.code;
+                const cleanCode = data.code.replace(/^```[a-zA-Z]*\n?/gm, '').replace(/```$/gm, '').trim();
+                document.getElementById('activeCodeOutput').textContent = cleanCode;
             }
 
             // 5. Update State Snapshot
@@ -1679,30 +1804,19 @@
                     liveEventSource.close();
                     liveEventSource = null;
                 }
-                btn.disabled = false;
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origHtml;
+                }
                 if (simBtn) simBtn.disabled = false;
-                btn.innerHTML = origHtml;
 
                 highlightLiveNode('ReviewGate', 'running');
-                document.getElementById('graphLoopBadge').textContent = `STEP ${liveEventCount} — HUMAN REVIEW GATE`;
-                document.getElementById('simStepStatus').textContent = `LIVE: Paused for Human Review`;
+                document.getElementById('telemetryStatusBadge').textContent = 'STATUS: WAITING FOR HUMAN REVIEW';
+                document.getElementById('telemetryStatusBadge').className = 'cyber-badge cyber-badge-indigo';
+                document.getElementById('simStepStatus').textContent = `LIVE: Paused at Human Review Gate`;
 
-                // Update single source of truth
-                setCurrentWorkflowRun({
-                    runId: `run_${Date.now()}`,
-                    task: task,
-                    language: lang,
-                    currentNode: 'ReviewGate',
-                    status: 'PAUSED_FOR_REVIEW',
-                    generatedCode: data.code || '',
-                    testResult: 'Awaiting human review approval before sandbox testing.',
-                    iteration: data.iteration || 1,
-                    humanReviewStatus: 'awaiting_human_review',
-                    thread_id: data.thread_id
-                });
-
-                openWorkflowHitlModal(data.code, data.thread_id);
-                showToast('⏸️ Human Review Gate reached! Please review code.', 'info');
+                openWorkflowHitlModal(data.code, data.thread_id || runId);
+                showToast('⏸️ Human Review Gate reached! Please review code in modal.', 'info');
                 return;
             }
 
@@ -1712,23 +1826,27 @@
                     liveEventSource.close();
                     liveEventSource = null;
                 }
-                btn.disabled = false;
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origHtml;
+                }
                 if (simBtn) simBtn.disabled = false;
-                btn.innerHTML = origHtml;
 
                 if (data.event === 'workflow_complete' && data.execution_success) {
                     highlightLiveNode('END', 'success');
-                    document.getElementById('graphLoopBadge').textContent = `STEP ${liveEventCount} — END (SUCCESS)`;
+                    document.getElementById('telemetryStatusBadge').textContent = 'STATUS: COMPLETED (SUCCESS)';
+                    document.getElementById('telemetryStatusBadge').className = 'cyber-badge cyber-badge-emerald';
                     showToast(`🎉 Live LangGraph Execution Completed Successfully!`, 'success');
                 } else if (data.event === 'workflow_complete') {
                     highlightLiveNode('END', 'failed');
-                    document.getElementById('graphLoopBadge').textContent = `STEP ${liveEventCount} — END (COMPLETED)`;
+                    document.getElementById('telemetryStatusBadge').textContent = 'STATUS: COMPLETED (FAILED)';
+                    document.getElementById('telemetryStatusBadge').className = 'cyber-badge cyber-badge-amber';
                     showToast(`⚠️ Workflow completed with test issues.`, 'warning');
                 }
 
-                // Save to history & unified current run state
+                // Save to history log
                 saveRunToHistory({
-                    id: `live_${Date.now()}`,
+                    id: runId,
                     task: task,
                     language: lang,
                     code: data.code || document.getElementById('activeCodeOutput').textContent,
@@ -1736,7 +1854,7 @@
                     success: !!data.execution_success,
                     iterations: data.iteration || 1,
                     timestamp: new Date().toISOString(),
-                    thread_id: data.thread_id || activeLiveThreadId
+                    thread_id: data.thread_id || runId
                 });
             }
         }
