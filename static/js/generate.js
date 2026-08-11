@@ -170,74 +170,70 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 let activeHitlThreadId = null;
 
-async function handleGenerate() {
+async function handleGenerate(overrideMode) {
     const taskInput = document.getElementById('taskInput');
     const languageSelect = document.getElementById('languageSelect');
     const maxIterationsSelect = document.getElementById('maxIterationsSelect');
     const hitlToggle = document.getElementById('hitlModeToggle');
     const generateBtn = document.getElementById('generateBtn');
-    const statusBanner = document.getElementById('statusBanner');
-    const codeDisplay = document.getElementById('codeDisplay');
-    const reportDisplay = document.getElementById('reportDisplay');
-    const pipelineStepper = document.getElementById('pipelineStepper');
     const taskInlineAlert = document.getElementById('taskInlineAlert');
-    const codeTabHeader = document.querySelector('.code-editor-header span');
-    const hitlReviewModal = document.getElementById('hitlReviewModal');
 
-    const task = taskInput.value.trim();
+    const task = taskInput ? taskInput.value.trim() : '';
     if (!task) {
         if (taskInlineAlert) {
             taskInlineAlert.style.display = 'flex';
             document.getElementById('taskInlineAlertText').textContent = 'Please enter a task specification or click a preset button above before executing.';
         }
-        taskInput.focus();
+        if (taskInput) taskInput.focus();
         return;
     }
 
     if (taskInlineAlert) taskInlineAlert.style.display = 'none';
-    if (hitlReviewModal) hitlReviewModal.style.display = 'none';
 
     const language = languageSelect ? languageSelect.value : 'python';
     const maxIterations = maxIterationsSelect ? (parseInt(maxIterationsSelect.value) || 3) : 3;
     const hitlMode = hitlToggle ? hitlToggle.checked : false;
+    const mode = overrideMode || 'live';
 
-    // Save to localStorage so Canvas Simulator syncs automatically
+    // Generate authoritative run_id (thread ID)
+    const runId = (mode === 'simulation' ? 'sim_' : 'run_') + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+
+    // Save initial context to localStorage for passive reload restoration
     localStorage.setItem('langgraph_last_task', task);
     localStorage.setItem('ai_workflow_current_task', task);
     localStorage.setItem('langgraph_last_lang', language);
+    localStorage.setItem('ai_workflow_current_lang', language);
 
-    // Update code tab filename
-    updateCodeEditorHeader();
+    if (typeof setCurrentWorkflowRun === 'function') {
+        setCurrentWorkflowRun({
+            runId: runId,
+            task: task,
+            language: language,
+            mode: mode,
+            status: 'RUNNING',
+            currentNode: 'START',
+            generatedCode: null,
+            testResult: null,
+            iteration: 1,
+            maxIterations: maxIterations,
+            hitl_enabled: hitlMode,
+            timestamp: new Date().toISOString()
+        });
+    }
 
-    // UI Loading State
-    generateBtn.disabled = true;
-    generateBtn.innerHTML = `
-        <span class="material-symbols-outlined spin" style="font-size: 16px;">sync</span>
-        <span>${hitlMode ? 'Drafting for Review...' : 'Running Workflow...'}</span>
-    `;
+    // Show toast and minimize tour if open
+    if (typeof minimizeTourForExecution === 'function') {
+        minimizeTourForExecution();
+    }
+    showToast(`🚀 Launching ${mode.toUpperCase()} Workflow for task: "${task.substring(0, 30)}..."`, 'info');
 
-    // Update Workflow Stages Banner
-    const stageDevBadge = document.getElementById('stageDevBadge');
-    const stageTestBadge = document.getElementById('stageTestBadge');
-    const stageResultBadge = document.getElementById('stageResultBadge');
-    const stageStatusTag = document.getElementById('stageStatusTag');
-
-    if (stageDevBadge) {
-        stageDevBadge.className = 'cyber-badge cyber-badge-terracotta';
-        stageDevBadge.textContent = '1. Developer (Drafting...)';
-    }
-    if (stageTestBadge) {
-        stageTestBadge.className = 'cyber-badge';
-        stageTestBadge.textContent = hitlMode ? '2. Review Gate' : '2. Tester';
-    }
-    if (stageResultBadge) {
-        stageResultBadge.className = 'cyber-badge';
-        stageResultBadge.textContent = '3. Result';
-    }
-    if (stageStatusTag) {
-        stageStatusTag.className = 'cyber-badge cyber-badge-indigo';
-        stageStatusTag.textContent = 'EXECUTING';
-    }
+    // Immediate Redirection to Pipeline Visualizer
+    const targetUrl = `/workflow?run=${encodeURIComponent(runId)}&task=${encodeURIComponent(task)}&lang=${encodeURIComponent(language)}&max=${maxIterations}&hitl=${hitlMode}&mode=${mode}&autoRun=true`;
+    
+    setTimeout(() => {
+        window.location.href = targetUrl;
+    }, 250);
+}
 
     statusBanner.style.display = 'flex';
     statusBanner.className = 'studio-card';
