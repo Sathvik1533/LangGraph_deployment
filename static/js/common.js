@@ -206,14 +206,37 @@ function showToast(message, type = 'info') {
     }, 2800);
 }
 
-// Set Active Navigation
+// Set Active Navigation (Derived directly from Route/Pathname)
 function setActiveNav(pageId) {
+    let currentId = pageId;
+    if (!currentId) {
+        const path = window.location.pathname;
+        if (path === '/' || path.includes('overview') || path.includes('dashboard')) currentId = 'dashboard';
+        else if (path.includes('generate') || path.includes('workspace')) currentId = 'generator';
+        else if (path.includes('workflow') || path.includes('pipeline')) currentId = 'workflow';
+        else if (path.includes('history') || path.includes('runs')) currentId = 'history';
+        else currentId = 'dashboard';
+    }
+
     document.querySelectorAll('.nav-link-item').forEach(item => {
         item.classList.remove('active');
-        if (item.dataset.page === pageId) {
+        if (item.dataset.page === currentId) {
             item.classList.add('active');
         }
     });
+
+    document.querySelectorAll('.mobile-nav-link').forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.page === currentId) {
+            item.classList.add('active');
+        }
+    });
+}
+
+// Minimize/Close Tour overlay during active execution
+function minimizeTourForExecution() {
+    sessionStorage.setItem('ai_workflow_tour_dismissed', 'true');
+    closeSpotlightTour();
 }
 
 // Copy Code to Clipboard
