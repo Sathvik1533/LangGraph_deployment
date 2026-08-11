@@ -574,8 +574,10 @@
                 return;
             }
             closeSecurityLabModal();
-            window.location.href = `/workflow?task=${encodeURIComponent(val.trim())}&autoRun=true`;
+            const runId = 'run_sec_' + Date.now();
+            window.location.href = `/workflow?run=${runId}&task=${encodeURIComponent(val.trim())}&scenario=guardrail_block&autoRun=true`;
         }
+
 
         function renderSecurityLabResults(data, scannedText) {
             const icon = document.getElementById('labResultIcon');

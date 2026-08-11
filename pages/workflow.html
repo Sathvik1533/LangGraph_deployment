@@ -1417,11 +1417,19 @@
                 scope: 'Constrains runtime execution to isolated compilation environments without direct host filesystem or socket access.',
                 detector: 'Multi-Lang Sandboxed Process Isolation',
                 status: 'WAITING',
-            prompt_injection: { name: 'LLM01: Prompt Injection Defense', status: 'WAITING', reason: 'Awaiting task execution trigger...' },
-            sensitive_data: { name: 'LLM02: Sensitive Data Leak Prevention', status: 'WAITING', reason: 'Awaiting task execution trigger...' },
-            excessive_agency: { name: 'LLM06: Excessive Agency & OS Shield', status: 'WAITING', reason: 'Awaiting task execution trigger...' },
-            unbounded_consumption: { name: 'LLM10: Unbounded Consumption & Rate Boundary', status: 'WAITING', reason: 'Awaiting task execution trigger...' }
+                action: 'Monitoring incoming prompt',
+                reason: 'Awaiting task execution trigger...'
+            },
+            unbounded_consumption: {
+                name: 'LLM10: Unbounded Consumption & Rate Boundary',
+                scope: 'Strict iteration ceiling and token ceiling prevent runaway retry costs.',
+                detector: 'Rate Limiter & Loop Ceiling Guard',
+                status: 'WAITING',
+                action: 'Monitoring incoming prompt',
+                reason: 'Awaiting task execution trigger...'
+            }
         };
+
 
         let nodeStore = {
             'START': { events: [], log: '[00:00.00] 🚀 START Node ready. Awaiting task execution.', code: '', state: null, status: 'IDLE', iteration: 0, time: '' },
@@ -1661,6 +1669,12 @@
             }
         }
 
+        function updateCustomTask(val) {
+            if (typeof val === 'string') {
+                activeTask = val.trim();
+            }
+        }
+
         function applyCustomTask() {
             const input = document.getElementById('canvasTaskInput');
             const btn = document.getElementById('updateTaskBtn');
@@ -1677,46 +1691,50 @@
 
             activeTask = rawTask;
             activeLanguage = getActiveLanguage();
+            const taskIntent = extractTaskIntent(activeTask);
+            const artifactFilename = generateArtifactFilename(taskIntent || activeTask, activeLanguage);
+            const labelMap = { 'python': 'PYTHON 3.11', 'java': 'JAVA 17', 'cpp': 'C++ 20' };
 
-            if (btn) btn.disabled = true;
-            if (icon) icon.className = 'material-symbols-outlined spin';
-            if (text) text.textContent = 'Syncing Task...';
+            localStorage.setItem('ai_workflow_current_task', activeTask);
+            localStorage.setItem('ai_workflow_current_lang', activeLanguage);
+            localStorage.setItem('langgraph_last_task', activeTask);
+            localStorage.setItem('langgraph_last_lang', activeLanguage);
 
-            setTimeout(() => {
-                localStorage.setItem('ai_workflow_current_task', activeTask);
-                localStorage.setItem('ai_workflow_current_lang', activeLanguage);
-                localStorage.setItem('langgraph_last_task', activeTask);
-                localStorage.setItem('langgraph_last_lang', activeLanguage);
+            setElemText('activeTaskDisplayTitle', `"${activeTask}"`);
+            setElemText('activeTaskIntentDisplay', taskIntent);
+            setElemText('activeTaskLangBadge', labelMap[activeLanguage] || activeLanguage.toUpperCase());
+            setElemText('activeArtifactBadge', artifactFilename);
+            setElemText('canvasLangBadge', `TARGET: ${labelMap[activeLanguage] || activeLanguage.toUpperCase()}`);
 
-                setCurrentWorkflowRun({
-                    runId: 'run_' + Date.now(),
-                    task: activeTask,
-                    language: activeLanguage,
-                    status: 'IDLE',
-                    currentNode: 'START',
-                    generatedCode: null,
-                    testResult: null,
-                    iteration: 0,
-                    timestamp: new Date().toISOString()
-                });
+            const newUrl = `/workflow?task=${encodeURIComponent(activeTask)}&lang=${encodeURIComponent(activeLanguage)}`;
+            window.history.pushState({}, '', newUrl);
 
-                document.getElementById('canvasLangBadge').textContent = `TARGET: ${activeLanguage.toUpperCase()}`;
+            setCurrentWorkflowRun({
+                runId: 'run_' + Date.now(),
+                task: activeTask,
+                task_intent: taskIntent,
+                language: activeLanguage,
+                target_language: activeLanguage,
+                status: 'IDLE',
+                currentNode: 'START',
+                generatedCode: null,
+                testResult: null,
+                iteration: 0,
+                timestamp: new Date().toISOString()
+            });
 
-                if (btn) btn.disabled = false;
-                if (icon) icon.className = 'material-symbols-outlined';
-                if (text) text.textContent = 'UPDATE TASK';
+            if (badge) {
+                badge.style.display = 'inline-block';
+                setTimeout(() => {
+                    badge.style.display = 'none';
+                }, 3500);
+            }
 
-                if (badge) {
-                    badge.style.display = 'inline-block';
-                    setTimeout(() => {
-                        badge.style.display = 'none';
-                    }, 3500);
-                }
-
-                resetCurrentScenario();
-                showToast(`✅ TASK UPDATED: ${activeTask} (${activeLanguage.toUpperCase()})`, 'success');
-            }, 300);
+            resetCurrentScenario();
+            showToast(`✅ TASK UPDATED: ${activeTask} (${activeLanguage.toUpperCase()})`, 'success');
         }
+
+
 
         function renderCurrentStep() {
             if (!activeTask || !activeTask.trim()) {
@@ -1777,10 +1795,79 @@
         }
 
         function resetCurrentScenario() {
-            if (playInterval) togglePlaySimulation();
+            if (liveEventSource) {
+                liveEventSource.close();
+                liveEventSource = null;
+            }
+            if (playInterval) {
+                clearInterval(playInterval);
+                playInterval = null;
+            }
+
             currentStepIndex = 0;
-            renderCurrentStep();
+            isExecutionPaused = false;
+
+            resetGraphVisuals();
+
+            Object.keys(nodeStore).forEach(k => {
+                nodeStore[k] = { events: [], log: '', code: '', state: null, status: 'WAITING', iteration: 1, time: '' };
+            });
+            nodeStore['START'] = { events: [], log: '[00:00.00] 🚀 START Node ready. Awaiting task execution.', code: '', state: null, status: 'IDLE', iteration: 0, time: '' };
+
+            Object.keys(liveSecurityControls).forEach(k => {
+                liveSecurityControls[k].status = 'WAITING';
+                liveSecurityControls[k].reason = 'Awaiting guardrail scan...';
+            });
+            renderSecurityControlCards();
+
+            activeExecutionNode = 'START';
+            selectedInspectorNode = 'START';
+            updateInspectorView('START');
+
+            const taskIntent = extractTaskIntent(activeTask);
+            const artifactFilename = generateArtifactFilename(taskIntent || activeTask, activeLanguage);
+            const labelMap = { 'python': 'PYTHON 3.11', 'java': 'JAVA 17', 'cpp': 'C++ 20' };
+
+            setElemText('activeTaskDisplayTitle', activeTask ? `"${activeTask}"` : '"No task specified"');
+            setElemText('activeTaskIntentDisplay', taskIntent);
+            setElemText('activeTaskLangBadge', labelMap[activeLanguage] || activeLanguage.toUpperCase());
+            setElemText('activeArtifactBadge', artifactFilename);
+
+            setElemText('simStepStatus', 'Enter a task specification and click LIVE or SIMULATION to begin');
+            setElemText('telemetryStatusBadge', 'STATUS: IDLE');
+            const statusBadge = document.getElementById('telemetryStatusBadge');
+            if (statusBadge) statusBadge.className = 'cyber-badge cyber-badge-emerald';
+            setElemText('telemetryAgentBadge', 'AGENT: START');
+            setElemText('telemetryIterationBadge', 'ITERATION: 0 / 3');
+
+            setElemText('streamLogOutput', `[${new Date().toLocaleTimeString()}] 🚀 Workflow state reset to IDLE.\n`);
+            setElemText('activeCodeOutput', '// Awaiting code generation...');
+            setElemText('activeStateOutput', JSON.stringify({ task: activeTask, language: activeLanguage, status: 'IDLE', iteration: 0 }, null, 2));
+
+
+            const btn = document.getElementById('liveApiRunBtn');
+            const simBtn = document.getElementById('simPlayBtn');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<span class="material-symbols-outlined" style="font-size: 18px;">bolt</span><span>LIVE: Execute API</span>`;
+            }
+            if (simBtn) {
+                simBtn.disabled = false;
+                setElemText('simPlayIcon', 'play_circle');
+                setElemText('simPlayText', 'SIMULATION: Play');
+            }
+
+            try {
+                fetch('/api/workflow/control', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'reset', thread_id: activeLiveThreadId })
+                }).catch(() => {});
+            } catch (e) {}
+
+            showToast('🔄 Workflow state reset to IDLE', 'info');
         }
+
 
         function togglePlaySimulation() {
             const playIcon = document.getElementById('simPlayIcon');
@@ -1847,8 +1934,14 @@
             const queryLang = urlParams.get('lang') || urlParams.get('language');
             const queryIntent = urlParams.get('intent');
             const queryMode = urlParams.get('mode') || 'live';
+            const queryScenario = urlParams.get('scenario');
             const autoRun = urlParams.get('autoRun') === 'true';
             const hitlModeParam = urlParams.get('hitl') === 'true';
+
+            if (queryScenario) {
+                switchScenario(queryScenario);
+            }
+
 
             const currentRun = getCurrentWorkflowRun();
 
@@ -1926,6 +2019,26 @@
             }
         });
 
+        window.addEventListener('popstate', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const task = urlParams.get('task');
+            const lang = urlParams.get('lang') || urlParams.get('language');
+            if (task) {
+                activeTask = task;
+                const taskInput = document.getElementById('canvasTaskInput');
+                if (taskInput) taskInput.value = task;
+                setElemText('activeTaskDisplayTitle', `"${task}"`);
+                setElemText('activeTaskIntentDisplay', extractTaskIntent(task));
+            }
+            if (lang) {
+                activeLanguage = lang.toLowerCase();
+                const labelMap = { 'python': 'PYTHON 3.11', 'java': 'JAVA 17', 'cpp': 'C++ 20' };
+                setElemText('activeTaskLangBadge', labelMap[activeLanguage] || activeLanguage.toUpperCase());
+                setElemText('canvasLangBadge', `TARGET: ${labelMap[activeLanguage] || activeLanguage.toUpperCase()}`);
+            }
+        });
+
+
         function togglePauseResumeExecution() {
             const icon = document.getElementById('pauseResumeIcon');
             const text = document.getElementById('pauseResumeText');
@@ -1950,7 +2063,78 @@
                 }
                 showToast('▶️ Resuming execution', 'info');
             }
+
+            try {
+                fetch('/api/workflow/control', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: isExecutionPaused ? 'pause' : 'resume', thread_id: activeLiveThreadId })
+                }).catch(() => {});
+            } catch (e) {}
         }
+
+        async function stopActiveWorkflowRun() {
+            if (liveEventSource) {
+                liveEventSource.close();
+                liveEventSource = null;
+            }
+            if (playInterval) {
+                clearInterval(playInterval);
+                playInterval = null;
+            }
+            
+            const btn = document.getElementById('liveApiRunBtn');
+            const simBtn = document.getElementById('simPlayBtn');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<span class="material-symbols-outlined" style="font-size: 18px;">bolt</span><span>LIVE: Execute API</span>`;
+            }
+            if (simBtn) simBtn.disabled = false;
+
+            setElemText('telemetryStatusBadge', 'STATUS: WORKFLOW STOPPED');
+            const statusBadge = document.getElementById('telemetryStatusBadge');
+            if (statusBadge) statusBadge.className = 'cyber-badge cyber-badge-amber';
+
+            try {
+                await fetch('/api/workflow/control', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'stop', thread_id: activeLiveThreadId })
+                });
+            } catch (e) { console.warn('Stop control error:', e); }
+
+            showToast('🛑 Workflow execution stopped', 'warning');
+        }
+
+        function prevSimStep() {
+            if (currentStepIndex > 0) {
+                currentStepIndex--;
+                renderCurrentStep();
+                showToast(`Rewound to Step ${currentStepIndex + 1}`, 'info');
+            } else {
+                showToast('Already at initial step (START)', 'info');
+            }
+        }
+
+        async function nextSimStep() {
+            const steps = getScenarioSteps(currentScenario, activeTask, activeLanguage);
+            if (currentStepIndex < steps.length - 1) {
+                currentStepIndex++;
+                renderCurrentStep();
+                showToast(`Advanced to Step ${currentStepIndex + 1} (${steps[currentStepIndex].node})`, 'info');
+            } else {
+                showToast('Reached final step (END)', 'info');
+            }
+
+            try {
+                await fetch('/api/workflow/control', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'next', thread_id: activeLiveThreadId })
+                });
+            } catch (e) { console.warn('Next step control error:', e); }
+        }
+
 
         function launchNewRunFromPipeline(mode) {
             const inputTask = (document.getElementById('canvasTaskInput')?.value || activeTask || '').trim();
@@ -2086,7 +2270,8 @@
             showToast(`🚀 ${modeVal.toUpperCase()} execution started for ${labelMap[lang] || lang.toUpperCase()}`, 'info');
 
             try {
-                const streamUrl = `/stream?task=${encodeURIComponent(inputTask)}&target_language=${encodeURIComponent(lang)}&task_intent=${encodeURIComponent(taskIntent)}&language=${encodeURIComponent(lang)}&max_iterations=3&hitl_mode=${hitlMode}&thread_id=${encodeURIComponent(runId)}&mode=${encodeURIComponent(modeVal)}`;
+                const streamUrl = `/stream?task=${encodeURIComponent(inputTask)}&target_language=${encodeURIComponent(lang)}&task_intent=${encodeURIComponent(taskIntent)}&language=${encodeURIComponent(lang)}&max_iterations=3&hitl_mode=${hitlMode}&thread_id=${encodeURIComponent(runId)}&mode=${encodeURIComponent(modeVal)}&scenario=${encodeURIComponent(currentScenario)}`;
+
                 
                 if (liveEventSource) {
                     liveEventSource.close();
@@ -2128,7 +2313,9 @@
         }
 
         function handleLiveSseMessage(data, btn, simBtn, origHtml, task, lang, runId, modeVal) {
+            if (!liveEventSource || isExecutionPaused) return;
             liveEventCount++;
+
             const canonicalNode = normalizeNodeKey(data.node);
             const timeStr = data.timestamp || new Date().toLocaleTimeString();
             const nodeUpper = canonicalNode.toUpperCase();

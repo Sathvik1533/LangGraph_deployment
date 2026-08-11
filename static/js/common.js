@@ -13,6 +13,43 @@ const PLATFORM_PAGES = [
     { id: 'history', path: '/history', name: 'Runs' }
 ];
 
+function extractTaskIntent(rawTask) {
+    if (!rawTask) return "General Code Implementation";
+    let intent = rawTask.trim();
+    const patterns = [
+        /^write\s+(?:a|an)\s+(?:python|java|c\+\+|cpp|javascript|typescript|c)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which)\s+/i,
+        /^write\s+(?:a|an)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which)\s+/i,
+        /^create\s+(?:a|an)\s+(?:python|java|c\+\+|cpp|javascript|typescript|c)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i,
+        /^create\s+(?:a|an)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i,
+        /^implement\s+(?:a|an)\s+(?:python|java|c\+\+|cpp|javascript|typescript|c)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i,
+        /^implement\s+(?:a|an)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i,
+        /^build\s+(?:a|an)\s+(?:python|java|c\+\+|cpp|javascript|typescript|c)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i,
+        /^build\s+(?:a|an)\s+(?:function|script|program|class|module|algorithm)\s+(?:that|to|for|which|with)\s+/i
+    ];
+    for (const pat of patterns) {
+        if (pat.test(intent)) {
+            intent = intent.replace(pat, '');
+            break;
+        }
+    }
+    intent = intent.replace(/\s+(?:in|using|with)\s+(?:python|java|c\+\+|cpp|javascript|typescript|c)\b/gi, '');
+    intent = intent.trim();
+    if (intent) {
+        intent = intent.charAt(0).toUpperCase() + intent.slice(1);
+    }
+    return intent || "General Code Implementation";
+}
+
+function generateArtifactFilename(rawTask, lang) {
+    const langMap = { 'python': '.py', 'java': '.java', 'cpp': '.cpp' };
+    const ext = langMap[(lang || 'python').toLowerCase()] || '.py';
+    let base = (rawTask || 'solution').toLowerCase();
+    base = base.replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
+    if (!base) base = 'solution';
+    return `${base}${ext}`;
+}
+
+
 // Initialize Page Flow Stepper & Previous/Next Navigation
 function initPageFlowStepper() {
     const currentPath = window.location.pathname;
