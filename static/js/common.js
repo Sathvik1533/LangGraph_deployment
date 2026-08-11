@@ -28,12 +28,21 @@ function initPageFlowStepper() {
     const nextBtn = document.getElementById('pageFlowNextBtn');
     const prevLabel = document.getElementById('pageFlowPrevLabel');
     const nextLabel = document.getElementById('pageFlowNextLabel');
+    const pageFlowBadge = document.getElementById('pageFlowBadge');
+    const pageFlowTitle = document.getElementById('pageFlowTitle');
+
+    if (pageFlowBadge) {
+        pageFlowBadge.textContent = `${currentIndex + 1} / ${PLATFORM_PAGES.length}`;
+    }
+    if (pageFlowTitle) {
+        pageFlowTitle.textContent = PLATFORM_PAGES[currentIndex]?.name || 'Overview';
+    }
 
     if (prevBtn && nextBtn) {
         if (currentIndex === 0) {
             prevBtn.classList.add('disabled');
             prevBtn.disabled = true;
-            if (prevLabel) prevLabel.textContent = 'Start';
+            if (prevLabel) prevLabel.textContent = 'Previous';
         } else {
             prevBtn.classList.remove('disabled');
             prevBtn.disabled = false;
@@ -44,7 +53,7 @@ function initPageFlowStepper() {
         if (currentIndex === PLATFORM_PAGES.length - 1) {
             nextBtn.classList.add('disabled');
             nextBtn.disabled = true;
-            if (nextLabel) nextLabel.textContent = 'End';
+            if (nextLabel) nextLabel.textContent = 'Next';
         } else {
             nextBtn.classList.remove('disabled');
             nextBtn.disabled = false;
@@ -81,22 +90,58 @@ function navigatePageStep(direction) {
     }
 }
 
+const CURRENT_RUN_STORAGE_KEY = 'ai_workflow_current_run';
+
+// Unified State Management: Single Source of Truth across all pages
+function getCurrentWorkflowRun() {
+    try {
+        const raw = localStorage.getItem(CURRENT_RUN_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function setCurrentWorkflowRun(run) {
+    try {
+        if (!run) {
+            localStorage.removeItem(CURRENT_RUN_STORAGE_KEY);
+            return;
+        }
+        localStorage.setItem(CURRENT_RUN_STORAGE_KEY, JSON.stringify(run));
+    } catch (e) {
+        console.warn('Failed to set current workflow run:', e);
+    }
+}
+
 // Save run to local history
 function saveRunToHistory(runData) {
     try {
         const history = getRunHistory();
-        history.unshift({
-            id: 'run_' + Date.now(),
-            timestamp: new Date().toISOString(),
+        const entry = {
+            id: runData.id || ('run_' + Date.now()),
+            timestamp: runData.timestamp || new Date().toISOString(),
             task: runData.task,
             language: runData.language || 'python',
-            success: runData.success || false,
+            success: !!runData.success,
             iterations: runData.iterations || 1,
             code: runData.code || '',
             report: runData.report || '',
             thread_id: runData.thread_id || ''
-        });
+        };
+        history.unshift(entry);
         localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history.slice(0, 50)));
+
+        // Also update single source of truth for active run
+        setCurrentWorkflowRun({
+            ...entry,
+            runId: entry.id,
+            status: entry.success ? 'SUCCESS' : 'FAILED',
+            currentNode: 'END',
+            generatedCode: entry.code,
+            testResult: entry.report,
+            iteration: entry.iterations
+        });
     } catch (e) {
         console.warn('Failed to save run to history:', e);
     }

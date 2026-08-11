@@ -253,6 +253,20 @@ async function handleGenerate() {
                 hitlReviewModal.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
 
+            // Update Single Source of Truth
+            setCurrentWorkflowRun({
+                runId: data.thread_id || ('run_' + Date.now()),
+                task: task,
+                language: language,
+                status: 'PAUSED_FOR_REVIEW',
+                currentNode: 'ReviewGate',
+                generatedCode: data.code || '',
+                testResult: data.report || 'Awaiting human review approval before sandbox testing.',
+                iteration: data.iterations || 1,
+                humanReviewStatus: 'awaiting_human_review',
+                thread_id: data.thread_id
+            });
+
             showToast('⏸️ Code drafted! Sign-off required at Human Review Gate.', 'info');
 
         } else if (response.ok && data.code) {

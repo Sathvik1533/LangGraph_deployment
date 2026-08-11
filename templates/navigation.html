@@ -54,34 +54,39 @@
 <!-- Sub-Navigation Stepper & Forward/Backward Arrows Helper -->
 <div class="page-flow-bar-container" id="pageFlowBarContainer">
     <div class="page-flow-bar">
-        <button class="flow-nav-btn flow-nav-prev" onclick="navigatePageStep(-1)" id="pageFlowPrevBtn" data-tooltip="Go to Previous Step">
+        <button class="flow-nav-btn flow-nav-prev" onclick="navigatePageStep(-1)" id="pageFlowPrevBtn" data-tooltip="Go to Previous Page">
             <span class="material-symbols-outlined" style="font-size: 18px;">arrow_back</span>
             <span class="flow-btn-label" id="pageFlowPrevLabel">Previous</span>
         </button>
 
+        <div class="flow-page-counter" id="pageFlowCounter" style="display: flex; align-items: center; gap: 10px;">
+            <span class="cyber-badge cyber-badge-terracotta" id="pageFlowBadge" style="font-size: 12px; font-weight: 700; padding: 4px 12px;">1 / 4</span>
+            <span id="pageFlowTitle" style="font-size: 13.5px; font-weight: 700; color: var(--text-primary);">Overview</span>
+        </div>
+
         <div class="flow-stepper-track">
-            <a href="/" class="flow-step-node" data-flow="dashboard" data-tooltip="Step 1: Platform Overview & System Capabilities">
+            <a href="/" class="flow-step-node" data-flow="dashboard" data-tooltip="Page 1: Platform Overview">
                 <span class="flow-step-num">1</span>
                 <span class="flow-step-text">Overview</span>
             </a>
             <span class="flow-step-divider">➔</span>
-            <a href="/generate" class="flow-step-node" data-flow="generator" data-tooltip="Step 2: Workspace & Task Execution">
+            <a href="/generate" class="flow-step-node" data-flow="generator" data-tooltip="Page 2: Workspace">
                 <span class="flow-step-num">2</span>
                 <span class="flow-step-text">Workspace</span>
             </a>
             <span class="flow-step-divider">➔</span>
-            <a href="/workflow" class="flow-step-node" data-flow="workflow" data-tooltip="Step 3: Interactive Pipeline Visualizer">
+            <a href="/workflow" class="flow-step-node" data-flow="workflow" data-tooltip="Page 3: Pipeline Visualizer">
                 <span class="flow-step-num">3</span>
                 <span class="flow-step-text">Pipeline</span>
             </a>
             <span class="flow-step-divider">➔</span>
-            <a href="/history" class="flow-step-node" data-flow="history" data-tooltip="Step 4: Past Runs & Execution History">
+            <a href="/history" class="flow-step-node" data-flow="history" data-tooltip="Page 4: Past Runs">
                 <span class="flow-step-num">4</span>
                 <span class="flow-step-text">Runs</span>
             </a>
         </div>
 
-        <button class="flow-nav-btn flow-nav-next" onclick="navigatePageStep(1)" id="pageFlowNextBtn" data-tooltip="Go to Next Step">
+        <button class="flow-nav-btn flow-nav-next" onclick="navigatePageStep(1)" id="pageFlowNextBtn" data-tooltip="Go to Next Page">
             <span class="flow-btn-label" id="pageFlowNextLabel">Next</span>
             <span class="material-symbols-outlined" style="font-size: 18px;">arrow_forward</span>
         </button>
