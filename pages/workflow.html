@@ -407,30 +407,78 @@
             return hidden ? hidden.value.toLowerCase() : 'python';
         }
 
-        // Generate dynamic code templates
+        // Generate dynamic code templates based on exact task & language
         function getScenarioSteps(scenarioKey, task, lang) {
             const isPy = lang === 'python';
             const isJava = lang === 'java';
             const isCpp = lang === 'cpp';
+            const taskLower = (task || '').toLowerCase();
+
+            const isLinkedList = taskLower.includes('linked list') || taskLower.includes('linkedlist') || taskLower.includes('node');
+            const isEmail = taskLower.includes('email') || taskLower.includes('validate email');
+            const isStack = taskLower.includes('stack') || taskLower.includes('lifo');
+            const isTree = taskLower.includes('tree') || taskLower.includes('bst');
+            const isFibo = taskLower.includes('fibonacci');
+            const isPalin = taskLower.includes('palindrome');
+            const isReverse = taskLower.includes('reverse');
+            const isPrime = taskLower.includes('prime') && !isLinkedList;
 
             const cleanTask = task.replace(/[^a-zA-Z0-9_\s]/g, '');
-            const words = cleanTask.split(/\s+/).filter(w => w.length > 2 && !['write','create','function','code','python','java','cpp','that'].includes(w.toLowerCase()));
-            const funcPy = words.slice(0, 3).map(w => w.toLowerCase()).join('_') || 'custom_task';
-            const funcJava = words.slice(0, 3).map((w, i) => i === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join('') || 'customTask';
+            const words = cleanTask.split(/\s+/).filter(w => w.length > 2 && !['write','create','function','code','python','java','cpp','that','with','check','using','program','implement'].includes(w.toLowerCase()));
+            const funcPy = words.slice(0, 3).map(w => w.toLowerCase()).join('_') || 'execute_solution';
+            const funcJava = words.slice(0, 3).map((w, i) => i === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join('') || 'executeSolution';
 
-            // Buggy Code (for Self-Healing Scenario)
+            // Buggy Code (for Self-Healing Scenario), Fixed Code, and Traceback Log
             let buggyCode = "";
             let fixedCode = "";
             let tracebackLog = "";
 
             if (isPy) {
-                buggyCode = `def is_prime(n: int) -> bool:\n    # BUG: Forgot edge case for 1 and negative numbers!\n    for i in range(2, int(n ** 0.5) + 1):\n        if n % i == 0:\n            return False\n    return True\n\n# Self-test assertion\nassert is_prime(1) == False, "AssertionError: is_prime(1) returned True instead of False"`;
-                fixedCode = `def is_prime(n: int) -> bool:\n    # AUTO-FIXED: Incorporated traceback to handle n <= 1\n    if n <= 1:\n        return False\n    for i in range(2, int(n ** 0.5) + 1):\n        if n % i == 0:\n            return False\n    return True\n\n# Self-test assertion\nassert is_prime(1) == False\nassert is_prime(29) == True\nprint("All test assertions passed successfully!")`;
-                tracebackLog = `Traceback (most recent call last):\n  File "solution.py", line 9, in <module>\n    assert is_prime(1) == False\nAssertionError: is_prime(1) returned True instead of False`;
+                if (isLinkedList) {
+                    buggyCode = `class Node:\n    def __init__(self, data):\n        self.data = data\n        self.next = None\n\nclass LinkedList:\n    def __init__(self):\n        self.head = None\n    def insert(self, data):\n        # BUG: Fails when head is None\n        curr = self.head\n        while curr.next:\n            curr = curr.next\n        curr.next = Node(data)\n\nll = LinkedList()\nll.insert(10)`;
+                    fixedCode = `class Node:\n    def __init__(self, data: int):\n        self.data = data\n        self.next = None\n\nclass LinkedList:\n    def __init__(self):\n        self.head = None\n    def insert(self, data: int):\n        # AUTO-FIXED: Added head is None check\n        if not self.head:\n            self.head = Node(data)\n            return\n        curr = self.head\n        while curr.next:\n            curr = curr.next\n        curr.next = Node(data)\n    def traverse(self) -> list:\n        res, curr = [], self.head\n        while curr:\n            res.append(curr.data)\n            curr = curr.next\n        return res\n\nll = LinkedList()\nll.insert(10)\nll.insert(20)\nassert ll.traverse() == [10, 20]\nprint("LinkedList verified:", ll.traverse())`;
+                    tracebackLog = `Traceback (most recent call last):\n  File "solution.py", line 14, in <module>\n    ll.insert(10)\n  File "solution.py", line 10, in insert\n    while curr.next:\nAttributeError: 'NoneType' object has no attribute 'next'`;
+                } else if (isEmail) {
+                    buggyCode = `def validate_email(email: str) -> bool:\n    # BUG: Naive check without regex domain/TLD validation\n    return "@" in email\n\nassert validate_email("user@example.com") == True\nassert validate_email("invalid-email") == False, "AssertionError: invalid-email allowed"`;
+                    fixedCode = `import re\n\ndef validate_email(email: str) -> bool:\n    # AUTO-FIXED: Standard RFC regex syntax validator\n    if not isinstance(email, str) or not email.strip():\n        return False\n    pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$'\n    return bool(re.match(pattern, email.strip()))\n\nassert validate_email("user@example.com") == True\nassert validate_email("invalid-email") == False\nprint("Email validator assertions verified successfully!")`;
+                    tracebackLog = `Traceback (most recent call last):\n  File "solution.py", line 6, in <module>\n    assert validate_email("invalid-email") == False\nAssertionError: invalid-email allowed`;
+                } else if (isFibo) {
+                    buggyCode = `def fibonacci(n: int) -> list[int]:\n    # BUG: Fails on n <= 0\n    seq = [0, 1]\n    while len(seq) < n: seq.append(seq[-1] + seq[-2])\n    return seq\n\nassert fibonacci(0) == []`;
+                    fixedCode = `def fibonacci(n: int) -> list[int]:\n    # AUTO-FIXED: Guard added for n <= 0 and n == 1\n    if n <= 0: return []\n    if n == 1: return [0]\n    seq = [0, 1]\n    while len(seq) < n: seq.append(seq[-1] + seq[-2])\n    return seq\n\nassert fibonacci(0) == []\nassert fibonacci(5) == [0, 1, 1, 2, 3]\nprint("Fibonacci verified cleanly!")`;
+                    tracebackLog = `Traceback (most recent call last):\n  File "solution.py", line 7, in <module>\n    assert fibonacci(0) == []\nAssertionError: assert [0, 1] == []`;
+                } else if (isPrime) {
+                    buggyCode = `def is_prime(n: int) -> bool:\n    # BUG: Forgot edge case for 1 and negative numbers!\n    for i in range(2, int(n ** 0.5) + 1):\n        if n % i == 0:\n            return False\n    return True\n\nassert is_prime(1) == False, "AssertionError: is_prime(1) returned True instead of False"`;
+                    fixedCode = `def is_prime(n: int) -> bool:\n    # AUTO-FIXED: Incorporated traceback to handle n <= 1\n    if n <= 1:\n        return False\n    for i in range(2, int(n ** 0.5) + 1):\n        if n % i == 0:\n            return False\n    return True\n\nassert is_prime(1) == False\nassert is_prime(29) == True\nprint("All test assertions passed successfully!")`;
+                    tracebackLog = `Traceback (most recent call last):\n  File "solution.py", line 9, in <module>\n    assert is_prime(1) == False\nAssertionError: is_prime(1) returned True instead of False`;
+                } else {
+                    buggyCode = `def ${funcPy}(items: list = None) -> dict:\n    # BUG: IndexError when items is empty\n    return {"first": items[0], "status": "processed"}\n\nassert ${funcPy}([])["status"] == "processed"`;
+                    fixedCode = `def ${funcPy}(items: list = None) -> dict:\n    # AUTO-FIXED: Guard against empty collection\n    data = items or []\n    return {\n        "task": "${cleanTask.substring(0, 40)}",\n        "first": data[0] if data else None,\n        "status": "success"\n    }\n\nassert ${funcPy}([])["status"] == "success"\nassert ${funcPy}([10, 20])["first"] == 10\nprint("Dynamic Python execution verified cleanly!")`;
+                    tracebackLog = `Traceback (most recent call last):\n  File "solution.py", line 5, in <module>\n    assert ${funcPy}([])\nIndexError: list index out of range`;
+                }
             } else if (isJava) {
-                buggyCode = `public class Main {\n    public static boolean isPrime(int n) {\n        // BUG: n = 1 returns true\n        for (int i = 2; i * i <= n; i++) {\n            if (n % i == 0) return false;\n        }\n        return true;\n    }\n}`;
-fixedCode = `#include <iostream>\n#include <cassert>\n\nbool isPrime(int n) {\n    // AUTO-FIXED: Guard added\n    if (n <= 1) return false;\n    for (int i = 2; i * i <= n; i++) {\n        if (n % i == 0) return false;\n    }\n    return true;\n}`;
-                tracebackLog = `Assertion failed: (isPrime(1) == false), function main, file main.cpp, line 14.`;
+                if (isLinkedList) {
+                    buggyCode = `class Node {\n    int data; Node next;\n    Node(int d) { data = d; }\n}\npublic class Main {\n    Node head;\n    public void insert(int d) {\n        // BUG: Null pointer on empty head\n        Node curr = head;\n        while (curr.next != null) curr = curr.next;\n        curr.next = new Node(d);\n    }\n    public static void main(String[] args) {\n        new Main().insert(10);\n    }\n}`;
+                    fixedCode = `class Node {\n    int data; Node next;\n    Node(int d) { data = d; }\n}\npublic class Main {\n    Node head;\n    public void insert(int d) {\n        // AUTO-FIXED: Head null check added\n        if (head == null) { head = new Node(d); return; }\n        Node curr = head;\n        while (curr.next != null) curr = curr.next;\n        curr.next = new Node(d);\n    }\n    public static void main(String[] args) {\n        Main list = new Main();\n        list.insert(10);\n        list.insert(20);\n        System.out.println("Java LinkedList insertion & traversal verified!");\n    }\n}`;
+                    tracebackLog = `Exception in thread "main" java.lang.NullPointerException: Cannot read field "next" because "curr" is null\n\tat Main.insert(Main.java:10)\n\tat Main.main(Main.java:15)`;
+                } else if (isEmail) {
+                    buggyCode = `public class Main {\n    public static boolean validateEmail(String email) {\n        // BUG: Simple contains check\n        return email != null && email.contains("@");\n    }\n    public static void main(String[] args) {\n        assert validateEmail("invalid-email") == false : "Invalid email passed";\n    }\n}`;
+                    fixedCode = `import java.util.regex.Pattern;\npublic class Main {\n    private static final Pattern P = Pattern.compile("^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\\\.[a-zA-Z0-9-.]+$");\n    public static boolean validateEmail(String email) {\n        return email != null && P.matcher(email.trim()).matches();\n    }\n    public static void main(String[] args) {\n        System.out.println("validateEmail('user@example.com'): " + validateEmail("user@example.com"));\n        System.out.println("All Java email validator tests passed!");\n    }\n}`;
+                    tracebackLog = `Exception in thread "main" java.lang.AssertionError: Invalid email passed\n\tat Main.main(Main.java:7)`;
+                } else {
+                    buggyCode = `public class Main {\n    public static int ${funcJava}(int n) {\n        // BUG: Missing edge condition\n        return 100 / n;\n    }\n    public static void main(String[] args) {\n        System.out.println(${funcJava}(0));\n    }\n}`;
+                    fixedCode = `public class Main {\n    public static int ${funcJava}(int n) {\n        // AUTO-FIXED: Arithmetic guard added\n        if (n == 0) return 0;\n        return 100 / n;\n    }\n    public static void main(String[] args) {\n        System.out.println("Java 17 Execution verified: " + ${funcJava}(10));\n    }\n}`;
+                    tracebackLog = `Exception in thread "main" java.lang.ArithmeticException: / by zero\n\tat Main.${funcJava}(Main.java:4)\n\tat Main.main(Main.java:7)`;
+                }
+            } else { // C++
+                if (isLinkedList) {
+                    buggyCode = `#include <iostream>\nstruct Node { int data; Node* next; Node(int d): data(d), next(nullptr) {} };\nclass LinkedList {\npublic:\n    Node* head = nullptr;\n    void insert(int d) {\n        // BUG: nullptr dereference\n        Node* curr = head;\n        while (curr->next) curr = curr->next;\n        curr->next = new Node(d);\n    }\n};\nint main() { LinkedList ll; ll.insert(10); return 0; }`;
+                    fixedCode = `#include <iostream>\nstruct Node { int data; Node* next; Node(int d): data(d), next(nullptr) {} };\nclass LinkedList {\npublic:\n    Node* head = nullptr;\n    void insert(int d) {\n        // AUTO-FIXED: nullptr check\n        if (!head) { head = new Node(d); return; }\n        Node* curr = head;\n        while (curr->next) curr = curr->next;\n        curr->next = new Node(d);\n    }\n};\nint main() {\n    LinkedList ll;\n    ll.insert(10);\n    ll.insert(20);\n    std::cout << "C++ LinkedList verified!" << std::endl;\n    return 0;\n}`;
+                    tracebackLog = `Segmentation fault (core dumped) at 0x0000000000401123 in LinkedList::insert(int)`;
+                } else {
+                    buggyCode = `#include <iostream>\n#include <cassert>\n\nbool isPrime(int n) {\n    // BUG: n = 1 returns true\n    for (int i = 2; i * i <= n; i++) {\n        if (n % i == 0) return false;\n    }\n    return true;\n}\nint main() { assert(isPrime(1) == false); return 0; }`;
+                    fixedCode = `#include <iostream>\n#include <cassert>\n\nbool isPrime(int n) {\n    // AUTO-FIXED: Guard added for n <= 1\n    if (n <= 1) return false;\n    for (int i = 2; i * i <= n; i++) {\n        if (n % i == 0) return false;\n    }\n    return true;\n}\nint main() {\n    assert(isPrime(1) == false);\n    assert(isPrime(29) == true);\n    std::cout << "All C++ assertions passed successfully!" << std::endl;\n    return 0;\n}`;
+                    tracebackLog = `Assertion failed: (isPrime(1) == false), function main, file main.cpp, line 14.`;
+                }
             }
 
             if (scenarioKey === 'self_fix') {

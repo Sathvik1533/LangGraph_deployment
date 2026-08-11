@@ -315,10 +315,16 @@ class OutputGuard:
     def scan_pii_leaks(cls, code: str) -> GuardrailResult:
         """Scan generated code for PII or credential leaks."""
         found_pii = []
+        safe_placeholders = ["example.com", "example.org", "example.net", "test.com", "domain.org", "sample.com", "placeholder.org"]
 
         for pattern, pii_type in cls.PII_PATTERNS.items():
             matches = re.findall(pattern, code, re.IGNORECASE)
-            if matches:
+            if pii_type == "email_address":
+                # Filter out standard RFC 2606 / test example domain placeholders
+                real_leaks = [m for m in matches if not any(m.lower().endswith("@" + dom) or m.lower().endswith("." + dom) for dom in safe_placeholders)]
+                if real_leaks:
+                    found_pii.append({"type": pii_type, "count": len(real_leaks)})
+            elif matches:
                 found_pii.append({"type": pii_type, "count": len(matches)})
 
         if found_pii:

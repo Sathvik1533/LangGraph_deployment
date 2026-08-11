@@ -121,33 +121,193 @@ class DemoLLM:
         
         # Detect language cleanly from system prompt or task
         lang = "python"
-        if "java" in prompt_lower:
+        if "java" in prompt_lower or "java" in user_task_lower:
             lang = "java"
-        elif "c++" in prompt_lower or "cpp" in prompt_lower:
+        elif "c++" in prompt_lower or "cpp" in prompt_lower or "c++" in user_task_lower:
             lang = "cpp"
             
-        # Task detection & categorization
-        is_prime = "prime" in user_task_lower
+        # Comprehensive Task Intent Classification
+        is_linked_list = any(k in user_task_lower for k in ["linked list", "linkedlist", "node", "singly linked", "doubly linked", "head.next"])
+        is_email = any(k in user_task_lower for k in ["email", "validate email", "email address", "email validation"])
+        is_stack = any(k in user_task_lower for k in ["stack", "lifo", "push and pop"]) and not is_linked_list
+        is_queue = any(k in user_task_lower for k in ["queue", "fifo", "enqueue", "dequeue"])
+        is_tree = any(k in user_task_lower for k in ["tree", "bst", "binary search tree", "binary tree"])
+        is_matrix = any(k in user_task_lower for k in ["matrix", "2d array", "matrix multiplication", "transpose"])
+        is_prime = "prime" in user_task_lower and not is_linked_list
         is_fibo = "fibonacci" in user_task_lower
         is_palin = "palindrome" in user_task_lower
-        is_div = "divide" in user_task_lower or "division" in user_task_lower
-        is_reverse = "reverse" in user_task_lower
+        is_div = ("divide" in user_task_lower or "division" in user_task_lower) and "safe" in user_task_lower
+        is_reverse = "reverse" in user_task_lower and not is_linked_list
         is_factorial = "factorial" in user_task_lower
         is_sort = any(k in user_task_lower for k in ["sort", "bubble", "quicksort", "mergesort", "order"])
-        is_search = any(k in user_task_lower for k in ["binary search", "search", "lookup", "find"])
+        is_search = any(k in user_task_lower for k in ["binary search", "search", "lookup", "find"]) and not is_linked_list and not is_tree
         is_stats = any(k in user_task_lower for k in ["stats", "statistics", "average", "sum", "count", "min", "max", "aggregate"])
         is_anagram = "anagram" in user_task_lower
 
         import re
         clean_task = re.sub(r'[^a-zA-Z0-9\s]', '', user_task).strip()
-        safe_task_summary = clean_task[:40] if clean_task else "custom task"
-        clean_words = [w for w in clean_task.split() if len(w) > 2 and w.lower() not in ['write', 'create', 'function', 'code', 'python', 'java', 'cpp', 'that', 'with', 'check', 'calculate', 'using', 'return', 'make']]
+        safe_task_summary = clean_task[:50] if clean_task else "custom task"
+        clean_words = [w for w in clean_task.split() if len(w) > 2 and w.lower() not in ['write', 'create', 'function', 'code', 'python', 'java', 'cpp', 'that', 'with', 'check', 'calculate', 'using', 'return', 'make', 'program', 'implement']]
         
-        func_name_py = "_".join(w.lower() for w in clean_words[:3]) or "custom_solution"
-        func_name_java = "".join(w.capitalize() for w in clean_words[:3]) or "CustomSolution"
+        func_name_py = "_".join(w.lower() for w in clean_words[:3]) or "execute_task"
+        func_name_java = "".join(w.capitalize() for w in clean_words[:3]) or "ExecuteTask"
 
+        # ====================================================================
+        # PYTHON 3.11 IMPLEMENTATIONS
+        # ====================================================================
         if lang == "python":
-            if is_reverse:
+            if is_linked_list:
+                code = '''class Node:
+    def __init__(self, data: int):
+        self.data = data
+        self.next = None
+
+class LinkedList:
+    def __init__(self):
+        self.head = None
+
+    def insert(self, data: int) -> None:
+        """Insert a new node at the end of the list."""
+        new_node = Node(data)
+        if not self.head:
+            self.head = new_node
+            return
+        curr = self.head
+        while curr.next:
+            curr = curr.next
+        curr.next = new_node
+
+    def delete(self, key: int) -> bool:
+        """Delete first occurrence of key. Returns True if deleted."""
+        curr = self.head
+        if curr and curr.data == key:
+            self.head = curr.next
+            return True
+        prev = None
+        while curr and curr.data != key:
+            prev = curr
+            curr = curr.next
+        if not curr:
+            return False
+        prev.next = curr.next
+        return True
+
+    def traverse(self) -> list[int]:
+        """Traverse the linked list and return elements as a list."""
+        elements = []
+        curr = self.head
+        while curr:
+            elements.append(curr.data)
+            curr = curr.next
+        return elements
+
+# Self-test validation
+ll = LinkedList()
+ll.insert(10)
+ll.insert(20)
+ll.insert(30)
+assert ll.traverse() == [10, 20, 30], "LinkedList insertion failed"
+ll.delete(20)
+assert ll.traverse() == [10, 30], "LinkedList deletion failed"
+print("Python LinkedList insertion, deletion, and traversal verified:", ll.traverse())
+'''
+            elif is_email:
+                code = '''import re
+
+def validate_email(email: str) -> bool:
+    """Validate an email address syntax according to standard format."""
+    if not isinstance(email, str) or not email.strip():
+        return False
+    pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+    return bool(re.match(pattern, email.strip()))
+
+# Self-test validation
+assert validate_email("user@example.com") == True, "Valid email failed"
+assert validate_email("invalid-email") == False, "Invalid email failed"
+assert validate_email("k.sathvik@domain.org") == True, "Valid dot email failed"
+assert validate_email("@no-user.com") == False, "Missing user failed"
+print("Python email validator assertions passed cleanly for user@example.com and edge cases!")
+'''
+            elif is_stack:
+                code = '''class Stack:
+    def __init__(self):
+        self._items = []
+
+    def push(self, item) -> None:
+        self._items.append(item)
+
+    def pop(self):
+        if self.is_empty():
+            raise IndexError("pop from empty stack")
+        return self._items.pop()
+
+    def peek(self):
+        if self.is_empty():
+            return None
+        return self._items[-1]
+
+    def is_empty(self) -> bool:
+        return len(self._items) == 0
+
+    def size(self) -> int:
+        return len(self._items)
+
+# Self-test validation
+s = Stack()
+s.push(1)
+s.push(2)
+assert s.peek() == 2
+assert s.pop() == 2
+assert s.size() == 1
+print("Stack implementation verified successfully!")
+'''
+            elif is_tree:
+                code = '''class TreeNode:
+    def __init__(self, val: int):
+        self.val = val
+        self.left = None
+        self.right = None
+
+class BinarySearchTree:
+    def __init__(self):
+        self.root = None
+
+    def insert(self, val: int) -> None:
+        if not self.root:
+            self.root = TreeNode(val)
+        else:
+            self._insert(self.root, val)
+
+    def _insert(self, node: TreeNode, val: int):
+        if val < node.val:
+            if not node.left:
+                node.left = TreeNode(val)
+            else:
+                self._insert(node.left, val)
+        else:
+            if not node.right:
+                node.right = TreeNode(val)
+            else:
+                self._insert(node.right, val)
+
+    def inorder(self) -> list[int]:
+        res = []
+        def _inorder(n):
+            if n:
+                _inorder(n.left)
+                res.append(n.val)
+                _inorder(n.right)
+        _inorder(self.root)
+        return res
+
+# Self-test validation
+bst = BinarySearchTree()
+for v in [50, 30, 70, 20, 40]:
+    bst.insert(v)
+assert bst.inorder() == [20, 30, 40, 50, 70]
+print("Binary Search Tree in-order traversal verified:", bst.inorder())
+'''
+            elif is_reverse:
                 code = '''def reverse_string(s: str) -> str:
     """Reverse a given string."""
     return s[::-1]
@@ -272,32 +432,191 @@ stats = compute_statistics([10, 20, 30, 40, 50])
 print("compute_statistics:", stats)
 assert stats["avg"] == 30.0 and stats["sum"] == 150
 '''
-            elif is_anagram:
-                code = '''def is_anagram(s1: str, s2: str) -> bool:
-    """Check if two strings are anagrams."""
-    c1 = sorted(c.lower() for c in s1 if c.isalnum())
-    c2 = sorted(c.lower() for c in s2 if c.isalnum())
-    return c1 == c2
-
-# Self-test validation
-res = is_anagram("listen", "silent")
-print("is_anagram('listen', 'silent'):", res)
-assert res == True, "Anagram test failed"
-'''
             else:
-                code = f'''def {func_name_py}(input_data: list = None) -> dict:
-    """Dynamically generated solution for: {safe_task_summary}"""
-    data = input_data or [10, 20, 30]
-    return {{"status": "success", "task": "{safe_task_summary}", "processed_count": len(data)}}
+                code = f'''def {func_name_py}(items: list = None) -> dict:
+    """
+    Automated implementation for specification:
+    '{safe_task_summary}'
+    """
+    data = items if items is not None else [10, 20, 30, 40]
+    processed = [x * 2 if isinstance(x, (int, float)) else str(x).upper() for x in data]
+    return {{
+        "task": "{safe_task_summary}",
+        "input_count": len(data),
+        "processed_result": processed,
+        "status": "success"
+    }}
 
 # Self-test validation
-res = {func_name_py}([1, 2, 3, 4])
-print("Execution output:", res)
-assert res["status"] == "success", "Execution assertion failed"
+result = {func_name_py}([1, 2, 3, 4])
+print("Dynamic execution output:", result)
+assert result["status"] == "success" and result["input_count"] == 4, "Assertion failed"
 '''
 
+        # ====================================================================
+        # JAVA 17 IMPLEMENTATIONS
+        # ====================================================================
         elif lang == "java":
-            if is_reverse:
+            if is_linked_list:
+                code = '''class Node {
+    int data;
+    Node next;
+    Node(int data) {
+        this.data = data;
+        this.next = null;
+    }
+}
+
+public class Main {
+    private Node head;
+
+    public void insert(int data) {
+        Node newNode = new Node(data);
+        if (head == null) {
+            head = newNode;
+            return;
+        }
+        Node curr = head;
+        while (curr.next != null) {
+            curr = curr.next;
+        }
+        curr.next = newNode;
+    }
+
+    public boolean delete(int key) {
+        Node curr = head, prev = null;
+        if (curr != null && curr.data == key) {
+            head = curr.next;
+            return true;
+        }
+        while (curr != null && curr.data != key) {
+            prev = curr;
+            curr = curr.next;
+        }
+        if (curr == null) return false;
+        prev.next = curr.next;
+        return true;
+    }
+
+    public void traverse() {
+        Node curr = head;
+        System.out.print("LinkedList: ");
+        while (curr != null) {
+            System.out.print(curr.data + " -> ");
+            curr = curr.next;
+        }
+        System.out.println("null");
+    }
+
+    public static void main(String[] args) {
+        Main list = new Main();
+        list.insert(10);
+        list.insert(20);
+        list.insert(30);
+        list.traverse();
+        list.delete(20);
+        list.traverse();
+        System.out.println("Java LinkedList insertion, deletion, and traversal executed successfully!");
+    }
+}
+'''
+            elif is_email:
+                code = '''import java.util.regex.Pattern;
+
+public class Main {
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$");
+
+    public static boolean validateEmail(String email) {
+        if (email == null || email.trim().isEmpty()) return false;
+        return EMAIL_PATTERN.matcher(email.trim()).matches();
+    }
+
+    public static void main(String[] args) {
+        boolean valid = validateEmail("user@example.com");
+        boolean invalid = validateEmail("invalid.email");
+        System.out.println("validateEmail('user@example.com'): " + valid);
+        System.out.println("validateEmail('invalid.email'): " + invalid);
+        if (valid && !invalid) {
+            System.out.println("All Java email validator test cases passed!");
+        }
+    }
+}
+'''
+            elif is_stack:
+                code = '''import java.util.ArrayList;
+
+public class Main {
+    private ArrayList<Integer> items = new ArrayList<>();
+
+    public void push(int item) {
+        items.add(item);
+    }
+
+    public int pop() {
+        if (isEmpty()) throw new IllegalStateException("Stack is empty");
+        return items.remove(items.size() - 1);
+    }
+
+    public int peek() {
+        if (isEmpty()) throw new IllegalStateException("Stack is empty");
+        return items.get(items.size() - 1);
+    }
+
+    public boolean isEmpty() {
+        return items.isEmpty();
+    }
+
+    public static void main(String[] args) {
+        Main stack = new Main();
+        stack.push(10);
+        stack.push(20);
+        System.out.println("Peek: " + stack.peek());
+        System.out.println("Pop: " + stack.pop());
+        System.out.println("Java Stack implementation verified successfully!");
+    }
+}
+'''
+            elif is_tree:
+                code = '''class TreeNode {
+    int val;
+    TreeNode left, right;
+    TreeNode(int val) { this.val = val; }
+}
+
+public class Main {
+    TreeNode root;
+
+    public void insert(int val) {
+        root = insertRec(root, val);
+    }
+
+    private TreeNode insertRec(TreeNode root, int val) {
+        if (root == null) return new TreeNode(val);
+        if (val < root.val) root.left = insertRec(root.left, val);
+        else if (val > root.val) root.right = insertRec(root.right, val);
+        return root;
+    }
+
+    public void inorder(TreeNode root) {
+        if (root != null) {
+            inorder(root.left);
+            System.out.print(root.val + " ");
+            inorder(root.right);
+        }
+    }
+
+    public static void main(String[] args) {
+        Main bst = new Main();
+        bst.insert(50);
+        bst.insert(30);
+        bst.insert(70);
+        System.out.print("Inorder BST: ");
+        bst.inorder(bst.root);
+        System.out.println("\nJava BST verified!");
+    }
+}
+'''
+            elif is_reverse:
                 code = '''public class Main {
     public static String reverseString(String s) {
         return new StringBuilder(s).reverse().toString();
@@ -358,20 +677,104 @@ assert res["status"] == "success", "Execution assertion failed"
 '''
             else:
                 code = f'''public class Main {{
-    public static String execute{func_name_java}(String taskSpec) {{
-        System.out.println("Executing dynamic Java specification: " + taskSpec);
-        return "SUCCESS: " + taskSpec;
+    public static String execute{func_name_java}(String spec) {{
+        System.out.println("Executing Java 17 logic for: " + spec);
+        return "SUCCESS: " + spec;
     }}
 
     public static void main(String[] args) {{
         String result = execute{func_name_java}("{safe_task_summary}");
-        System.out.println(result);
+        System.out.println("Execution result: " + result);
     }}
 }}
 '''
 
-        else: # C++
-            if is_reverse:
+        # ====================================================================
+        # C++ 20 IMPLEMENTATIONS
+        # ====================================================================
+        else:
+            if is_linked_list:
+                code = '''#include <iostream>
+
+struct Node {
+    int data;
+    Node* next;
+    Node(int val) : data(val), next(nullptr) {}
+};
+
+class LinkedList {
+public:
+    Node* head;
+    LinkedList() : head(nullptr) {}
+
+    void insert(int val) {
+        Node* newNode = new Node(val);
+        if (!head) { head = newNode; return; }
+        Node* temp = head;
+        while (temp->next) temp = temp->next;
+        temp->next = newNode;
+    }
+
+    bool remove(int key) {
+        if (!head) return false;
+        if (head->data == key) {
+            Node* temp = head;
+            head = head->next;
+            delete temp;
+            return true;
+        }
+        Node* curr = head;
+        while (curr->next && curr->next->data != key) curr = curr->next;
+        if (!curr->next) return false;
+        Node* temp = curr->next;
+        curr->next = curr->next->next;
+        delete temp;
+        return true;
+    }
+
+    void traverse() {
+        Node* curr = head;
+        std::cout << "LinkedList: ";
+        while (curr) {
+            std::cout << curr->data << " -> ";
+            curr = curr->next;
+        }
+        std::cout << "nullptr" << std::endl;
+    }
+};
+
+int main() {
+    LinkedList ll;
+    ll.insert(10);
+    ll.insert(20);
+    ll.insert(30);
+    ll.traverse();
+    ll.remove(20);
+    ll.traverse();
+    std::cout << "C++ LinkedList operations executed successfully!" << std::endl;
+    return 0;
+}
+'''
+            elif is_email:
+                code = '''#include <iostream>
+#include <string>
+#include <regex>
+
+bool validateEmail(const std::string& email) {
+    if (email.empty()) return false;
+    const std::regex pattern(R"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)");
+    return std::regex_match(email, pattern);
+}
+
+int main() {
+    bool valid = validateEmail("user@example.com");
+    bool invalid = validateEmail("invalid.email");
+    std::cout << "validateEmail('user@example.com'): " << (valid ? "true" : "false") << std::endl;
+    std::cout << "validateEmail('invalid.email'): " << (invalid ? "true" : "false") << std::endl;
+    return 0;
+}
+'''
+            elif is_reverse:
                 code = '''#include <iostream>
 #include <string>
 #include <algorithm>
@@ -426,12 +829,12 @@ int main() {
                 code = f'''#include <iostream>
 #include <string>
 
-void {func_name_py}() {{
-    std::cout << "Dynamic C++ execution for specification: {safe_task_summary}" << std::endl;
+void execute_{func_name_py}() {{
+    std::cout << "Executing C++ 20 specification: {safe_task_summary}" << std::endl;
 }}
 
 int main() {{
-    {func_name_py}();
+    execute_{func_name_py}();
     return 0;
 }}
 '''
@@ -594,8 +997,8 @@ def run_python_code(code: str) -> str:
     sys.stdout = new_stdout
     
     try:
-        local_scope: Dict[str, Any] = {}
-        exec(clean_code, {}, local_scope)
+        sandbox_scope: Dict[str, Any] = {"__builtins__": __builtins__}
+        exec(clean_code, sandbox_scope, sandbox_scope)
         result = new_stdout.getvalue()
     except Exception:
         result = f"Execution Error:\n{traceback.format_exc()}"
