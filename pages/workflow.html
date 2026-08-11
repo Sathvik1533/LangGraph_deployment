@@ -1937,13 +1937,13 @@
                 if (simBtn) simBtn.disabled = false;
 
                 highlightLiveNode('ReviewGate', 'running');
-                setElemText('telemetryStatusBadge', 'STATUS: WAITING FOR HUMAN REVIEW');
+                setElemText('telemetryStatusBadge', 'STATUS: Awaiting Human Sign-off');
                 const tBadge = document.getElementById('telemetryStatusBadge');
                 if (tBadge) tBadge.className = 'cyber-badge cyber-badge-indigo';
-                setElemText('simStepStatus', `LIVE: Paused at Human Review Gate`);
+                setElemText('simStepStatus', `LIVE: Awaiting Human Sign-off`);
 
                 openWorkflowHitlModal(data.code, data.thread_id || runId);
-                showToast('⏸️ Human Review Gate reached! Please review code in modal.', 'info');
+                showToast('⏸️ Human Review Gate reached! Awaiting Human Sign-off.', 'info');
                 return;
             }
 
@@ -1963,7 +1963,7 @@
 
                 if (isSuccess) {
                     highlightLiveNode('END', 'success');
-                    setElemText('telemetryStatusBadge', 'STATUS: COMPLETED (SUCCESS)');
+                    setElemText('telemetryStatusBadge', 'STATUS: Tests Passed');
                     const tBadge = document.getElementById('telemetryStatusBadge');
                     if (tBadge) tBadge.className = 'cyber-badge cyber-badge-emerald';
                     showToast(`🎉 Execution Completed Successfully!`, 'success');
@@ -2016,6 +2016,7 @@
         }
 
         async function submitWorkflowHitlAction(action) {
+            console.log(`[HITL] CLICK action: ${action}`);
             const codeInput = document.getElementById('workflowHitlCodeInput');
             const feedbackInput = document.getElementById('workflowHitlFeedbackInput');
             
@@ -2026,6 +2027,7 @@
             showToast(`Submitting Human Review decision: [${action.toUpperCase()}]...`, 'info');
 
             try {
+                console.log(`[HITL] REQUEST POST /hitl/action: thread_id=${activeLiveThreadId}, action=${action}`);
                 const res = await fetch('/hitl/action', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -2038,6 +2040,7 @@
                     })
                 });
 
+                console.log(`[HITL] RESPONSE STATUS: ${res.status}`);
                 if (!res.ok) {
                     const err = await res.json().catch(() => ({}));
                     const errMsg = err.detail?.message || err.detail || 'Server error processing action';
@@ -2047,6 +2050,7 @@
                 }
 
                 const result = await res.json();
+                console.log(`[HITL] RESPONSE JSON:`, result);
                 const logBox = document.getElementById('streamLogOutput');
                 const codeOutput = document.getElementById('activeCodeOutput');
                 const stateOutput = document.getElementById('activeStateOutput');
@@ -2056,8 +2060,8 @@
                     // Action 1: ABORT
                     highlightLiveNode('ReviewGate', 'failed');
                     setElemText('telemetryAgentBadge', 'AGENT: HUMAN_REVIEW (ABORTED)');
-                    setElemText('telemetryStatusBadge', 'STATUS: ABORTED BY REVIEWER');
-                    setElemText('simStepStatus', 'LIVE: Workflow cancelled by human reviewer. Execution safely halted.');
+                    setElemText('telemetryStatusBadge', 'STATUS: Workflow Aborted');
+                    setElemText('simStepStatus', 'LIVE: Workflow Aborted');
 
                     const statusBadge = document.getElementById('telemetryStatusBadge');
                     if (statusBadge) statusBadge.className = 'cyber-badge cyber-badge-amber';
@@ -2089,8 +2093,8 @@
                     // Action 2: REQUEST CHANGES
                     highlightLiveNode('Developer', 'running');
                     setElemText('telemetryAgentBadge', 'AGENT: DEVELOPER (REVISING)');
-                    setElemText('telemetryStatusBadge', 'STATUS: WAITING FOR HUMAN REVIEW');
-                    setElemText('simStepStatus', `LIVE: Developer Agent synthesized revised draft based on feedback: "${feedback || 'Revisions requested'}"`);
+                    setElemText('telemetryStatusBadge', 'STATUS: Reviewer Requested Changes → Developer Revising');
+                    setElemText('simStepStatus', `LIVE: Reviewer Requested Changes → Developer Revising`);
 
                     const statusBadge = document.getElementById('telemetryStatusBadge');
                     if (statusBadge) statusBadge.className = 'cyber-badge cyber-badge-indigo';
@@ -2120,10 +2124,13 @@
 
                     // Step A: Mark ReviewGate Completed ➔ Start Tester Node
                     highlightLiveNode('ReviewGate', 'success');
+                    setElemText('telemetryStatusBadge', 'STATUS: Human Approved → Testing');
+                    setElemText('simStepStatus', 'LIVE: Human Approved → Testing');
+
                     setTimeout(() => {
                         highlightLiveNode('Tester', 'running');
                         setElemText('telemetryAgentBadge', 'AGENT: TESTER (SANDBOX)');
-                        setElemText('telemetryStatusBadge', 'STATUS: TESTING CANDIDATE CODE');
+                        setElemText('telemetryStatusBadge', 'STATUS: Human Approved → Testing');
 
                         const statusBadge = document.getElementById('telemetryStatusBadge');
                         if (statusBadge) statusBadge.className = 'cyber-badge cyber-badge-emerald';
@@ -2144,8 +2151,8 @@
                             if (isSuccess) {
                                 highlightLiveNode('END', 'success');
                                 setElemText('telemetryAgentBadge', 'AGENT: END');
-                                setElemText('telemetryStatusBadge', 'STATUS: COMPLETED (SUCCESS)');
-                                setElemText('simStepStatus', 'LIVE: All sandbox test assertions PASSED cleanly following human review!');
+                                setElemText('telemetryStatusBadge', 'STATUS: Tests Passed');
+                                setElemText('simStepStatus', 'LIVE: Tests Passed');
 
                                 if (logBox) {
                                     logBox.textContent += `[${timeStr}] [TESTER] ${result.report || 'All sandbox assertions passed cleanly.'}\n[${timeStr}] [ROUTER] Decision: END (execution_success = True)\n[${timeStr}] 🎉 Workflow completed successfully!\n`;

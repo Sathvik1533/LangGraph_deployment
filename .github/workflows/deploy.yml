@@ -1,0 +1,15 @@
+name: Continuous Deployment (CD)
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    name: Trigger Render Deployment
+    runs-on: ubuntu-latest
+    if: github.repository == 'Sathvik1533/LangGraph_deployment'
+    steps:
+      - name: Trigger Webhook Deploy
+        run: |
+          echo "Triggering auto-deploy for production branch main..."
