@@ -18,12 +18,8 @@ Production Patterns:
 """
 
 import warnings
-# Silence LangChain and LangGraph pending deprecation warnings for production deployment
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
-warnings.filterwarnings("ignore", message=".*allowed_objects.*")
-warnings.filterwarnings("ignore", message=".*LangChain.*")
-warnings.filterwarnings("ignore", message=".*on_event.*")
+warnings.filterwarnings("ignore")
+warnings.simplefilter("ignore")
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request, Query
