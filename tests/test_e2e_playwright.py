@@ -7,9 +7,8 @@ Verifies:
 3. Workflow control toolbar: Simulation Play, Pause, Resume, Stop, Reset, Next, Back
 4. Security Lab: Scanning live API, Attack Vector presets, Test in Pipeline -> Guardrail Intercept
 5. Human-in-the-Loop Governance: Approve, Edit & Approve, Request Changes, Abort
-6. Scenario card selections
-7. Real-time execution advancement & state machine invariants (A-J)
-8. Input -> Guardrail -> Workflow Payload Trace Panel & Security Decisions
+6. Automated Simulation vs Human Review Mode execution lifecycles
+7. Guardrail Trace Panel synchronization with backend SSE events
 """
 
 import pytest
@@ -147,17 +146,52 @@ def test_full_platform_e2e_flow():
 
         # Check HITL review modal opens
         hitl_modal = page.locator("#workflowHitlModal")
-        if hitl_modal.is_visible():
-            print("  ✓ HITL Review Gate opened successfully")
-            page.locator("#workflowHitlModal button:has-text('Approve')").click()
-            page.wait_for_timeout(1500)
-            print("  ✓ HITL Approve action submitted successfully")
+        expect(hitl_modal).to_be_visible(timeout=5000)
+        print("  ✓ HITL Review Gate opened successfully")
+        page.locator("#workflowHitlModal button", has_text=re.compile(r"^Approve$")).click()
+        page.wait_for_timeout(1500)
+        print("  ✓ HITL Approve action submitted successfully")
 
         # 6. AUDIT HISTORY PAGE
         print("\n🚀 [6/6] Testing History & Audit Logs ('/history')...")
         page.goto(f"{BASE_URL}/history")
         expect(page.locator("h1")).to_contain_text(re.compile(r"(Code History|Audit Log)"))
         print("  ✓ Audit Logs page loaded cleanly")
+
+        browser.close()
+
+
+def test_human_review_mode_lifecycle_pause_resume_abort():
+    """Verifies Mode B: Human Review mode pause, resume (Approve), and abort lifecycles."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(viewport={"width": 1400, "height": 900})
+        context.add_init_script("localStorage.setItem('ai_workflow_studio_tour_completed_v3', 'true');")
+        page = context.new_page()
+
+        # 1. Test Pause & Approve Resume Path
+        page.goto(f"{BASE_URL}/workflow?run=sim_hitl_approve_1&task=Write%20a%20python%20function%20to%20sort%20an%20array&mode=simulation&hitl=true&autoRun=true")
+        
+        # Expect modal to pop open when reaching human review gate
+        hitl_modal = page.locator("#workflowHitlModal")
+        expect(hitl_modal).to_be_visible(timeout=5000)
+        expect(page.locator("#telemetryStatusBadge")).to_contain_text("Awaiting Human Sign-off")
+        print("  ✓ HITL Mode paused execution at Human Review Gate and opened review modal")
+
+        # Click exact Approve button -> resumes same thread
+        page.locator("#workflowHitlModal button", has_text=re.compile(r"^Approve$")).click()
+        page.wait_for_timeout(2500)
+        expect(page.locator("#telemetryStatusBadge")).to_contain_text(re.compile(r"(Tests Passed|COMPLETED|SUCCESS)"))
+        expect(page.locator("#simStepStatus")).to_contain_text(re.compile(r"(WORKFLOW COMPLETED SUCCESSFULLY|Tests Passed|COMPLETED|SUCCESS)"))
+        print("  ✓ Approve action resumed same run and completed execution successfully")
+
+        # 2. Test Pause & Abort Path
+        page.goto(f"{BASE_URL}/workflow?run=sim_hitl_abort_1&task=Write%20a%20python%20function%20to%20sort%20an%20array&mode=simulation&hitl=true&autoRun=true")
+        expect(hitl_modal).to_be_visible(timeout=5000)
+        page.locator("#workflowHitlModal button:has-text('Abort')").click()
+        page.wait_for_timeout(1000)
+        expect(page.locator("#telemetryStatusBadge")).to_contain_text(re.compile(r"(Aborted|STOPPED|FAILED)"))
+        print("  ✓ Abort action safely halted workflow at review gate")
 
         browser.close()
 
@@ -170,8 +204,8 @@ def test_workflow_execution_advancement_and_state_invariants():
         context.add_init_script("localStorage.setItem('ai_workflow_studio_tour_completed_v3', 'true');")
         page = context.new_page()
 
-        # A-D. Clean task passes Guardrail and populates trace panel
-        page.goto(f"{BASE_URL}/workflow?run=sim_e2e_inv_1&task=Write%20a%20python%20function%20to%20reverse%20a%20string&mode=simulation&autoRun=true")
+        # A-D. Clean task passes Guardrail and populates trace panel in Automated Mode (hitl=false)
+        page.goto(f"{BASE_URL}/workflow?run=sim_e2e_inv_1&task=Write%20a%20python%20function%20to%20reverse%20a%20string&mode=simulation&hitl=false&autoRun=true")
         
         # Verify SSE stream connection and real START event
         page.wait_for_timeout(1500)
@@ -240,4 +274,4 @@ def test_workflow_execution_advancement_and_state_invariants():
         print("  ✓ F: LIVE Execute API starts real backend workflow execution")
 
         browser.close()
-        print("\n🎉 ALL ADVANCED EXECUTION, PAYLOAD TRACE & STATE INVARIANT VERIFICATIONS PASSED!")
+        print("\n🎉 ALL ADVANCED EXECUTION, HITL & STATE INVARIANT VERIFICATIONS PASSED!")

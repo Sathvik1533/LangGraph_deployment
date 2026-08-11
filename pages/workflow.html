@@ -2688,6 +2688,21 @@
             }
         }
 
+        function openWorkflowHitlModal(code, threadId) {
+            const modal = document.getElementById('workflowHitlModal');
+            const codeInput = document.getElementById('workflowHitlCodeInput');
+            const subtitle = document.getElementById('workflowHitlSubtitle');
+            if (codeInput && code) {
+                codeInput.value = code.replace(/^```[a-zA-Z]*\n?/gm, '').replace(/```$/gm, '').trim();
+            }
+            if (subtitle && threadId) {
+                subtitle.textContent = `Thread ID: ${threadId} • Candidate Code Draft Ready for Governance Review`;
+            }
+            if (modal) {
+                modal.style.display = 'flex';
+            }
+        }
+
         function closeWorkflowHitlModal() {
             const modal = document.getElementById('workflowHitlModal');
             if (modal) modal.style.display = 'none';
