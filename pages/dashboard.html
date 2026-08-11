@@ -136,7 +136,7 @@
         </div>
 
         <!-- Presets & State Canvas Split -->
-        <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 24px; margin-bottom: 32px;">
+        <div class="dashboard-split-grid" style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 24px; margin-bottom: 32px;">
             
             <div class="studio-card">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
@@ -289,7 +289,7 @@
                         <span class="material-symbols-outlined" style="font-size: 16px; color: #2563eb;">verified_user</span>
                         OWASP Top 10 for LLM Applications (2025 Standard Mapping)
                     </div>
-                    <span class="cyber-badge cyber-badge-emerald" style="font-size: 11px;">100% DEFENSE COVERAGE</span>
+                    <span class="cyber-badge cyber-badge-emerald" style="font-size: 11px;" id="defenseCoverageBadge">— / — DEFENSE COVERAGE</span>
                 </div>
 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; font-size: 12.5px;">
@@ -523,6 +523,7 @@
             const subtitle = document.getElementById('scanResultSubtitle');
             const badge = document.getElementById('scanResultBadge');
             const grid = document.getElementById('scannersListGrid');
+            const coverageBadge = document.getElementById('defenseCoverageBadge');
 
             if (data.passed) {
                 icon.textContent = 'verified';
@@ -538,6 +539,18 @@
                 subtitle.textContent = data.reason || 'Input intercepted before model invocation to ensure safe execution.';
                 badge.className = 'cyber-badge cyber-badge-amber';
                 badge.textContent = `BLOCKED (${data.severity || 'HIGH'})`;
+            }
+
+            if (data.scans && coverageBadge) {
+                const total = data.scans.length;
+                const blocked = data.scans.filter(s => !s.passed).length;
+                if (blocked > 0) {
+                    coverageBadge.textContent = `${blocked} / ${total} BLOCKED`;
+                    coverageBadge.className = 'cyber-badge cyber-badge-amber';
+                } else {
+                    coverageBadge.textContent = `${total} / ${total} CLEAN`;
+                    coverageBadge.className = 'cyber-badge cyber-badge-emerald';
+                }
             }
 
             if (data.scans) {
