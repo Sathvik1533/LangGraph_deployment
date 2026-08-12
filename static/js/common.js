@@ -27,6 +27,30 @@ document.addEventListener('click', () => {
     document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
 });
 
+function isNaturalLanguageText(text, lang) {
+    if (!text || !text.trim()) return false;
+    const lower = text.trim().toLowerCase();
+    
+    // Check if code contains structural code constructs for target language
+    const codeConstructs = [
+        'def ', 'class ', 'function ', 'return ', 'import ', 'from ', '#include', 
+        'public class', 'void ', 'int ', 'const ', 'let ', 'var ', 'if (', 'for (', 'while (', ';'
+    ];
+    const hasCodeStructure = codeConstructs.some(c => lower.includes(c));
+    
+    // Check for common natural language feedback patterns
+    const nlPatterns = [
+        /\braise\b.*\b(exception|error)\b/,
+        /\b(please|ensure|make sure|add|change|fix|modify|create|update|implement|use|handle|check)\b.*\b(error|exception|case|function|logic|code|input|parameter|type|string|return|null)\b/,
+        /\bif string is not present\b/,
+        /\bshould return\b/,
+        /\bshould raise\b/
+    ];
+    const matchesNlPattern = nlPatterns.some(p => p.test(lower));
+    
+    return matchesNlPattern && !hasCodeStructure;
+}
+
 function extractTaskIntent(rawTask) {
     if (!rawTask) return "General Code Implementation";
     let intent = rawTask.trim();

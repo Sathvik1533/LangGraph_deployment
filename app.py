@@ -994,6 +994,19 @@ async def handle_hitl_action(req_body: HITLActionRequest):
         if action == "edit":
             hitl_stats["edited"] += 1
             active_code = req_body.edited_code if req_body.edited_code is not None else session.get("code", "")
+            
+            # Backend Guard: Check if edited_code is natural language instructions
+            code_clean = (active_code or "").strip().lower()
+            code_kw = ["def ", "class ", "function ", "return ", "import ", "#include", "public class", "void ", "int ", "const ", "let ", "var ", ";"]
+            has_code_kw = any(kw in code_clean for kw in code_kw)
+            nl_trig = ["raise ", "please ", "ensure ", "make sure", "should ", "add ", "change ", "fix ", "modify "]
+            has_nl_trig = any(trig in code_clean for trig in nl_trig)
+            
+            if has_nl_trig and not has_code_kw:
+                raise HTTPException(
+                    status_code=400,
+                    detail="The submitted code contains natural language instructions. Please place instructions in the Reviewer Guidance field and select 'Request Changes' so the Developer Agent can synthesize the code."
+                )
         else:
             hitl_stats["approved"] += 1
             active_code = session.get("code", "")

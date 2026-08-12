@@ -2600,10 +2600,14 @@
                     }
                 });
                 renderSecurityControlCards();
-            } else if (canonicalNode === 'guardrail' && (data.status === 'CLEAN' || data.status === 'PASSED' || data.event === 'node_complete')) {
+            }
+
+            if (canonicalNode === 'guardrail' && (data.status === 'CLEAN' || data.status === 'PASSED' || data.status === 'success' || data.event === 'node_complete')) {
                 Object.keys(liveSecurityControls).forEach(k => {
-                    liveSecurityControls[k].status = 'CLEAN';
-                    liveSecurityControls[k].reason = 'Zero adversarial patterns or sensitive data detected.';
+                    if (liveSecurityControls[k].status === 'WAITING' || liveSecurityControls[k].status === 'SCANNING...') {
+                        liveSecurityControls[k].status = 'CLEAN';
+                        liveSecurityControls[k].reason = 'Zero adversarial patterns or sensitive data detected.';
+                    }
                 });
                 renderSecurityControlCards();
 
@@ -2613,7 +2617,6 @@
                 const tb = document.getElementById('inputTraceBadge');
                 if (tb) tb.className = 'cyber-badge cyber-badge-emerald';
             }
-
 
             if (!nodeStore[canonicalNode]) {
                 nodeStore[canonicalNode] = { events: [], log: '', code: '', state: null, status: 'WAITING', iteration: data.iteration || 1 };
@@ -2795,8 +2798,20 @@
             const codeInput = document.getElementById('workflowHitlCodeInput');
             const feedbackInput = document.getElementById('workflowHitlFeedbackInput');
             
-            const editedCode = codeInput ? codeInput.value : '';
-            const feedback = feedbackInput ? feedbackInput.value : '';
+            let editedCode = codeInput ? codeInput.value : '';
+            let feedback = feedbackInput ? feedbackInput.value : '';
+
+            // Guard 1: Natural language text in Code Editor box
+            if ((action === 'edit' || action === 'approve') && typeof isNaturalLanguageText === 'function' && isNaturalLanguageText(editedCode, activeLanguage)) {
+                showToast('⚠️ Code Editor contains natural-language text. Put instructions in Feedback box & click "Request Changes".', 'warning');
+                return;
+            }
+
+            // Guard 2: Feedback typed in guidance box, but clicked "Edit & Approve"
+            if (action === 'edit' && feedback.trim().length > 0) {
+                showToast('💡 Feedback detected in guidance box: Requesting AI code revision via Developer Agent...', 'info');
+                action = 'reject';
+            }
 
             closeWorkflowHitlModal();
             showToast(`Submitting Human Review decision: [${action.toUpperCase()}]...`, 'info');
@@ -3001,10 +3016,10 @@
             </div>
 
             <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
-                <button onclick="submitWorkflowHitlAction('abort')" class="cyber-btn" style="background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1;">Abort</button>
-                <button onclick="submitWorkflowHitlAction('reject')" class="cyber-btn" style="background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5;">Request Changes</button>
-                <button onclick="submitWorkflowHitlAction('edit')" class="cyber-btn" style="background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe;">Edit & Approve</button>
-                <button onclick="submitWorkflowHitlAction('approve')" class="cyber-btn cyber-btn-primary">Approve</button>
+                <button onclick="submitWorkflowHitlAction('abort')" class="cyber-btn" style="background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1;" data-tooltip="Abort: Cancel task execution safely without running untrusted code.">Abort</button>
+                <button onclick="submitWorkflowHitlAction('reject')" class="cyber-btn" style="background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5;" data-tooltip="Request Changes: Send instructions from Reviewer Guidance box to Developer Agent to revise code.">Request Changes (AI Revision)</button>
+                <button onclick="submitWorkflowHitlAction('edit')" class="cyber-btn" style="background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe;" data-tooltip="Edit & Approve: Apply your direct manual edits from Candidate Code box directly to sandbox testing.">Edit & Approve (Manual Code)</button>
+                <button onclick="submitWorkflowHitlAction('approve')" class="cyber-btn cyber-btn-primary" data-tooltip="Approve: Approve candidate code as-is for sandbox testing.">Approve</button>
             </div>
         </div>
     </div>

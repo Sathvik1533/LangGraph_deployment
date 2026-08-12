@@ -478,14 +478,29 @@ async function submitHitlAction(action) {
     const reportDisplay = document.getElementById('reportDisplay');
     const taskInput = document.getElementById('taskInput');
 
+    let editedCodeVal = hitlEditableCode ? hitlEditableCode.value : null;
+    let feedbackVal = hitlFeedbackInput ? hitlFeedbackInput.value : null;
+
+    // Guard 1: Natural language text in Code Editor box
+    if ((action === 'edit' || action === 'approve') && typeof isNaturalLanguageText === 'function' && isNaturalLanguageText(editedCodeVal, language)) {
+        showToast('⚠️ Code Editor contains natural-language text. Put instructions in Feedback box & click "Request Changes".', 'warning');
+        return;
+    }
+
+    // Guard 2: Feedback typed in guidance box, but clicked "Edit & Approve"
+    if (action === 'edit' && feedbackVal && feedbackVal.trim().length > 0) {
+        showToast('💡 Feedback detected in guidance box: Requesting AI code revision via Developer Agent...', 'info');
+        action = 'reject';
+    }
+
     showToast(`Processing human action: ${action.toUpperCase()}...`, 'info');
 
     try {
         const payload = {
             thread_id: activeHitlThreadId,
             action: action,
-            edited_code: hitlEditableCode ? hitlEditableCode.value : null,
-            feedback: hitlFeedbackInput ? hitlFeedbackInput.value : null,
+            edited_code: editedCodeVal,
+            feedback: feedbackVal,
             language: language
         };
 
