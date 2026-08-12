@@ -2284,11 +2284,16 @@
             updateInspectorView('START');
 
             if (autoRun) {
+                const freshRunId = (queryMode === 'simulation' ? 'sim_' : 'run_') + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+                const freshUrl = `/workflow?run=${encodeURIComponent(freshRunId)}&task=${encodeURIComponent(activeTask)}&intent=${encodeURIComponent(taskIntent)}&lang=${encodeURIComponent(activeLanguage)}&mode=${queryMode}&autoRun=true${hitlModeParam ? '&hitl=true' : ''}`;
+                window.history.replaceState({}, '', freshUrl);
+                if (runIdBadge) runIdBadge.textContent = `ID: ${freshRunId.substring(0, 18)}`;
+
                 setTimeout(() => {
                     document.getElementById('stateGraphSvg')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }, 300);
 
-                runLiveBackendWorkflow(activeRunId, activeTask, activeLanguage, hitlModeParam, queryMode);
+                runLiveBackendWorkflow(freshRunId, activeTask, activeLanguage, hitlModeParam, queryMode);
             } else if (currentRun && currentRun.generatedCode) {
                 if (currentRun.generatedCode) setElemText('activeCodeOutput', currentRun.generatedCode);
                 if (currentRun.testResult) setElemText('streamLogOutput', `[RESTORED RUN: ${activeRunId}]\nTask: ${currentRun.task}\nLanguage: ${currentRun.language}\nStatus: ${currentRun.status}\n\n[REPORT]\n${currentRun.testResult}`);

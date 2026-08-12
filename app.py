@@ -1159,7 +1159,14 @@ async def stream_workflow_events(
         task=task_text, 
         language=target_lang
     )
+    # Ensure fresh execution stream: reset flags and clean up any stale session
     run_state.status = "RUNNING"
+    run_state.current_node = "START"
+    run_state.stop_requested = False
+    run_state.step_mode = False
+    run_state.pause_event.set()
+    run_state.history_events.clear()
+    hitl_sessions.pop(tid, None)
 
     lang_labels = {"python": "Python 3.11", "java": "Java 17", "cpp": "C++ 20"}
     target_lang_label = lang_labels.get(target_lang, target_lang.upper())
