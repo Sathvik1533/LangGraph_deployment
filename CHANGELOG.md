@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.1.0] - 2026-08-12
 
 ### Added
+- **Verified Production Resilience Patterns Documentation**: Fully documented and cited source line references for `circuit_breaker` (`agent.py:L65-69`), `jittered_wait` (`agent.py:L1234-1265`), `RateLimiter` (`app.py:L71-111`), `thread_id` session tracking (`app.py:L331`), `validate_task_input` (`agent.py:L1288`), and `should_continue` (`agent.py:L1766`).
 - **Dynamic Input & Output OWASP Guardrails Architecture**: Fully documented and aligned 6 input scanners (`Prompt Injection LLM01`, `Sensitive Data LLM02`, `Excessive Agency LLM06`, `Unbounded Consumption LLM10`, `Topic Boundary`, `Content Safety`) and 4 output scanners (`Dangerous Code`, `PII Leaks`, `Code Relevance`, `Language Correctness`).
 - **Persistent Governance & Error Recovery Banners**: Integrated persistent canvas banners (`#hitlGovernanceBanner` and `#workflowErrorBanner`) providing immediate `[Re-open Review Gate]`, `[Abort Task]`, and `[Reset Workflow]` escape hatches.
 - **LLM Engine Mode Badge**: Real-time header indicator displaying `Live LLM: Groq llama-3.3-70b` vs `Template Fallback Mode`.

@@ -233,6 +233,22 @@ AI Workflow Studio implements **OWASP LLM Top 10** controls across pre-LLM and p
 
 ---
 
+## ⚙️ Verified Production Resilience Patterns
+
+All production resilience patterns described below are backed by verified implementation in source code:
+
+| Production Pattern | Verified Implementation | Source Code Citation |
+| :--- | :--- | :--- |
+| **Circuit Breaker Shield** | Tracks consecutive provider failures (`CIRCUIT_BREAKER_THRESHOLD = 5`) with auto-cooldown (`CIRCUIT_BREAKER_TIMEOUT = 60s`). Traps downstream API outages before cascading. | [`agent.py:L65-L69`](file:///Users/k.sathvik/.gemini/antigravity/scratch/LangGraph_deployment/agent.py#L65-L69), [`agent.py:L1246-L1253`](file:///Users/k.sathvik/.gemini/antigravity/scratch/LangGraph_deployment/agent.py#L1246-L1253), [`app.py:L495-L502`](file:///Users/k.sathvik/.gemini/antigravity/scratch/LangGraph_deployment/app.py#L495-L502) |
+| **Jittered Exponential Backoff** | Backoff decorator with randomized micro-jitter (`min_wait=1s`, `max_wait=10s`) for LLM API retries to prevent thundering herd spikes. | [`agent.py:L1234-L1265`](file:///Users/k.sathvik/.gemini/antigravity/scratch/LangGraph_deployment/agent.py#L1234-L1265) |
+| **Sliding Window IP Rate Limiter** | In-memory IP rate limiter enforcing 10 requests / minute per client IP, rejecting bursts with HTTP 429 Too Many Requests. | [`app.py:L71-L111`](file:///Users/k.sathvik/.gemini/antigravity/scratch/LangGraph_deployment/app.py#L71-L111), [`app.py:L698-L699`](file:///Users/k.sathvik/.gemini/antigravity/scratch/LangGraph_deployment/app.py#L698-L699) |
+| **Isolated Execution Timeouts** | Strictly bound execution timeouts: 5-second subprocess execution limit with `env={}` in `run_python_code()`, 30s LLM request timeout, and 60s circuit breaker cooldown. | [`agent.py:L1206`](file:///Users/k.sathvik/.gemini/antigravity/scratch/LangGraph_deployment/agent.py#L1206), [`agent.py:L1385-L1415`](file:///Users/k.sathvik/.gemini/antigravity/scratch/LangGraph_deployment/agent.py#L1385-L1415) |
+| **Thread Session Isolation & State Tracking** | Unique thread ID allocation (`thread_id`) tracking HITL decision states, SSE telemetry logs, and Redis/dict session persistence. | [`app.py:L331-L332`](file:///Users/k.sathvik/.gemini/antigravity/scratch/LangGraph_deployment/app.py#L331-L332), [`app.py:L730-L785`](file:///Users/k.sathvik/.gemini/antigravity/scratch/LangGraph_deployment/app.py#L730-L785), [`app.py:L1146`](file:///Users/k.sathvik/.gemini/antigravity/scratch/LangGraph_deployment/app.py#L1146) |
+| **Input Task Pre-Validation** | Sanitizes user prompt task inputs and extracts core task intents prior to graph ingestion. | [`agent.py:L1288`](file:///Users/k.sathvik/.gemini/antigravity/scratch/LangGraph_deployment/agent.py#L1288), [`app.py:L1136`](file:///Users/k.sathvik/.gemini/antigravity/scratch/LangGraph_deployment/app.py#L1136) |
+| **Conditional Edge State Graph Routing** | Resolves dynamic graph transitions (`should_continue`) based on test verification status and retry counts. | [`agent.py:L1766`](file:///Users/k.sathvik/.gemini/antigravity/scratch/LangGraph_deployment/agent.py#L1766), [`agent.py:L1820`](file:///Users/k.sathvik/.gemini/antigravity/scratch/LangGraph_deployment/agent.py#L1820) |
+
+---
+
 ## 📂 Project Directory Structure
 
 ```
