@@ -2496,7 +2496,8 @@
             showToast(`🚀 ${modeVal.toUpperCase()} execution started for ${labelMap[lang] || lang.toUpperCase()}`, 'info');
 
             try {
-                const streamUrl = `/stream?task=${encodeURIComponent(inputTask)}&target_language=${encodeURIComponent(lang)}&task_intent=${encodeURIComponent(taskIntent)}&language=${encodeURIComponent(lang)}&max_iterations=3&hitl_mode=${hitlMode}&thread_id=${encodeURIComponent(runId)}&mode=${encodeURIComponent(modeVal)}&scenario=${encodeURIComponent(currentScenario)}`;
+                const streamScenario = modeVal === 'live' ? 'live' : currentScenario;
+                const streamUrl = `/stream?task=${encodeURIComponent(inputTask)}&target_language=${encodeURIComponent(lang)}&task_intent=${encodeURIComponent(taskIntent)}&language=${encodeURIComponent(lang)}&max_iterations=3&hitl_mode=${hitlMode}&thread_id=${encodeURIComponent(runId)}&mode=${encodeURIComponent(modeVal)}&scenario=${encodeURIComponent(streamScenario)}`;
 
                 
                 if (liveEventSource) {

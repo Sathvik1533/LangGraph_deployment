@@ -1118,9 +1118,9 @@ async def stream_workflow_events(
     hitl = request.hitl_mode if request else (hitl_mode or False)
     tid = request.thread_id if request and request.thread_id else (thread_id or f"thread_{uuid.uuid4().hex[:12]}")
     mode_val = (mode or "live").lower()
-    scenario_val = (scenario or "self_fix").lower()
+    scenario_val = (scenario or ("live" if mode_val == "live" else "self_fix")).lower()
     speed_val = float(speed or 1.0)
-    is_simulation = mode_val == "simulation" or "sim_" in tid or scenario_val != "live"
+    is_simulation = (mode_val == "simulation") or ("sim_" in tid) or (scenario_val != "live" and mode_val != "live")
 
 
     # Initialize workflow run state in controller
@@ -1262,10 +1262,10 @@ async def stream_workflow_events(
         }
 
         # Guardrail block condition (or guardrail_block scenario)
-        if not input_report.passed or scenario_val == "guardrail_block":
+        if not input_report.passed or (is_simulation and scenario_val == "guardrail_block"):
             reason = input_report.reason if not input_report.passed else "Guardrail Intercept: Prompt Injection pattern detected (LLM01)."
             blocked_by = input_report.blocked_by if not input_report.passed else "prompt_injection"
-            if scenario_val == "guardrail_block":
+            if is_simulation and scenario_val == "guardrail_block":
                 controls["prompt_injection"]["status"] = "BLOCKED"
                 controls["prompt_injection"]["reason"] = reason
 
@@ -1305,7 +1305,7 @@ async def stream_workflow_events(
 
         # 5. Human-in-the-Loop Review Gate
         async for item in check_checkpoint("human_review"): yield item
-        if hitl or scenario_val == "hitl_gate":
+        if hitl or (is_simulation and scenario_val == "hitl_gate"):
             hitl_sessions[tid] = {
                 "thread_id": tid, "task": task_text, "task_intent": task_intent_val,
                 "language": target_lang, "target_language": target_lang, "code": draft_code,
@@ -1328,7 +1328,7 @@ async def stream_workflow_events(
             await step_sleep(0.3)
 
             # Check if simulation failure injection is needed for attempt 1
-            force_fail_attempt1 = (is_simulation or scenario_val in ["self_fix", "max_retry"]) and current_it == 1
+            force_fail_attempt1 = is_simulation and (scenario_val in ["self_fix", "max_retry"]) and (current_it == 1)
             if force_fail_attempt1:
                 test_res = {
                     "execution_success": False,
@@ -1342,7 +1342,7 @@ async def stream_workflow_events(
                         f"[STATUS] Rejection by Tester Agent. Self-healing loop triggered."
                     )
                 }
-            elif scenario_val == "max_retry" and current_it < max_it:
+            elif is_simulation and scenario_val == "max_retry" and current_it < max_it:
                 test_res = {
                     "execution_success": False,
                     "report": f"[SANDBOX ASSERTION FAILURE]\nAssertionError: Attempt {current_it} failed in isolated sandbox."

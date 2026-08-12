@@ -13,6 +13,20 @@ const PLATFORM_PAGES = [
     { id: 'history', path: '/history', name: 'Runs' }
 ];
 
+function toggleCustomSelect(trigger, e) {
+    if (e) e.stopPropagation();
+    const wrapper = trigger ? trigger.closest('.custom-select-wrapper') : null;
+    if (!wrapper) return;
+    document.querySelectorAll('.custom-select-wrapper').forEach(w => {
+        if (w !== wrapper) w.classList.remove('open');
+    });
+    wrapper.classList.toggle('open');
+}
+
+document.addEventListener('click', () => {
+    document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
+});
+
 function extractTaskIntent(rawTask) {
     if (!rawTask) return "General Code Implementation";
     let intent = rawTask.trim();
