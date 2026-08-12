@@ -393,6 +393,17 @@ hitl_stats: Dict[str, int] = {
 }
 
 
+def cleanup_stale_hitl_sessions(max_age_seconds: float = 1800.0):
+    """Clean up stale or finished HITL sessions from memory."""
+    now = time.time()
+    stale_keys = [
+        tid for tid, s in hitl_sessions.items()
+        if (now - s.get("created_at", now)) > max_age_seconds or s.get("status") in ["aborted", "completed"]
+    ]
+    for tid in stale_keys:
+        hitl_sessions.pop(tid, None)
+
+
 @app.post("/api/workflow/control", tags=["Agent"])
 async def control_workflow(req: WorkflowControlRequest):
     """
@@ -425,8 +436,11 @@ async def control_workflow(req: WorkflowControlRequest):
         run.status = "STOPPED"
         run.stop_requested = True
         run.pause_event.set()
+        hitl_sessions.pop(tid, None)
     elif act == "reset":
         workflow_controller.reset_run(tid)
+        hitl_sessions.pop(tid, None)
+        cleanup_stale_hitl_sessions()
         return {
             "success": True, 
             "action": "reset", 

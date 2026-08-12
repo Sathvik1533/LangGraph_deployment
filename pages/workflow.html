@@ -511,6 +511,65 @@
             </div>
         </div>
 
+        <!-- Persistent Human Governance Review Active Banner -->
+        <div id="hitlGovernanceBanner" class="studio-card" style="display: none; background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(15, 23, 42, 0.95)); border: 1.5px solid #6366f1; margin-bottom: 24px; padding: 16px 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(99, 102, 241, 0.4); display: flex; align-items: center; justify-content: center;">
+                        <span class="material-symbols-outlined spin" style="color: #818cf8; font-size: 22px;">hourglass_top</span>
+                    </div>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: #f8fafc;">Human Review Gate Active</h4>
+                            <span class="cyber-badge cyber-badge-indigo">PAUSED FOR SIGN-OFF</span>
+                        </div>
+                        <div style="font-size: 12.5px; color: #94a3b8; margin-top: 2px;">
+                            Developer Agent synthesized candidate draft. Review, edit, or request changes to resume execution.
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <button onclick="reopenWorkflowHitlModal()" class="cyber-btn cyber-btn-primary" style="font-size: 12px; padding: 7px 14px;" data-tooltip="Re-open Review Gate: Open the decision modal to approve, edit, or request changes.">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">edit_note</span>
+                        <span>Re-open Review Gate</span>
+                    </button>
+                    <button onclick="submitWorkflowHitlAction('abort')" class="cyber-btn" style="font-size: 12px; padding: 7px 14px; background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5;" data-tooltip="Abort Task: Cancel execution cleanly.">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">cancel</span>
+                        <span>Abort Task</span>
+                    </button>
+                    <button onclick="resetCurrentScenario()" class="cyber-btn cyber-btn-secondary" style="font-size: 12px; padding: 7px 14px;" data-tooltip="Reset Workflow: Cleanly reset execution state to IDLE.">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">restart_alt</span>
+                        <span>Reset Workflow</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Persistent Workflow Error Recovery Banner -->
+        <div id="workflowErrorBanner" class="studio-card" style="display: none; background: rgba(239, 68, 68, 0.1); border: 1.5px solid #ef4444; margin-bottom: 24px; padding: 16px 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span class="material-symbols-outlined" style="color: #ef4444; font-size: 24px;">error_med</span>
+                    <div>
+                        <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: #f8fafc;" id="workflowErrorTitle">Workflow Execution Halted</h4>
+                        <div style="font-size: 12.5px; color: #fca5a5; margin-top: 2px;" id="workflowErrorMessage">An error occurred during workflow execution. Click Reset to return to a clean state.</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button onclick="reopenWorkflowHitlModal()" id="errorReopenHitlBtn" class="cyber-btn" style="display: none; font-size: 12px; padding: 7px 14px; background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">edit_note</span>
+                        <span>Re-open Review Modal</span>
+                    </button>
+                    <button onclick="resetCurrentScenario()" class="cyber-btn cyber-btn-primary" style="font-size: 12px; padding: 7px 14px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">restart_alt</span>
+                        <span>Reset Workflow</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Dynamic Active-Node Inspector & Multi-Tab Execution Console -->
 
         <div class="studio-card" id="inspectorCard" style="background: #0f172a; color: #f8fafc; border: 1px solid #334155; padding: 0; overflow: hidden; margin-bottom: 32px;">
@@ -535,6 +594,10 @@
                     <button class="cyber-btn" id="followLiveToggleBtn" onclick="toggleFollowLive()" style="font-size: 11.5px; padding: 5px 12px; border-radius: var(--radius-pill); background: rgba(5, 150, 105, 0.15); color: #34d399; border: 1px solid rgba(5, 150, 105, 0.4);" data-tooltip="Toggle Follow Live: Automatically follows execution head in real time.">
                         <span class="material-symbols-outlined" style="font-size: 15px;" id="followLiveIcon">sync_alt</span>
                         <span id="followLiveLabel">Following Live</span>
+                    </button>
+                    <button class="cyber-btn" onclick="resetCurrentScenario()" style="font-size: 11.5px; padding: 5px 12px; border-radius: var(--radius-pill); background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);" data-tooltip="Reset Run: Clear execution state cleanly to IDLE.">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">restart_alt</span>
+                        <span>Reset Run</span>
                     </button>
 
                     <div style="display: flex; gap: 4px; background: #0f172a; padding: 4px; border-radius: 10px; border: 1px solid #334155; flex-wrap: wrap;">
@@ -1988,6 +2051,9 @@
                 playInterval = null;
             }
 
+            if (typeof closeWorkflowHitlModal === 'function') closeWorkflowHitlModal();
+            if (typeof hideWorkflowBanners === 'function') hideWorkflowBanners();
+
             currentStepIndex = 0;
             isExecutionPaused = false;
 
@@ -2773,24 +2839,59 @@
             }
         }
 
+        let lastHitlCode = '';
+        let lastHitlThreadId = '';
+
         function openWorkflowHitlModal(code, threadId) {
             const modal = document.getElementById('workflowHitlModal');
             const codeInput = document.getElementById('workflowHitlCodeInput');
             const subtitle = document.getElementById('workflowHitlSubtitle');
-            if (codeInput && code) {
-                codeInput.value = code.replace(/^```[a-zA-Z]*\n?/gm, '').replace(/```$/gm, '').trim();
+            const banner = document.getElementById('hitlGovernanceBanner');
+            const errBanner = document.getElementById('workflowErrorBanner');
+            
+            if (code) lastHitlCode = code;
+            if (threadId) lastHitlThreadId = threadId;
+
+            if (codeInput && lastHitlCode) {
+                codeInput.value = lastHitlCode.replace(/^```[a-zA-Z]*\n?/gm, '').replace(/```$/gm, '').trim();
             }
-            if (subtitle && threadId) {
-                subtitle.textContent = `Thread ID: ${threadId} • Candidate Code Draft Ready for Governance Review`;
+            if (subtitle && lastHitlThreadId) {
+                subtitle.textContent = `Thread ID: ${lastHitlThreadId} • Candidate Code Draft Ready for Governance Review`;
             }
             if (modal) {
                 modal.style.display = 'flex';
             }
+            if (banner) {
+                banner.style.display = 'block';
+            }
+            if (errBanner) {
+                errBanner.style.display = 'none';
+            }
+        }
+
+        function reopenWorkflowHitlModal() {
+            openWorkflowHitlModal(lastHitlCode, lastHitlThreadId || activeLiveThreadId);
         }
 
         function closeWorkflowHitlModal() {
             const modal = document.getElementById('workflowHitlModal');
             if (modal) modal.style.display = 'none';
+        }
+
+        function showWorkflowErrorBanner(message, allowHitlReopen = false) {
+            const errBanner = document.getElementById('workflowErrorBanner');
+            const msgElem = document.getElementById('workflowErrorMessage');
+            const reopenBtn = document.getElementById('errorReopenHitlBtn');
+            if (msgElem && message) msgElem.textContent = message;
+            if (reopenBtn) reopenBtn.style.display = allowHitlReopen ? 'inline-flex' : 'none';
+            if (errBanner) errBanner.style.display = 'block';
+        }
+
+        function hideWorkflowBanners() {
+            const banner = document.getElementById('hitlGovernanceBanner');
+            const errBanner = document.getElementById('workflowErrorBanner');
+            if (banner) banner.style.display = 'none';
+            if (errBanner) errBanner.style.display = 'none';
         }
 
         async function submitWorkflowHitlAction(action) {
@@ -2835,6 +2936,7 @@
                     const err = await res.json().catch(() => ({}));
                     const errMsg = err.detail?.message || err.detail || 'Server error processing action';
                     showToast(`⚠️ Error submitting review action: ${errMsg}`, 'error');
+                    showWorkflowErrorBanner(`Workflow Review Error: ${errMsg}`, true);
                     openWorkflowHitlModal(editedCode, activeLiveThreadId);
                     return;
                 }
