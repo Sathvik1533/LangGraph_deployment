@@ -1689,6 +1689,11 @@
             end: 'END Node (Final Delivered Artifact)'
         };
 
+        function selectInspectorNode(nodeKey) {
+            selectedInspectorNode = normalizeNodeKey(nodeKey);
+            updateInspectorView(selectedInspectorNode);
+        }
+
         function updateInspectorView(nodeKey) {
 
             const canonicalKey = normalizeNodeKey(nodeKey);
@@ -2771,11 +2776,23 @@
                 }
                 if (simBtn) simBtn.disabled = false;
 
+                if (!nodeStore['human_review']) {
+                    nodeStore['human_review'] = { events: [], log: '', code: '', state: null, status: 'WAITING', iteration: 1 };
+                }
+                nodeStore['human_review'].status = 'PAUSED_FOR_REVIEW';
+                nodeStore['human_review'].log = (nodeStore['human_review'].log || '') + `[${timeStr}] [HUMAN_REVIEW] Paused at Human Review Gate. Candidate code draft ready for reviewer inspection & sign-off.\n`;
+
                 highlightLiveNode('human_review', 'running');
                 setElemText('telemetryStatusBadge', 'STATUS: Awaiting Human Sign-off');
                 const tBadge = document.getElementById('telemetryStatusBadge');
                 if (tBadge) tBadge.className = 'cyber-badge cyber-badge-indigo';
                 setElemText('simStepStatus', `LIVE: Awaiting Human Sign-off`);
+
+                activeExecutionNode = 'human_review';
+                if (followLiveNode) {
+                    selectedInspectorNode = 'human_review';
+                    updateInspectorView('human_review');
+                }
 
                 openWorkflowHitlModal(data.code, data.thread_id || runId);
                 showToast('⏸️ Human Review Gate reached! Awaiting Human Sign-off.', 'info');
@@ -2954,6 +2971,12 @@
                 const timeStr = new Date().toLocaleTimeString();
 
                 if (action === 'abort') {
+                    if (!nodeStore['human_review']) {
+                        nodeStore['human_review'] = { events: [], log: '', code: '', state: null, status: 'WAITING', iteration: 1 };
+                    }
+                    nodeStore['human_review'].status = 'ABORTED';
+                    nodeStore['human_review'].log = (nodeStore['human_review'].log || '') + `[${timeStr}] [HUMAN_REVIEW] Decision: ABORT\n[${timeStr}] 🛑 Workflow execution aborted by human reviewer. Halting safely.\n`;
+
                     highlightLiveNode('human_review', 'failed');
                     setElemText('telemetryAgentBadge', 'AGENT: HUMAN_REVIEW (ABORTED)');
                     setElemText('telemetryStatusBadge', 'STATUS: Workflow Aborted');
@@ -2961,6 +2984,13 @@
 
                     const statusBadge = document.getElementById('telemetryStatusBadge');
                     if (statusBadge) statusBadge.className = 'cyber-badge cyber-badge-amber';
+
+                    activeExecutionNode = 'human_review';
+                    if (followLiveNode) {
+                        selectedInspectorNode = 'human_review';
+                        updateInspectorView('human_review');
+                    }
+                    hideWorkflowBanners();
 
                     if (logBox) {
                         logBox.textContent += `\n[${timeStr}] [HUMAN_REVIEW] Decision: ABORT\n[${timeStr}] 🛑 Workflow aborted by reviewer. Execution safely halted without running untrusted code.\n`;
@@ -2986,6 +3016,18 @@
                     showToast('🛑 Workflow execution aborted by human reviewer', 'warning');
 
                 } else if (action === 'reject') {
+                    if (!nodeStore['human_review']) {
+                        nodeStore['human_review'] = { events: [], log: '', code: '', state: null, status: 'WAITING', iteration: 1 };
+                    }
+                    nodeStore['human_review'].status = 'CHANGES_REQUESTED';
+                    nodeStore['human_review'].log = (nodeStore['human_review'].log || '') + `[${timeStr}] [HUMAN_REVIEW] Decision: REQUEST CHANGES\n[${timeStr}] 💬 Reviewer Feedback: "${feedback || 'Re-evaluate implementation'}"\n[${timeStr}] 🔄 Forwarded feedback to Developer Agent for code revision.\n`;
+
+                    if (!nodeStore['developer']) {
+                        nodeStore['developer'] = { events: [], log: '', code: '', state: null, status: 'WAITING', iteration: 1 };
+                    }
+                    nodeStore['developer'].status = 'REVISING';
+                    nodeStore['developer'].log = (nodeStore['developer'].log || '') + `[${timeStr}] [DEVELOPER] Re-synthesizing code candidate based on reviewer guidance: "${feedback}"\n`;
+
                     highlightLiveNode('developer', 'running');
                     setElemText('telemetryAgentBadge', 'AGENT: DEVELOPER (REVISING)');
                     setElemText('telemetryStatusBadge', 'STATUS: Reviewer Requested Changes → Developer Revising');
@@ -2993,6 +3035,12 @@
 
                     const statusBadge = document.getElementById('telemetryStatusBadge');
                     if (statusBadge) statusBadge.className = 'cyber-badge cyber-badge-indigo';
+
+                    activeExecutionNode = 'developer';
+                    if (followLiveNode) {
+                        selectedInspectorNode = 'developer';
+                        updateInspectorView('developer');
+                    }
 
                     if (logBox) {
                         logBox.textContent += `\n[${timeStr}] [HUMAN_REVIEW] Decision: REQUEST CHANGES\n[${timeStr}] 💬 Reviewer Feedback: "${feedback || 'Re-evaluate implementation'}"\n[${timeStr}] 🤖 Developer Agent synthesized revised code candidate.\n`;
@@ -3014,21 +3062,47 @@
                 } else {
                     const activeCode = result.code || editedCode;
                     const isEdit = action === 'edit';
+                    const actionLabel = isEdit ? 'EDIT & APPROVE' : 'APPROVE';
+                    const approvedStatus = isEdit ? 'EDITED & APPROVED' : 'APPROVED';
+
+                    if (!nodeStore['human_review']) {
+                        nodeStore['human_review'] = { events: [], log: '', code: '', state: null, status: 'WAITING', iteration: 1 };
+                    }
+                    nodeStore['human_review'].status = approvedStatus;
+                    nodeStore['human_review'].log = (nodeStore['human_review'].log || '') + `[${timeStr}] [HUMAN_REVIEW] Decision: ${actionLabel}\n[${timeStr}] ✓ Candidate code approved for sandbox testing.${isEdit ? ' (Reviewer modifications applied)' : ''}\n`;
 
                     highlightLiveNode('human_review', 'success');
                     setElemText('telemetryStatusBadge', 'STATUS: Human Approved → Testing');
                     setElemText('simStepStatus', 'LIVE: Human Approved → Testing');
+                    hideWorkflowBanners();
+
+                    activeExecutionNode = 'human_review';
+                    if (followLiveNode) {
+                        selectedInspectorNode = 'human_review';
+                        updateInspectorView('human_review');
+                    }
 
                     setTimeout(() => {
                         highlightLiveNode('tester', 'running');
                         setElemText('telemetryAgentBadge', 'AGENT: TESTER (SANDBOX)');
                         setElemText('telemetryStatusBadge', 'STATUS: Human Approved → Testing');
 
+                        if (!nodeStore['tester']) {
+                            nodeStore['tester'] = { events: [], log: '', code: '', state: null, status: 'WAITING', iteration: 1 };
+                        }
+                        nodeStore['tester'].status = 'RUNNING';
+                        nodeStore['tester'].log = (nodeStore['tester'].log || '') + `[${timeStr}] [TESTER] Executing assertions in isolated sandbox...\n`;
+
+                        activeExecutionNode = 'tester';
+                        if (followLiveNode) {
+                            selectedInspectorNode = 'tester';
+                            updateInspectorView('tester');
+                        }
+
                         const statusBadge = document.getElementById('telemetryStatusBadge');
                         if (statusBadge) statusBadge.className = 'cyber-badge cyber-badge-emerald';
 
                         if (logBox) {
-                            const actionLabel = isEdit ? 'EDIT & APPROVE' : 'APPROVE';
                             logBox.textContent += `\n[${timeStr}] [HUMAN_REVIEW] Decision: ${actionLabel}\n[${timeStr}] ✓ Candidate code approved for sandbox testing.${isEdit ? ' (Reviewer modifications applied)' : ''}\n[${timeStr}] [TESTER] Executing assertions in isolated sandbox...\n`;
                             logBox.scrollTop = logBox.scrollHeight;
                         }
@@ -3039,11 +3113,19 @@
 
                         setTimeout(() => {
                             const isSuccess = !!result.success;
+                            if (!nodeStore['end']) {
+                                nodeStore['end'] = { events: [], log: '', code: '', state: null, status: 'WAITING', iteration: 1 };
+                            }
+
                             if (isSuccess) {
                                 highlightLiveNode('END', 'success');
                                 setElemText('telemetryAgentBadge', 'AGENT: END');
                                 setElemText('telemetryStatusBadge', 'STATUS: Tests Passed');
                                 setElemText('simStepStatus', 'LIVE: Tests Passed');
+
+                                nodeStore['tester'].status = 'SUCCESS';
+                                nodeStore['end'].status = 'SUCCESS';
+                                nodeStore['end'].log = (nodeStore['end'].log || '') + `[${timeStr}] [TESTER] ${result.report || 'All sandbox assertions passed cleanly.'}\n[${timeStr}] [ROUTER] Decision: END (execution_success = True)\n[${timeStr}] 🎉 Workflow completed successfully!\n`;
 
                                 if (logBox) {
                                     logBox.textContent += `[${timeStr}] [TESTER] ${result.report || 'All sandbox assertions passed cleanly.'}\n[${timeStr}] [ROUTER] Decision: END (execution_success = True)\n[${timeStr}] 🎉 Workflow completed successfully!\n`;
@@ -3057,12 +3139,22 @@
                                 setElemText('telemetryStatusBadge', 'STATUS: COMPLETED (FAILED)');
                                 setElemText('simStepStatus', 'LIVE: Sandbox tests finished with warnings following human review.');
 
+                                nodeStore['tester'].status = 'FAILED';
+                                nodeStore['end'].status = 'FAILED';
+                                nodeStore['end'].log = (nodeStore['end'].log || '') + `[${timeStr}] [TESTER] ${result.report || 'Sandbox execution finished.'}\n[${timeStr}] [ROUTER] Decision: END\n`;
+
                                 if (logBox) {
                                     logBox.textContent += `[${timeStr}] [TESTER] ${result.report || 'Sandbox execution finished.'}\n[${timeStr}] [ROUTER] Decision: END\n`;
                                     logBox.scrollTop = logBox.scrollHeight;
                                 }
 
                                 showToast('⚠️ Human Review applied. Sandbox completed with warnings.', 'warning');
+                            }
+
+                            activeExecutionNode = 'END';
+                            if (followLiveNode) {
+                                selectedInspectorNode = 'END';
+                                updateInspectorView('END');
                             }
 
                             if (stateOutput) stateOutput.textContent = JSON.stringify(result, null, 2);

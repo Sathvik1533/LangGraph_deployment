@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **HITL Review Natural Language Guard**: Added client-side (`isNaturalLanguageText`) and backend HTTP 400 validation guards preventing natural language guidance from bypassing model generation in `Edit & Approve` mode.
 
 ### Fixed
+- **HITL Node Inspector State Synchronization**: Synchronized `nodeStore['human_review']` resolution statuses (`APPROVED`, `EDITED & APPROVED`, `CHANGES_REQUESTED`, `ABORTED`) and logs across all review decision paths, ensuring the Active Node Inspector automatically follows active node execution and never displays stale `waiting_for_human` state after completion.
 - **Inline Workspace Execution**: Fixed `/generate` button to execute inline without triggering page navigation.
 - **SSE Live Mode Isolation**: Separated `LIVE: Execute API` real execution streams from simulation overrides in `app.py` and `workflow.html`.
 - **Page Reload & Thread State Management**: Ensured page reloads generate fresh unique run IDs (`run_...`) and update browser history via `replaceState`, while backend `/stream` and reset endpoints cleanly purge stale thread memory and `hitl_sessions`.
