@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.1.0] - 2026-08-12
+
+### Added
+- **Dynamic Input & Output OWASP Guardrails Architecture**: Fully documented and aligned 6 input scanners (`Prompt Injection LLM01`, `Sensitive Data LLM02`, `Excessive Agency LLM06`, `Unbounded Consumption LLM10`, `Topic Boundary`, `Content Safety`) and 4 output scanners (`Dangerous Code`, `PII Leaks`, `Code Relevance`, `Language Correctness`).
+- **Persistent Governance & Error Recovery Banners**: Integrated persistent canvas banners (`#hitlGovernanceBanner` and `#workflowErrorBanner`) providing immediate `[Re-open Review Gate]`, `[Abort Task]`, and `[Reset Workflow]` escape hatches.
+- **LLM Engine Mode Badge**: Real-time header indicator displaying `Live LLM: Groq llama-3.3-70b` vs `Template Fallback Mode`.
+
+### Security & Hardening
+- **Isolated Subprocess Python Execution**: Replaced in-process `exec()` in `run_python_code()` with an isolated `subprocess.run()` sandbox using temporary Python files, `timeout=5`, and a stripped environment (`env={}`).
+- **Honest Static Syntax Checks**: Removed fake execution mocks for Java and C++; relabeled results accurately as `[STATIC SYNTAX CHECK — not compiled or executed]`.
+- **HITL Review Natural Language Guard**: Added client-side (`isNaturalLanguageText`) and backend HTTP 400 validation guards preventing natural language guidance from bypassing model generation in `Edit & Approve` mode.
+
+### Fixed
+- **Inline Workspace Execution**: Fixed `/generate` button to execute inline without triggering page navigation.
+- **SSE Live Mode Isolation**: Separated `LIVE: Execute API` real execution streams from simulation overrides in `app.py` and `workflow.html`.
+- **Page Reload & Thread State Management**: Ensured page reloads generate fresh unique run IDs (`run_...`) and update browser history via `replaceState`, while backend `/stream` and reset endpoints cleanly purge stale thread memory and `hitl_sessions`.
+
+---
+
 ## [3.0.0] - 2026-08-11
 
 ### Added

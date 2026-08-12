@@ -33,11 +33,14 @@
 
 ## 🏗️ Architecture
 
-The engine runs as a compiled **LangGraph StateGraph** with conditional routing and dynamic checkpointing:
+The engine runs as a compiled **LangGraph StateGraph** with conditional routing, OWASP safety shields, and dynamic checkpointing:
 
 ```mermaid
 graph TD
-    START([🚀 START: User Task & Language]) --> DEV[🤖 Developer Agent]
+    START([🚀 START: User Task & Language]) --> IN_GUARD[🛡️ Input Guardrails: 6 OWASP Scanners]
+    IN_GUARD -->|✅ Passed| DEV[🤖 Developer Agent]
+    IN_GUARD -->|⛔ Blocked| IN_FAIL([🛡️ Input Guard Intercept])
+    
     DEV --> HITL{👤 Human Review Gate?}
     
     HITL -->|Review Mode: Enabled| MODAL[⏸️ Human Inspection & Sign-off]
@@ -48,15 +51,20 @@ graph TD
     HITL -->|Review Mode: Automated| TEST
     
     TEST --> ROUTE{🔀 Router Decision}
-    ROUTE -->|✅ All Assertions Pass| END_NODE([🎉 END: Verified Artifact])
+    ROUTE -->|✅ All Assertions Pass| OUT_GUARD[🛡️ Output Guardrails: 4 Safety Scanners]
     ROUTE -->|❌ Test Failures & Retries Remain| RETRY_DEV[🔄 Feedback Loop: Defect Trace]
     RETRY_DEV --> DEV
     ROUTE -->|❌ Max Iterations Exceeded| END_FAIL([⚠️ END: Max Attempts Reached])
 
+    OUT_GUARD -->|✅ Passed| END_NODE([🎉 END: Verified Artifact])
+    OUT_GUARD -->|⛔ Blocked| OUT_FAIL([🛡️ Output Security Intercept])
+
+    style IN_GUARD fill:#312e81,stroke:#818cf8,stroke-width:2px,color:#fff
     style DEV fill:#1e293b,stroke:#38bdf8,stroke-width:2px,color:#fff
     style HITL fill:#312e81,stroke:#818cf8,stroke-width:2px,color:#fff
     style TEST fill:#064e3b,stroke:#34d399,stroke-width:2px,color:#fff
     style ROUTE fill:#78350f,stroke:#fbbf24,stroke-width:2px,color:#fff
+    style OUT_GUARD fill:#312e81,stroke:#818cf8,stroke-width:2px,color:#fff
     style END_NODE fill:#065f46,stroke:#10b981,stroke-width:2px,color:#fff
 ```
 
@@ -64,12 +72,12 @@ graph TD
 
 | Agent / Component | Primary Responsibility | Isolation & Tooling |
 | :--- | :--- | :--- |
-| **Input Guardrails** | Pre-execution safety filter checking for prompt injection & topic boundaries | OWASP Pattern Matcher & Regex AST |
+| **Input Guardrails** | Pre-execution safety filter with 6 scanners (Prompt Injection LLM01, Sensitive Data LLM02, Excessive Agency LLM06, Unbounded Consumption LLM10, Topic Boundary, Content Safety) | Zero-dependency Pattern Matcher & Regex AST |
 | **Developer Agent** | Synthesizes clean, idiomatic source code without markdown conversational filler | Groq LLaMA-3.3-70B / Fallback Engine |
-| **Human Review Gate** | Intercepts candidate code for manual review, code editing, or guided revisions | LangGraph State Checkpoint |
-| **Sandbox Tester** | Compiles and runs test assertions against generated candidate code | Subprocess Sandbox with Strict Timeout |
+| **Human Review Gate** | Intercepts candidate code for manual review, code editing, or guided AI revisions | LangGraph State Checkpoint |
+| **Sandbox Tester** | Compiles and executes test assertions against generated candidate code | Isolated Subprocess with 5s Timeout & Empty Env (`env={}`) |
 | **Router Node** | Inspects test verdict, manages iteration counters, and dispatches retry loops | Conditional Edge Resolver |
-| **Output Guardrails** | Scans generated code for dangerous system commands and PII leaks | Safety Lexer & PII Regex Scanners |
+| **Output Guardrails** | Post-generation safety filter with 4 scanners (Dangerous Code Scan, PII Leak Scan, Code Relevance, Language Correctness) | Safety Lexer, PII Regex & Language Markers |
 
 ---
 
@@ -188,35 +196,39 @@ Inspect real-time statistics and defense posture of the security shield.
 
 ## 🛡️ Guardrails & Security
 
-AI Workflow Studio implements **OWASP LLM Top 10** controls:
+AI Workflow Studio implements **OWASP LLM Top 10** controls across pre-LLM and post-LLM evaluation gates:
 
 ```
 [User Request] 
       │
       ▼
-┌──────────────────────────────────────────────┐
-│ INPUT GUARDRAILS                             │
-│ • Prompt Injection Scanner                   │
-│ • System Prompt Override Filter              │
-│ • Topic Boundary Verifier                    │
-└──────────────────────┬───────────────────────┘
-                       │ Validated
-                       ▼
-┌──────────────────────────────────────────────┐
-│ LANGGRAPH MULTI-AGENT WORKFLOW               │
-│ • Developer ➔ Human Review ➔ Sandbox Tester  │
-└──────────────────────┬───────────────────────┘
-                       │ Output Artifact
-                       ▼
-┌──────────────────────────────────────────────┐
-│ OUTPUT GUARDRAILS                            │
-│ • Malicious OS Command Filter (rm, dd, etc.) │
-│ • PII & Secret Redactor                      │
-│ • Relevance & Format Verifier                │
-└──────────────────────┬───────────────────────┘
-                       │ Safe
-                       ▼
-[Client Response]
+┌────────────────────────────────────────────────────────┐
+│ INPUT GUARDRAILS (InputGuard)                          │
+│ 1. Prompt Injection Scanner (LLM01)                    │
+│ 2. Sensitive Data & PII Scanner (LLM02)                │
+│ 3. Excessive Agency & OS Shield (LLM06)                │
+│ 4. Unbounded Consumption & Rate Ceiling (LLM10)        │
+│ 5. Topic Boundary Verifier (Coding Domain)             │
+│ 6. Content Safety Scanner (Harmful Intent)             │
+└──────────────────────────┬─────────────────────────────┘
+                           │ Validated
+                           ▼
+┌────────────────────────────────────────────────────────┐
+│ LANGGRAPH MULTI-AGENT WORKFLOW                         │
+│ • Developer Agent ➔ Human Review Gate ➔ Sandbox Tester │
+└──────────────────────────┬─────────────────────────────┘
+                           │ Generated Artifact
+                           ▼
+┌────────────────────────────────────────────────────────┐
+│ OUTPUT GUARDRAILS (OutputGuard)                        │
+│ 1. Dangerous Code Scanner (os.system, subprocess, etc.)│
+│ 2. PII Leak & Credential Redactor                      │
+│ 3. Code Relevance Verifier                             │
+│ 4. Language Correctness Validator                      │
+└──────────────────────────┬─────────────────────────────┘
+                           │ Verified & Safe
+                           ▼
+[Verified Response & Source Artifact]
 ```
 
 ---
