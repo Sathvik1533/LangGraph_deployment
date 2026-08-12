@@ -930,7 +930,16 @@ async def handle_hitl_action(req_body: HITLActionRequest):
     task_intent_val = req_body.task_intent or (session.get("task_intent") if session else extract_task_intent(task_desc))
     artifact_filename = generate_artifact_filename(task_intent_val or task_desc, target_lang)
     
-    if not session and req_body.action != "abort":
+    action = req_body.action.lower()
+    
+    # Backend Guard: Check if the workflow run has already completed or terminated
+    if (not session or session.get("status") in ["completed", "aborted", "resolved", "SUCCESS", "FAILED"]) and action != "abort":
+        raise HTTPException(
+            status_code=400,
+            detail="This workflow run has already completed or terminated. Please click 'Reset Workflow' to start a fresh run."
+        )
+
+    if not session and action != "abort":
         session = {
             "thread_id": req_body.thread_id,
             "task": task_desc,
@@ -942,8 +951,6 @@ async def handle_hitl_action(req_body: HITLActionRequest):
             "iterations": 1,
             "max_iterations": 3
         }
-
-    action = req_body.action.lower()
     
     if action == "abort":
         hitl_stats["aborted"] += 1

@@ -2800,6 +2800,7 @@
             }
 
             if (data.event === 'workflow_complete' || data.event === 'error') {
+                hideWorkflowBanners();
                 if (liveEventSource) {
                     liveEventSource.close();
                     liveEventSource = null;
@@ -2892,6 +2893,17 @@
         }
 
         function reopenWorkflowHitlModal() {
+            const isRunCompleted = (
+                (nodeStore['END'] && ['SUCCESS', 'FAILED'].includes(nodeStore['END'].status)) ||
+                (nodeStore['human_review'] && ['APPROVED', 'EDITED & APPROVED', 'ABORTED'].includes(nodeStore['human_review'].status)) ||
+                (activeExecutionNode === 'END')
+            );
+            if (isRunCompleted) {
+                showToast("⚠️ This workflow run has already completed or terminated. Click 'Reset Workflow' to start a fresh run.", "warning");
+                hideWorkflowBanners();
+                closeWorkflowHitlModal();
+                return;
+            }
             openWorkflowHitlModal(lastHitlCode, lastHitlThreadId || activeLiveThreadId);
         }
 
@@ -2958,8 +2970,8 @@
                     const err = await res.json().catch(() => ({}));
                     const errMsg = err.detail?.message || err.detail || 'Server error processing action';
                     showToast(`⚠️ Error submitting review action: ${errMsg}`, 'error');
-                    showWorkflowErrorBanner(`Workflow Review Error: ${errMsg}`, true);
-                    openWorkflowHitlModal(editedCode, activeLiveThreadId);
+                    showWorkflowErrorBanner(`Workflow Review Error: ${errMsg}`, false);
+                    closeWorkflowHitlModal();
                     return;
                 }
 

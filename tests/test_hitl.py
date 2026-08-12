@@ -128,3 +128,29 @@ def test_hitl_pending_and_stats(client):
     pending_data = pending_res.json()
     assert "count" in pending_data
     assert isinstance(pending_data["sessions"], list)
+
+
+def test_hitl_action_on_completed_run_returns_400(client):
+    """Test that submitting a HITL action on an already completed run returns HTTP 400."""
+    gen_res = client.post("/generate", json={
+        "task": "Write a function to return minimum of two numbers",
+        "language": "python",
+        "hitl_mode": True
+    })
+    thread_id = gen_res.json()["thread_id"]
+
+    # First action completes the session
+    act1 = client.post("/hitl/action", json={
+        "thread_id": thread_id,
+        "action": "approve"
+    })
+    assert act1.status_code == 200
+
+    # Second action on the completed session should return 400
+    act2 = client.post("/hitl/action", json={
+        "thread_id": thread_id,
+        "action": "approve"
+    })
+    assert act2.status_code == 400
+    assert "already completed" in act2.json()["detail"]
+
