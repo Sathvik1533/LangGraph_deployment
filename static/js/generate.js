@@ -238,6 +238,7 @@ async function handleGenerate(overrideMode) {
     const maxIterationsSelect = document.getElementById('maxIterationsSelect');
     const hitlToggle = document.getElementById('hitlModeToggle');
     const generateBtn = document.getElementById('generateBtn');
+    const simBtn = document.getElementById('simBtn');
     const taskInlineAlert = document.getElementById('taskInlineAlert');
 
     const task = taskInput ? taskInput.value.trim() : '';
@@ -293,14 +294,139 @@ async function handleGenerate(overrideMode) {
     if (typeof minimizeTourForExecution === 'function') {
         minimizeTourForExecution();
     }
-    showToast(`🚀 Launching ${mode.toUpperCase()} Workflow for intent: "${taskIntent}" in ${language.toUpperCase()}`, 'info');
 
-    // Immediate Redirection to Pipeline Visualizer with authoritative target language & task intent
-    const targetUrl = `/workflow?run=${encodeURIComponent(runId)}&task=${encodeURIComponent(task)}&intent=${encodeURIComponent(taskIntent)}&lang=${encodeURIComponent(language)}&max=${maxIterations}&hitl=${hitlMode}&mode=${mode}&autoRun=true`;
-    
-    setTimeout(() => {
-        window.location.href = targetUrl;
-    }, 250);
+    // Disable buttons & set visual loading states
+    if (generateBtn) {
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = `
+            <span class="material-symbols-outlined spin" style="font-size: 18px;">sync</span>
+            <span>Executing...</span>
+        `;
+    }
+    if (simBtn) simBtn.disabled = true;
+
+    // Reset output panels to pending/loading state
+    const codeDisplay = document.getElementById('codeDisplay');
+    const reportDisplay = document.getElementById('reportDisplay');
+    const reportBadge = document.getElementById('reportBadge');
+    const stageDevBadge = document.getElementById('stageDevBadge');
+    const stageTestBadge = document.getElementById('stageTestBadge');
+    const stageResultBadge = document.getElementById('stageResultBadge');
+    const stageStatusTag = document.getElementById('stageStatusTag');
+    const statusBanner = document.getElementById('statusBanner');
+    const hitlReviewModal = document.getElementById('hitlReviewModal');
+    const conversionBar = document.getElementById('conversionBar');
+
+    if (statusBanner) statusBanner.style.display = 'none';
+    if (hitlReviewModal) hitlReviewModal.style.display = 'none';
+    if (conversionBar) conversionBar.style.display = 'none';
+
+    if (stageDevBadge) {
+        stageDevBadge.className = 'cyber-badge cyber-badge-amber';
+        stageDevBadge.textContent = '1. Developer (Writing...)';
+    }
+    if (stageTestBadge) {
+        stageTestBadge.className = 'cyber-badge';
+        stageTestBadge.textContent = '2. Reviewer / Tester';
+    }
+    if (stageResultBadge) {
+        stageResultBadge.className = 'cyber-badge';
+        stageResultBadge.textContent = '3. Validated Result';
+    }
+    if (stageStatusTag) {
+        stageStatusTag.className = 'cyber-badge cyber-badge-indigo';
+        stageStatusTag.textContent = 'EXECUTING...';
+    }
+    if (reportBadge) {
+        reportBadge.className = 'cyber-badge cyber-badge-terracotta';
+        reportBadge.textContent = 'RUNNING';
+    }
+
+    if (codeDisplay) {
+        codeDisplay.style.fontStyle = 'italic';
+        codeDisplay.style.color = '#94a3b8';
+        codeDisplay.textContent = `Developer Agent generating ${language.toUpperCase()} code...`;
+    }
+    if (reportDisplay) {
+        reportDisplay.style.fontStyle = 'italic';
+        reportDisplay.style.color = '#94a3b8';
+        reportDisplay.textContent = 'Awaiting sandbox test execution...';
+    }
+
+    showToast(`🚀 Executing ${mode.toUpperCase()} Workflow for intent: "${taskIntent}" in ${language.toUpperCase()}`, 'info');
+
+    try {
+        const payload = {
+            task: task,
+            language: language,
+            target_language: language,
+            task_intent: taskIntent,
+            max_iterations: maxIterations,
+            hitl_mode: hitlMode,
+            thread_id: runId
+        };
+
+        const response = await fetch('/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        currentResponseData = data;
+
+        if (data.llm_mode && typeof updateLlmBadge === 'function') {
+            updateLlmBadge(data.llm_mode);
+        }
+
+        if (data.hitl_status === 'awaiting_human_review') {
+            activeHitlThreadId = data.thread_id || runId;
+            const hitlEditableCode = document.getElementById('hitlEditableCode');
+            if (stageDevBadge) {
+                stageDevBadge.className = 'cyber-badge cyber-badge-emerald';
+                stageDevBadge.textContent = '1. Developer ✓';
+            }
+            if (stageStatusTag) {
+                stageStatusTag.className = 'cyber-badge cyber-badge-indigo';
+                stageStatusTag.textContent = 'PAUSED FOR REVIEW';
+            }
+            if (hitlEditableCode) hitlEditableCode.value = data.code || '';
+            if (hitlReviewModal) hitlReviewModal.style.display = 'block';
+            if (statusBanner) {
+                statusBanner.style.display = 'block';
+                statusBanner.className = 'studio-card';
+                statusBanner.style.borderColor = 'rgba(99, 102, 241, 0.4)';
+                statusBanner.style.background = 'var(--accent-indigo-bg)';
+                statusBanner.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span class="material-symbols-outlined" style="color: var(--accent-indigo); font-size: 24px;">pause_circle</span>
+                        <div>
+                            <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">Human Review Gate Active</div>
+                            <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Developer Agent generated draft code. Please review and Approve, Edit, or Request Changes below.</div>
+                        </div>
+                    </div>
+                `;
+            }
+            showToast('⏸️ Execution paused at Human Review Gate!', 'info');
+        } else if (data.execution_success || data.success) {
+            renderSuccessfulExecution(data, language, task);
+        } else {
+            renderFailedExecution(data);
+        }
+    } catch (err) {
+        console.error("Workflow execution failed:", err);
+        renderFailedExecution({ error: err.message || "Failed to execute workflow." });
+        showToast(`Execution error: ${err.message}`, 'error');
+    } finally {
+        if (generateBtn) {
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = `
+                <span class="material-symbols-outlined" style="font-size: 18px;">rocket_launch</span>
+                <span>Run Workflow</span>
+            `;
+        }
+        if (simBtn) simBtn.disabled = false;
+    }
 }
 
 async function submitHitlAction(action) {

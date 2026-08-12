@@ -55,10 +55,14 @@ def test_full_platform_e2e_flow():
                 java_opt.click()
                 print("  ✓ Target Language switched to Java 17")
 
-        # Click Run Workflow -> navigates to /workflow
+        # Click Run Workflow -> executes inline on /generate
         page.locator("#generateBtn").click()
-        page.wait_for_url(f"{BASE_URL}/workflow*")
-        print("  ✓ Run Workflow navigated to /workflow with task & language parameters")
+        page.wait_for_timeout(1500)
+        expect(page.locator("#codeDisplay")).to_not_be_empty()
+        print("  ✓ Run Workflow executed inline on /generate page")
+
+        # Navigate to /workflow page
+        page.goto(f"{BASE_URL}/workflow")
 
         # 3. WORKFLOW PAGE & TOOLBAR CONTROLS
         print("\n🚀 [3/6] Testing Interactive State Machine Visualizer ('/workflow')...")

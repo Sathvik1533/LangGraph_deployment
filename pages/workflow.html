@@ -2058,31 +2058,36 @@
         }
 
 
+        function updateLlmBadgeWorkflow(mode) {
+            const el = document.getElementById('llmModeBadgeWorkflow');
+            if (!el) return;
+            const isLive = mode && mode !== 'template-fallback';
+            el.textContent = isLive ? 'Live LLM: Groq llama-3.3-70b' : 'Template Fallback Mode';
+            el.style.color  = isLive ? '#059669' : '#d97706';
+            el.style.background = isLive ? 'rgba(5,150,105,0.12)' : 'rgba(217,119,6,0.12)';
+            el.style.border = isLive ? '1px solid #059669' : '1px solid #d97706';
+        }
+
+        async function checkLlmModeWorkflow() {
+            try {
+                const r = await fetch('/llm-mode');
+                if (r.ok) {
+                    const d = await r.json();
+                    updateLlmBadgeWorkflow(d.llm_mode);
+                }
+            } catch (e) {
+                console.warn('Failed to fetch /llm-mode:', e);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
+            checkLlmModeWorkflow();
 
             const navbarRes = await fetch('/templates/navigation.html');
             if (navbarRes.ok) {
                 document.getElementById('navbarContainer').innerHTML = await navbarRes.text();
                 setActiveNav('workflow');
             }
-
-            // Check LLM mode on load
-            (async () => {
-                try {
-                    const r = await fetch('/llm-mode');
-                    if (r.ok) {
-                        const d = await r.json();
-                        const el = document.getElementById('llmModeBadgeWorkflow');
-                        if (el) {
-                            const isLive = d.llm_mode && d.llm_mode !== 'template-fallback';
-                            el.textContent = isLive ? 'Live LLM: Groq llama-3.3-70b' : 'Template Fallback Mode';
-                            el.style.color  = isLive ? '#059669' : '#d97706';
-                            el.style.background = isLive ? 'rgba(5,150,105,0.12)' : 'rgba(217,119,6,0.12)';
-                            el.style.border = isLive ? '1px solid #059669' : '1px solid #d97706';
-                        }
-                    }
-                } catch (_) {}
-            })();
             const urlParams = new URLSearchParams(window.location.search);
             const queryRunId = urlParams.get('run') || urlParams.get('runId') || urlParams.get('id');
             const queryTask = urlParams.get('task');
@@ -2503,6 +2508,7 @@
                 highlightLiveNode(canonicalNode, data.status);
             }
 
+            if (data.llm_mode) updateLlmBadgeWorkflow(data.llm_mode);
             setElemText('telemetryAgentBadge', `AGENT: ${nodeUpper}`);
             setElemText('telemetryIterationBadge', `ITERATION: ${data.iteration || 1} / 3`);
 
