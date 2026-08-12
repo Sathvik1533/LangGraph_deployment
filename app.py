@@ -242,6 +242,7 @@ from agent import (
     agent,
     CrewState,
     get_llm_instance,
+    get_llm_mode_label,
     _circuit_breaker_open,
     _circuit_breaker_failures,
     CIRCUIT_BREAKER_THRESHOLD,
@@ -321,6 +322,7 @@ class AgentResponse(BaseModel):
     hitl_status: Optional[str] = Field(None, description="Human-in-the-Loop gate status")
     task_intent: Optional[str] = Field(None, description="Normalized task intent")
     target_language: Optional[str] = Field(None, description="Authoritative target language")
+    llm_mode: Optional[str] = Field(None, description="LLM mode: 'groq/llama-3.3-70b-versatile' or 'template-fallback'")
 
 
 class WorkflowControlRequest(BaseModel):
@@ -597,6 +599,26 @@ def get_info():
     }
 
 
+@app.get("/llm-mode", tags=["Info"])
+def llm_mode_endpoint():
+    """
+    Returns the active LLM mode for the current request.
+    Frontend uses this on page load to show the correct badge without
+    waiting for a full workflow run to complete.
+
+    Returns:
+        dict: { "llm_mode": "groq/llama-3.3-70b-versatile" | "template-fallback",
+                "display": "Live LLM: Groq llama-3.3-70b" | "Template Fallback Mode" }
+    """
+    mode = get_llm_mode_label()
+    display = (
+        "Live LLM: Groq llama-3.3-70b"
+        if mode != "template-fallback"
+        else "Template Fallback Mode"
+    )
+    return {"llm_mode": mode, "display": display}
+
+
 @app.post("/generate", response_model=AgentResponse, tags=["Agent"])
 @app.post("/invoke", response_model=AgentResponse, tags=["Agent"])
 async def invoke_agent(request: TaskRequest, req: Request):
@@ -777,7 +799,8 @@ async def invoke_agent(request: TaskRequest, req: Request):
                 checkpointed=True,
                 hitl_status="awaiting_human_review",
                 task_intent=task_intent,
-                target_language=target_lang
+                target_language=target_lang,
+                llm_mode=get_llm_mode_label()
             )
 
         if checkpointed:
@@ -812,7 +835,8 @@ async def invoke_agent(request: TaskRequest, req: Request):
                     checkpointed=checkpointed,
                     hitl_status="bypassed",
                     task_intent=task_intent,
-                    target_language=target_lang
+                    target_language=target_lang,
+                    llm_mode=get_llm_mode_label()
                 )
         
         # Check if we got valid results
@@ -832,7 +856,8 @@ async def invoke_agent(request: TaskRequest, req: Request):
             checkpointed=checkpointed,
             hitl_status="bypassed",
             task_intent=task_intent,
-            target_language=target_lang
+            target_language=target_lang,
+            llm_mode=get_llm_mode_label()
         )
         
     except HTTPException:

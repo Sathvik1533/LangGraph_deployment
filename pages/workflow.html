@@ -96,7 +96,10 @@
                     <span class="material-symbols-outlined" style="color: var(--accent-terracotta);">account_tree</span>
                     Interactive State Machine Visualizer
                 </h1>
-                <p class="page-subtitle">Real-time dynamic visualization of LangGraph state routing, sandbox assertions, defect trapping, and self-healing feedback loops.</p>
+                <p class="page-subtitle">Real-time dynamic visualization of LangGraph state routing, sandbox assertions, defect trapping, and self-healing feedback loops.
+                    &nbsp;
+                    <span id="llmModeBadgeWorkflow" style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 20px; vertical-align: middle; background: rgba(15,23,42,0.07); border: 1px solid currentColor;" title="Shows whether a live Groq API key is active or template fallback mode is running.">Checking...</span>
+                </p>
             </div>
 
             <!-- Playback & Execution Controls Toolbar -->
@@ -1455,10 +1458,10 @@
             },
             'router': {
                 name: 'Router Node',
-                role: 'Conditional State Machine & Feedback Loop Dispatcher',
+                role: 'Conditional Routing Function (no LLM call)',
                 icon: 'alt_route',
                 color: '#d97706',
-                description: 'Evaluates execution_success channel and iteration counter. Routes cleanly to END if tests passed, or triggers the self-healing feedback loop back to Developer.'
+                description: 'Pure conditional function — no LLM involved. Reads execution_success and iteration count from graph state. Routes to END if tests passed, or back to Developer for self-correction if iterations < max_iterations.'
             },
             'END': {
                 name: 'END Node',
@@ -2063,6 +2066,23 @@
                 setActiveNav('workflow');
             }
 
+            // Check LLM mode on load
+            (async () => {
+                try {
+                    const r = await fetch('/llm-mode');
+                    if (r.ok) {
+                        const d = await r.json();
+                        const el = document.getElementById('llmModeBadgeWorkflow');
+                        if (el) {
+                            const isLive = d.llm_mode && d.llm_mode !== 'template-fallback';
+                            el.textContent = isLive ? 'Live LLM: Groq llama-3.3-70b' : 'Template Fallback Mode';
+                            el.style.color  = isLive ? '#059669' : '#d97706';
+                            el.style.background = isLive ? 'rgba(5,150,105,0.12)' : 'rgba(217,119,6,0.12)';
+                            el.style.border = isLive ? '1px solid #059669' : '1px solid #d97706';
+                        }
+                    }
+                } catch (_) {}
+            })();
             const urlParams = new URLSearchParams(window.location.search);
             const queryRunId = urlParams.get('run') || urlParams.get('runId') || urlParams.get('id');
             const queryTask = urlParams.get('task');

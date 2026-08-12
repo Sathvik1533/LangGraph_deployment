@@ -103,9 +103,15 @@
                     <span style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">TASK INTENT:</span>
                     <span id="taskIntentDisplay" style="font-size: 13.5px; font-weight: 700; color: var(--accent-indigo);">Reverse a string and create tests</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">TARGET LANGUAGE:</span>
-                    <span id="authoritativeLangDisplay" class="cyber-badge cyber-badge-indigo" style="font-size: 12px; font-weight: 700;">PYTHON 3.11</span>
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">TARGET LANGUAGE:</span>
+                        <span id="authoritativeLangDisplay" class="cyber-badge cyber-badge-indigo" style="font-size: 12px; font-weight: 700;">PYTHON 3.11</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;" data-tooltip="LLM Engine: shows whether a live Groq API key is active or template fallback mode is running.">
+                        <span class="material-symbols-outlined" style="font-size: 15px; color: var(--text-muted);">smart_toy</span>
+                        <span id="llmModeBadge" class="cyber-badge" style="font-size: 11px; font-weight: 700;">Checking...</span>
+                    </div>
                 </div>
             </div>
 
@@ -263,11 +269,31 @@
     <script src="/static/js/common.js"></script>
     <script src="/static/js/generate.js"></script>
     <script>
+        // ── LLM Mode Badge ──────────────────────────────────────────────────────
+        function applyLlmBadge(elementId, mode) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            const isLive = mode && mode !== 'template-fallback';
+            el.textContent = isLive ? 'Live LLM: Groq llama-3.3-70b' : 'Template Fallback Mode';
+            el.style.background = isLive ? 'rgba(5,150,105,0.12)' : 'rgba(217,119,6,0.12)';
+            el.style.color      = isLive ? '#059669'               : '#d97706';
+            el.style.border     = isLive ? '1px solid #059669'     : '1px solid #d97706';
+        }
+        function updateLlmBadge(mode) { applyLlmBadge('llmModeBadge', mode); }
+
         document.addEventListener('DOMContentLoaded', async () => {
             const navbarRes = await fetch('/templates/navigation.html');
             if (navbarRes.ok) {
                 document.getElementById('navbarContainer').innerHTML = await navbarRes.text();
                 setActiveNav('generator');
+            }
+            // Check LLM mode on load
+            try {
+                const r = await fetch('/llm-mode');
+                if (r.ok) { const d = await r.json(); updateLlmBadge(d.llm_mode); }
+            } catch (_) {
+                const el = document.getElementById('llmModeBadge');
+                if (el) { el.textContent = 'Mode unknown'; }
             }
         });
 

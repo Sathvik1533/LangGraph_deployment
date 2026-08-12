@@ -338,6 +338,8 @@ async function submitHitlAction(action) {
 
         const data = await response.json();
         currentResponseData = data;
+        // Update LLM mode badge from AgentResponse.llm_mode
+        if (data.llm_mode && typeof updateLlmBadge === 'function') updateLlmBadge(data.llm_mode);
 
         if (action === 'abort') {
             if (hitlReviewModal) hitlReviewModal.style.display = 'none';

@@ -18,6 +18,8 @@ import sys
 import io
 import traceback
 import warnings
+import subprocess
+import tempfile
 warnings.filterwarnings("ignore")
 warnings.simplefilter("ignore")
 
@@ -1217,6 +1219,18 @@ def get_llm_instance():
     return _llm_instance
 
 
+def get_llm_mode_label() -> str:
+    """
+    Returns a human-readable label for the active LLM mode.
+    Reads the env key at call time (not cached) so it always reflects
+    the actual runtime config for that specific request.
+    """
+    provider = LLM_PROVIDERS[_current_provider_index]
+    api_key = os.environ.get(provider["env_key"], "").strip()
+    if api_key and not api_key.startswith("your_") and len(api_key) > 10:
+        return f"groq/{provider['model']}"
+    return "template-fallback"
+
 def jittered_wait(multiplier=1, min_wait=1, max_wait=10):
     def wait_func(retry_state):
         attempt = retry_state.attempt_number
@@ -1367,25 +1381,45 @@ class CrewState(TypedDict, total=False):
 
 @tool
 def run_python_code(code: str) -> str:
-    """Execute Python code in a sandboxed environment and capture stdout output."""
+    """
+    Execute Python code in an isolated subprocess with a 5-second timeout.
+    Uses an empty environment (env={}) so no server env vars (e.g. GROQ_API_KEY)
+    are accessible to generated code. Kills the process on timeout.
+    """
     if not isinstance(code, str):
         code = str(code)
     clean_code = code.replace("```python", "").replace("```", "").strip()
-    
-    old_stdout = sys.stdout
-    new_stdout = io.StringIO()
-    sys.stdout = new_stdout
-    
+
     try:
-        sandbox_scope: Dict[str, Any] = {"__builtins__": __builtins__}
-        exec(clean_code, sandbox_scope, sandbox_scope)
-        result = new_stdout.getvalue()
-    except Exception:
-        result = f"Execution Error:\n{traceback.format_exc()}"
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".py", delete=False, encoding="utf-8"
+        ) as tmp:
+            tmp.write(clean_code)
+            tmp_path = tmp.name
+
+        result = subprocess.run(
+            [sys.executable, tmp_path],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            env={},          # empty env: no inherited API keys or secrets
+        )
+        stdout = result.stdout.strip()
+        stderr = result.stderr.strip()
+
+        if result.returncode != 0:
+            return f"Execution Error:\n{stderr or stdout}"
+        return stdout if stdout else "Success (no terminal output)"
+
+    except subprocess.TimeoutExpired:
+        return "Execution Error:\nCode exceeded 5-second timeout limit (possible infinite loop)."
+    except Exception as exc:
+        return f"Execution Error:\n{exc}"
     finally:
-        sys.stdout = old_stdout
-    
-    return result.strip() if result.strip() else "Success (no terminal output)"
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
 
 
 @tool
@@ -1675,16 +1709,21 @@ def tester_node(state: CrewState) -> Dict[str, Any]:
     
     try:
         cases_str = f"1. Standard input verification for '{task}'\n2. Edge case boundary test\n3. Exception handling assertion"
-        
+
         if target_language == "python":
             execution_result = run_python_code.invoke(code)
             execution_success = not execution_result.startswith("Execution Error:")
-        elif target_language == "java":
-            execution_result = f"[JAVA JVM SANDBOX OUTPUT]\nCompiled classes successfully.\nExecuted test harness.\nstdout: All test cases passed for target Java environment."
-            execution_success = True
-        else: # C++
-            execution_result = f"[NATIVE C++ SANDBOX OUTPUT]\nCompiled successfully with g++ -O2 -std=c++20.\nExecuted binary ./a.out.\nstdout: All test cases passed for target C++ environment."
-            execution_success = True
+        else:
+            # Java and C++ runtime compilation is not available in this environment.
+            # Report the result of the structural syntax check already performed above.
+            lang_label = "Java" if target_language == "java" else "C++"
+            execution_result = (
+                f"[STATIC SYNTAX CHECK — not compiled or executed]\n"
+                f"{lang_label} source passed structural syntax validation.\n"
+                f"Note: Runtime compilation for {lang_label} is not available in this environment. "
+                f"The generated code has been validated for structural correctness only."
+            )
+            execution_success = True  # syntax check passed (would be False if validate_code_output failed above)
         
         if execution_success:
             report = (
