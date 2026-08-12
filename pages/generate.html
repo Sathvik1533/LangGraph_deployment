@@ -97,7 +97,7 @@
             </div>
 
             <!-- Task Intent & Authoritative Target Language Normalization Bar -->
-            <div id="taskIntentPreviewBar" style="background: rgba(99, 102, 241, 0.04); border: 1px dashed rgba(99, 102, 241, 0.3); border-radius: 10px; padding: 10px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+            <div id="taskIntentPreviewBar" style="background: rgba(99, 102, 241, 0.04); border: 1px dashed rgba(99, 102, 241, 0.3); border-radius: 10px; padding: 10px 16px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <span class="material-symbols-outlined" style="font-size: 18px; color: var(--accent-indigo);">psychology</span>
                     <span style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">TASK INTENT:</span>
@@ -113,6 +113,12 @@
                         <span id="llmModeBadge" class="cyber-badge" style="font-size: 11px; font-weight: 700;">Checking...</span>
                     </div>
                 </div>
+            </div>
+
+            <!-- Language Mismatch Warning Banner -->
+            <div id="generateLangMismatchWarning" style="display: none; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 8px 14px; margin-bottom: 16px; font-size: 12.5px; color: #d97706; align-items: center; gap: 8px;">
+                <span class="material-symbols-outlined" style="font-size: 18px; color: #d97706;">warning</span>
+                <span id="generateLangMismatchText">Language Mismatch Warning</span>
             </div>
 
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
@@ -311,6 +317,7 @@
             const wrapper = opt.closest('.custom-select-wrapper');
             const hidden = wrapper.querySelector('input[type="hidden"]');
             const valSpan = wrapper.querySelector('.custom-select-value');
+            const taskInput = document.getElementById('taskInput');
 
             wrapper.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
             opt.classList.add('selected');
@@ -320,6 +327,21 @@
                 hidden.dispatchEvent(new Event('change', { bubbles: true }));
             }
             if (valSpan) valSpan.textContent = label;
+
+            // Auto-adjust task language in text if explicit language is mentioned
+            if (taskInput && taskInput.value) {
+                const currentTask = taskInput.value;
+                const newLangName = val === 'python' ? 'Python' : (val === 'java' ? 'Java' : 'C++');
+                const updatedTask = currentTask.replace(/\b(Python|Java|C\+\+|CPP)\b/gi, (match) => {
+                    if (match === match.toUpperCase()) return newLangName.toUpperCase();
+                    if (match[0] === match[0].toUpperCase()) return newLangName;
+                    return newLangName.toLowerCase();
+                });
+                if (updatedTask !== currentTask) {
+                    taskInput.value = updatedTask;
+                    taskInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
 
             wrapper.classList.remove('open');
             showToast(`Target set to ${label}`, 'info');

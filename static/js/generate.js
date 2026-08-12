@@ -112,6 +112,39 @@ function updateTaskIntentPreview() {
         authoritativeLangDisplay.textContent = info.label;
         authoritativeLangDisplay.className = `cyber-badge ${info.cls}`;
     }
+
+    checkTaskLanguageMismatch(task, lang, 'generateLangMismatchWarning', 'generateLangMismatchText');
+}
+
+function checkTaskLanguageMismatch(taskText, targetLang, warningElemId, textElemId) {
+    if (!taskText) {
+        const warnEl = document.getElementById(warningElemId);
+        if (warnEl) warnEl.style.display = 'none';
+        return;
+    }
+    const text = taskText.toLowerCase();
+    const lang = (targetLang || 'python').toLowerCase();
+
+    let detectedMention = null;
+    if (/\bpython\b/.test(text)) detectedMention = 'python';
+    else if (/\bjava\b/.test(text)) detectedMention = 'java';
+    else if (/\b(c\+\+|cpp)\b/.test(text)) detectedMention = 'cpp';
+
+    const warnEl = document.getElementById(warningElemId);
+    const textEl = document.getElementById(textElemId);
+
+    if (detectedMention && detectedMention !== lang) {
+        const labelMap = { python: 'Python 3.11', java: 'Java 17', cpp: 'C++ 20' };
+        const mentionLabel = detectedMention === 'python' ? 'Python' : (detectedMention === 'java' ? 'Java' : 'C++');
+        const targetLabel = labelMap[lang] || lang.toUpperCase();
+
+        if (textEl) {
+            textEl.textContent = `Language Mismatch: Task text specifies '${mentionLabel}', but Target Language selector is set to '${targetLabel}'. Target Language (${targetLabel}) is authoritative for code generation.`;
+        }
+        if (warnEl) warnEl.style.display = 'flex';
+    } else {
+        if (warnEl) warnEl.style.display = 'none';
+    }
 }
 
 function updateCodeEditorHeader() {

@@ -235,6 +235,10 @@
                     <span class="material-symbols-outlined" id="updateTaskIcon" style="font-size: 18px;">sync</span>
                     <span id="updateTaskText">UPDATE TASK</span>
                 </button>
+            <!-- Language Mismatch Warning Banner -->
+            <div id="canvasLangMismatchWarning" style="display: none; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 8px 14px; margin-bottom: 12px; font-size: 12.5px; color: #d97706; align-items: center; gap: 8px;">
+                <span class="material-symbols-outlined" style="font-size: 18px; color: #d97706;">warning</span>
+                <span id="canvasLangMismatchText">Language Mismatch Warning</span>
             </div>
 
             <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
@@ -1798,10 +1802,61 @@
             }
         }
 
+        function selectCanvasOption(opt, val, label, e) {
+            if (e) e.stopPropagation();
+            const wrapper = opt.closest('.custom-select-wrapper');
+            const hidden = document.getElementById('canvasLangSelect');
+            const valSpan = document.getElementById('canvasLangValue');
+            const canvasLangBadge = document.getElementById('canvasLangBadge');
+            const langBadge = document.getElementById('activeTaskLangBadge');
+            const artifactBadge = document.getElementById('activeArtifactBadge');
+            const taskInput = document.getElementById('canvasTaskInput');
+
+            wrapper.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
+            opt.classList.add('selected');
+
+            activeLanguage = val.toLowerCase();
+            if (hidden) hidden.value = activeLanguage;
+            if (valSpan) valSpan.textContent = label;
+            wrapper.classList.remove('open');
+
+            const labelMap = { 'python': 'PYTHON 3.11', 'java': 'JAVA 17', 'cpp': 'C++ 20' };
+            if (canvasLangBadge) canvasLangBadge.textContent = `TARGET: ${labelMap[activeLanguage] || activeLanguage.toUpperCase()}`;
+            if (langBadge) {
+                langBadge.textContent = labelMap[activeLanguage] || activeLanguage.toUpperCase();
+                langBadge.className = `cyber-badge ${activeLanguage === 'python' ? 'cyber-badge-indigo' : (activeLanguage === 'java' ? 'cyber-badge-terracotta' : 'cyber-badge-emerald')}`;
+            }
+
+            // Auto-adjust task wording in input box if explicit language keyword is present
+            if (taskInput && taskInput.value) {
+                const currentTask = taskInput.value;
+                const newLangName = activeLanguage === 'python' ? 'Python' : (activeLanguage === 'java' ? 'Java' : 'C++');
+                const updatedTask = currentTask.replace(/\b(Python|Java|C\+\+|CPP)\b/gi, (match) => {
+                    if (match === match.toUpperCase()) return newLangName.toUpperCase();
+                    if (match[0] === match[0].toUpperCase()) return newLangName;
+                    return newLangName.toLowerCase();
+                });
+                if (updatedTask !== currentTask) {
+                    taskInput.value = updatedTask;
+                    updateCustomTask(updatedTask);
+                }
+            }
+
+            const taskIntent = extractTaskIntent(taskInput ? taskInput.value : activeTask);
+            const artifactFilename = generateArtifactFilename(taskIntent || activeTask, activeLanguage);
+            if (artifactBadge) artifactBadge.textContent = artifactFilename;
+
+            checkTaskLanguageMismatch(taskInput ? taskInput.value : activeTask, activeLanguage, 'canvasLangMismatchWarning', 'canvasLangMismatchText');
+            showToast(`Target set to ${label}`, 'info');
+        }
+
         function updateCustomTask(val) {
             if (typeof val === 'string') {
                 activeTask = val.trim();
             }
+            const hidden = document.getElementById('canvasLangSelect');
+            const targetLang = hidden ? hidden.value : activeLanguage;
+            checkTaskLanguageMismatch(val, targetLang, 'canvasLangMismatchWarning', 'canvasLangMismatchText');
         }
 
         function applyCustomTask() {
