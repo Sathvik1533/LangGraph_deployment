@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **HITL Review Natural Language Guard**: Added client-side (`isNaturalLanguageText`) and backend HTTP 400 validation guards preventing natural language guidance from bypassing model generation in `Edit & Approve` mode.
 
 ### Fixed
+- **Synchronous Abort Action Teardown & UI Transition**: Updated `submitWorkflowHitlAction('abort')` (`workflow.html:L2952`) to immediately close SSE streams, hide governance banners, close modals, and update `nodeStore['human_review'].status = 'ABORTED'` and Inspector UI synchronously on click before making background network calls.
 - **Terminal HITL Action Guard & Governance Banner Suppression**: Added backend HTTP 400 validation (`app.py:L935`) rejecting review actions submitted to already completed or terminated runs. Suppressed `#hitlGovernanceBanner` on workflow completion (`workflow.html:L2803`) and prevented `reopenWorkflowHitlModal()` on finished runs.
 - **HITL Node Inspector State Synchronization**: Synchronized `nodeStore['human_review']` resolution statuses (`APPROVED`, `EDITED & APPROVED`, `CHANGES_REQUESTED`, `ABORTED`) and logs across all review decision paths, ensuring the Active Node Inspector automatically follows active node execution and never displays stale `waiting_for_human` state after completion.
 - **Inline Workspace Execution**: Fixed `/generate` button to execute inline without triggering page navigation.

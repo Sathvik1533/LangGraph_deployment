@@ -2948,6 +2948,71 @@
                 action = 'reject';
             }
 
+            // --- IMMEDIATE SYNCHRONOUS ABORT HANDLER ---
+            if (action === 'abort') {
+                if (liveEventSource) {
+                    liveEventSource.close();
+                    liveEventSource = null;
+                }
+                closeWorkflowHitlModal();
+                hideWorkflowBanners();
+
+                const timeStr = new Date().toLocaleTimeString();
+                if (!nodeStore['human_review']) {
+                    nodeStore['human_review'] = { events: [], log: '', code: '', state: null, status: 'WAITING', iteration: 1 };
+                }
+                nodeStore['human_review'].status = 'ABORTED';
+                nodeStore['human_review'].log = (nodeStore['human_review'].log || '') + `[${timeStr}] [HUMAN_REVIEW] Decision: ABORT\n[${timeStr}] 🛑 Workflow execution aborted by human reviewer. Halting safely.\n`;
+
+                highlightLiveNode('human_review', 'failed');
+                setElemText('telemetryAgentBadge', 'AGENT: HUMAN_REVIEW (ABORTED)');
+                setElemText('telemetryStatusBadge', 'STATUS: Workflow Aborted');
+                setElemText('simStepStatus', 'LIVE: Workflow Aborted');
+
+                const statusBadge = document.getElementById('telemetryStatusBadge');
+                if (statusBadge) statusBadge.className = 'cyber-badge cyber-badge-amber';
+
+                activeExecutionNode = 'human_review';
+                selectedInspectorNode = 'human_review';
+                updateInspectorView('human_review');
+
+                const logBox = document.getElementById('streamLogOutput');
+                if (logBox) {
+                    logBox.textContent += `\n[${timeStr}] [HUMAN_REVIEW] Decision: ABORT\n[${timeStr}] 🛑 Workflow aborted by reviewer. Execution safely halted without running untrusted code.\n`;
+                    logBox.scrollTop = logBox.scrollHeight;
+                }
+
+                saveRunToHistory({
+                    id: activeLiveThreadId || `hitl_${Date.now()}`,
+                    thread_id: activeLiveThreadId,
+                    task: activeTask,
+                    language: activeLanguage,
+                    mode: 'live',
+                    status: 'ABORTED',
+                    success: false,
+                    iterations: 1,
+                    code: editedCode,
+                    report: 'Workflow aborted by reviewer',
+                    timestamp: new Date().toISOString()
+                });
+
+                showToast('🛑 Workflow execution aborted by human reviewer', 'warning');
+
+                fetch('/hitl/action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        thread_id: activeLiveThreadId || `thread_${Date.now()}`,
+                        action: 'abort',
+                        edited_code: editedCode,
+                        feedback: feedback,
+                        language: activeLanguage
+                    })
+                }).catch(err => console.warn('[HITL] Backend abort notify:', err));
+
+                return;
+            }
+
             closeWorkflowHitlModal();
             showToast(`Submitting Human Review decision: [${action.toUpperCase()}]...`, 'info');
 
@@ -2982,52 +3047,7 @@
                 const stateOutput = document.getElementById('activeStateOutput');
                 const timeStr = new Date().toLocaleTimeString();
 
-                if (action === 'abort') {
-                    if (!nodeStore['human_review']) {
-                        nodeStore['human_review'] = { events: [], log: '', code: '', state: null, status: 'WAITING', iteration: 1 };
-                    }
-                    nodeStore['human_review'].status = 'ABORTED';
-                    nodeStore['human_review'].log = (nodeStore['human_review'].log || '') + `[${timeStr}] [HUMAN_REVIEW] Decision: ABORT\n[${timeStr}] 🛑 Workflow execution aborted by human reviewer. Halting safely.\n`;
-
-                    highlightLiveNode('human_review', 'failed');
-                    setElemText('telemetryAgentBadge', 'AGENT: HUMAN_REVIEW (ABORTED)');
-                    setElemText('telemetryStatusBadge', 'STATUS: Workflow Aborted');
-                    setElemText('simStepStatus', 'LIVE: Workflow Aborted');
-
-                    const statusBadge = document.getElementById('telemetryStatusBadge');
-                    if (statusBadge) statusBadge.className = 'cyber-badge cyber-badge-amber';
-
-                    activeExecutionNode = 'human_review';
-                    if (followLiveNode) {
-                        selectedInspectorNode = 'human_review';
-                        updateInspectorView('human_review');
-                    }
-                    hideWorkflowBanners();
-
-                    if (logBox) {
-                        logBox.textContent += `\n[${timeStr}] [HUMAN_REVIEW] Decision: ABORT\n[${timeStr}] 🛑 Workflow aborted by reviewer. Execution safely halted without running untrusted code.\n`;
-                        logBox.scrollTop = logBox.scrollHeight;
-                    }
-
-                    if (stateOutput) stateOutput.textContent = JSON.stringify(result, null, 2);
-
-                    saveRunToHistory({
-                        id: activeLiveThreadId || `hitl_${Date.now()}`,
-                        thread_id: activeLiveThreadId,
-                        task: activeTask,
-                        language: activeLanguage,
-                        mode: 'live',
-                        status: 'ABORTED',
-                        success: false,
-                        iterations: result.iterations || 1,
-                        code: result.code || editedCode,
-                        report: result.report || 'Workflow aborted by reviewer',
-                        timestamp: new Date().toISOString()
-                    });
-
-                    showToast('🛑 Workflow execution aborted by human reviewer', 'warning');
-
-                } else if (action === 'reject') {
+                if (action === 'reject') {
                     if (!nodeStore['human_review']) {
                         nodeStore['human_review'] = { events: [], log: '', code: '', state: null, status: 'WAITING', iteration: 1 };
                     }
